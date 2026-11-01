@@ -150,6 +150,21 @@ validate_pst_check("macos", accepted$install, accepted$check, macos_tests, 1L)
 validate_pst_check("macos", macos_install, macos_check, macos_tests, 1L)
 validate_pst_check("macos", sdk27(clt = TRUE, line = "75")$install, accepted$check, macos_tests, 1L)
 validate_pst_check("macos", sdk27(clt = FALSE)$install, accepted$check, macos_tests, 1L)
+# Xcode 16.4 (MacOSX15.5 SDK) reports the same libc++ diagnostic at unique_ptr.h:81:5; only that exact line is added.
+xcode_81 <- function(install = macos_install) sub("unique_ptr.h:77:5: warning:", "unique_ptr.h:81:5: warning:", install, fixed = TRUE)
+bad81 <- function(install) validate_pst_check("macos", install, macos_check, macos_tests, 1L)
+bad81_ok <- xcode_81()
+validate_pst_check("macos", bad81_ok, macos_check, macos_tests, 1L)
+for (line in c("76", "78", "79", "80", "82")) {
+  reject(bad81(sub("unique_ptr.h:77:5: warning:", paste0("unique_ptr.h:", line, ":5: warning:"), macos_install, fixed = TRUE)))
+}
+reject(bad81(sub("non-virtual destructor", "virtual destructor", bad81_ok, fixed = TRUE)))
+reject(bad81(bad81_ok[bad81_ok != pst_libcpp_origin()]))
+reject(bad81(sub("AttractionReach.cpp:214:6: note:", "AttractionReach.cpp:215:6: note:", bad81_ok, fixed = TRUE)))
+reject(bad81(c(bad81_ok, grep("unique_ptr.h:81:5: warning:", bad81_ok, value = TRUE))))
+reject(bad81(sub("/Applications/Xcode_26.6.app/", "/Applications/Other_26.6.app/", bad81_ok, fixed = TRUE)))
+# Line 81 is an Xcode-root spelling only; with the CommandLineTools root it is rejected (and 75 stays CommandLineTools-only).
+reject(bad(sdk27(clt = TRUE, line = "81")))
 # Mixed pairs are rejected in both directions.
 xcode_75 <- sdk27(clt = FALSE); xcode_75$install <- sub("unique_ptr.h:77:5: warning:", "unique_ptr.h:75:5: warning:", xcode_75$install, fixed = TRUE)
 reject(bad(xcode_75))

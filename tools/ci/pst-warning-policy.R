@@ -56,24 +56,25 @@ pst_libcpp_warning <- function() {
 pst_compiler_warnings <- function(install) {
   indices <- grep(": warning:", install, fixed = TRUE)
   diagnostics <- install[indices]
-  # Two exact observed spellings of the same system-header location, each
-  # bound to its own line: the Xcode SDK used by CI reports unique_ptr.h:77:5,
-  # the CommandLineTools SDK reports unique_ptr.h:75:5. Mixed pairs are rejected.
+  # Exact observed spellings of the same system-header location, each bound
+  # to its own lines: the Xcode SDK used by CI reports unique_ptr.h:77:5
+  # (Xcode 26.x) or unique_ptr.h:81:5 (Xcode 16.4, MacOSX15.5 SDK), the
+  # CommandLineTools SDK reports unique_ptr.h:75:5. Mixed pairs are rejected.
   # Nothing else is rewritten: the remaining warning text and the pinned
   # instantiation origin stay exact.
   sdk_spellings <- list(
     list(prefix = paste0("^/Applications/Xcode_[0-9.]+\\.app/Contents/Developer/Platforms/",
                          "MacOSX\\.platform/Developer/SDKs/MacOSX\\.sdk/usr/include/c\\+\\+/v1/"),
-         line = "77"),
+         lines = c("77", "81")),
     list(prefix = "^/Library/Developer/CommandLineTools/SDKs/MacOSX\\.sdk/usr/include/c\\+\\+/v1/",
-         line = "75"))
+         lines = "75"))
   for (i in seq_along(indices)) {
     spelling <- Filter(function(s) grepl(s$prefix, diagnostics[[i]]), sdk_spellings)
     if (!length(spelling)) next
     spelling <- spelling[[1L]]
     normalized <- sub(spelling$prefix, "<libc++>/", diagnostics[[i]])
-    canonical <- paste0("<libc++>/__memory/unique_ptr.h:", spelling$line, ":5: warning:")
-    if (!startsWith(normalized, canonical)) stop("Unexpected SDK warning location")
+    canonical <- paste0("<libc++>/__memory/unique_ptr.h:", spelling$lines, ":5: warning:")
+    if (!any(startsWith(normalized, canonical))) stop("Unexpected SDK warning location")
     normalized <- sub("^<libc\\+\\+>/__memory/unique_ptr\\.h:[0-9]+:5: warning:",
                       "<libc++>/__memory/unique_ptr.h:77:5: warning:", normalized)
     attributed <- paste0(normalized,
