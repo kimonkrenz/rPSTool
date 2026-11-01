@@ -13,7 +13,7 @@ The package was developed under the name `rPST`. The Linux CRAN-oriented run on 
 
 **State of the rename.** The internal rename was completed before this repository was created: `DESCRIPTION`, `NAMESPACE` (`useDynLib(rPSTool)`), `R_init_rPSTool`, tests, documentation, vignettes, citation, CI scripts and metadata URLs. Internal technical identifiers (`rpst_*` native routines, `RPST_*` environment variables, `rpst:*` metadata keys, native pointer tags, `.rpst-build`, the `*_rpst_*` palette scales) are intentionally unchanged. Historical records still use the former name where they describe past work: the 2026-11-01 run below, the archived Windows/macOS logs under `tools/ci/fixtures/` and the parity-audit evidence files. A fresh full validation of the renamed package on macOS, Windows and Linux, including `R CMD check --as-cran`, is outstanding.
 
-**The public URLs are not yet accessible.** `https://github.com/kimonkrenz/rPSTool` and `https://kimonkrenz.com/rPSTool/` have not been created or checked. Do not mark incoming URL checks as passed until they resolve.
+**The public URLs have not been re-checked.** `https://github.com/kimonkrenz/rPSTool` now exists; `https://kimonkrenz.com/rPSTool/` has not been created. Do not mark incoming URL checks as passed until they resolve.
 
 ## CRAN incoming findings (2026-11-01; Linux Gate 2, run under the name rPST)
 

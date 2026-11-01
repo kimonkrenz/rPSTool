@@ -11,7 +11,6 @@ execution); no Q-level (QGIS-run) evidence exists. Rows cite upstream files and 
 |---|---|
 | [parity/parity-matrix.csv](parity/parity-matrix.csv) | 253 rows, 18 columns incl. `decision` (function, parameter, native / Python / rPSTool exposure, defaults, evidence, classification, tests, risk, recommendation) |
 | [parity/evidence-axial.md](parity/evidence-axial.md), [evidence-segment.md](parity/evidence-segment.md), [evidence-points-misc.md](parity/evidence-points-misc.md) | row-by-row evidence behind the matrix |
-| [parity/walking-radius-diagnosis.md](parity/walking-radius-diagnosis.md) | walking-radius investigation (research record; no native change planned) |
 
 ## 2. Governing principle and decision table
 
@@ -67,8 +66,10 @@ metadata test uses a steps radius.
 The following are not restricted here. Each needs a separate, evidence-based decision (section 5).
 
 * **Performance of BFS-based analyses with several limits.** Network Reach with walking + axmeter, and Attraction Reach with default
-  `distance = "steps"` plus a walking radius, can be extremely slow or exhaust memory in PST's native search
-  ([diagnosis](parity/walking-radius-diagnosis.md)). The official wizards run one radius type per analysis, so these combined limits
+  `distance = "steps"` plus a walking radius, can be extremely slow or exhaust memory in PST's native search.
+  The cause is in the unmodified upstream breadth-first search, which can queue a very large number of equivalent states when
+  more than one independently compared metric is limited and no turn limit applies; results are correct. This was observed in
+  maintainer investigations on dense axial networks and is not part of the release validation. The official wizards run one radius type per analysis, so these combined limits
   never occur in the plugin. They are rPSTool's combined-limit extension (retained, documented).
 * **AR-007.** `attraction_reach()` default `distance = "steps"` follows the native struct default; no change without source-grounded
   justification.
@@ -80,8 +81,7 @@ The following are not restricted here. Each needs a separate, evidence-based dec
 ## 5. Native BFS: no change
 
 No native BFS modification was implemented, proposed for implementation or authorised. `src/vendor`, `src/portability` and
-`inst/upstream` are unchanged. The earlier prototype patch was removed from the repository; the diagnosis
-([parity/walking-radius-diagnosis.md](parity/walking-radius-diagnosis.md)) is kept as a research record only. The upstream motive
+`inst/upstream` are unchanged. The upstream motive
 for the Network Integration restriction is not documented, and this audit does not claim that the BFS behaviour caused it.
 
 ## 6. Verification performed

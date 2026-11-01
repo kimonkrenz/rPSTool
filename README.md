@@ -40,15 +40,15 @@ rPSTool bundles the pinned PST v3.3.2 engine under LGPL-3-or-later. We gratefull
 rPSTool contains compiled C++ code and needs a **C++17 toolchain** (Rtools on Windows, Xcode command-line tools on macOS, `g++` or
 `clang++` on Linux). The first installation compiles the bundled engine from source, which takes a few minutes.
 
-Once the public release repository is available, install from GitHub:
+rPSTool is not yet on CRAN. Install the current source from the public GitHub repository:
 
 ```r
-# install.packages("remotes")
-remotes::install_github("kimonkrenz/rPSTool")
-# or
 # install.packages("pak")
 pak::pak("kimonkrenz/rPSTool")
+library(rPSTool)
 ```
+
+`remotes::install_github("kimonkrenz/rPSTool")` works equally well.
 
 From a source checkout or tarball: `install.packages("path/to/rPSTool", repos = NULL, type = "source")`.
 
@@ -165,9 +165,12 @@ you. See [palettes](https://github.com/kimonkrenz/rPSTool/blob/main/docs/palette
   comparison with real QGIS runs (level Q) has been recorded.
 * File input reads two-vertex line geometry in physical file order; polylines are never split, snapped or repaired, and external
   identifiers are not retained.
+* Combining a walking, angular or axmeter radius with another independently compared limit, without a steps limit, can make PST's
+  native search very slow or exhaust memory on dense networks. Results are not affected; see `?attraction_reach` and the
+  [parity audit](https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/parity-audit.md).
 * PST creates worker threads internally; rPSTool caps them (`RPST_NUM_THREADS`, and a ceiling of two under R's check limit).
 
-Package information: https://kimonkrenz.com/rPSTool/; bug reports: https://github.com/kimonkrenz/rPSTool/issues.
+Report bugs and request features at <https://github.com/kimonkrenz/rPSTool/issues>.
 
 ## Documentation and citation
 
