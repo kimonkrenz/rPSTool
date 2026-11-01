@@ -80,6 +80,14 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends texinfo tidy lmodern texlive-latex-base texlive-latex-recommended \
             texlive-latex-extra texlive-fonts-recommended
+          # inconsolata.sty (required by R's Rd.sty) is only packaged in the very large texlive-fonts-extra; install just that
+          # package from its CTAN TDS archive into the user texmf tree.
+          mkdir -p "$HOME/texmf" && cd "$RUNNER_TEMP"
+          curl -fsSLO https://mirrors.ctan.org/install/fonts/inconsolata.tds.zip
+          unzip -q -o inconsolata.tds.zip -d "$HOME/texmf"
+          texhash "$HOME/texmf"
+          updmap-user --enable Map=zi4.map
+          kpsewhich inconsolata.sty zi4.sty
           command -v pdflatex tidy texi2dvi
       - uses: r-lib/actions/setup-r@v2
         with:
