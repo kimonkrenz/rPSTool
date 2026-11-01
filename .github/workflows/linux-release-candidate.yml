@@ -34,26 +34,44 @@ jobs:
           dependencies: '"all"'
           extra-packages: any::rcmdcheck
       - name: Record commit and environment
+        id: env
         run: |
           mkdir -p .local/rc
-          { echo "commit: $(git rev-parse HEAD)"; R --version | head -1; gcc --version | head -1; g++ --version | head -1;
+          { echo "commit: $(git rev-parse HEAD)"; echo "runner: ${{ runner.os }} ${{ runner.arch }} $ImageOS $ImageVersion"; R --version | head -1; gcc --version | head -1; g++ --version | head -1;
             Rscript -e 'for (p in c("arrow","sf","testthat","jsonlite","ggplot2","classInt","knitr","rmarkdown")) cat(p, as.character(packageVersion(p)), "\n")'; } | tee .local/rc/environment.txt
           Rscript -e 'stopifnot(packageVersion("arrow") >= "25.0.0", requireNamespace("arrow", quietly = TRUE))'
       - name: Verify pinned vendor trees and provenance
+        id: vendor
         run: |
-          Rscript tools/verify-vendor.R
-          Rscript tools/verify-flatgeobuf-vendor.R
-          Rscript tools/verify-arrow-abi.R
-      - name: Build-time fail-closed tool tests
+          for t in verify-vendor verify-flatgeobuf-vendor verify-arrow-abi; do
+            echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
+          done
+      - name: Build-time fail-closed tool tests and historical-fixture regression suite
+        id: tools
+        shell: bash
         run: |
+          {
           for t in test-portability test-graph-constructors test-network-construction test-isovist-safety test-raster-safety \
                    test-diagnostic-fixes test-worker-limits test-fs-layer test-fp-policy test-flatgeobuf-vendor test-arrow-abi \
                    test-checkout-attributes test-build-lifecycle; do
             echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
           done
+          echo "::group::warning-policy regression suite (historical fixtures)"
           Rscript tools/ci/test-warning-policy.R
-      - name: Full gate (tools/ci/check-package.R)
-        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ubuntu
+          echo "::endgroup::"
+          } 2>&1 | tee .local/rc/tool-tests.log
+      - name: Full gate (live R CMD check, tools/ci/check-package.R)
+        id: gate
+        shell: bash
+        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ubuntu 2>&1 | tee .local/rc/gate.log
+      - name: Job summary
+        if: always()
+        env:
+          STEP_ENV: ${{ steps.env.outcome }}
+          STEP_VENDOR: ${{ steps.vendor.outcome }}
+          STEP_TOOLS: ${{ steps.tools.outcome }}
+          STEP_GATE: ${{ steps.gate.outcome }}
+        run: Rscript tools/ci/write-summary.R "Linux full development gate"
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -120,6 +138,23 @@ jobs:
           for u in https://github.com/kimonkrenz/rPSTool https://github.com/kimonkrenz/rPSTool/issues; do
             printf '%s ' "$u"; curl -sS -o /dev/null -w '%{http_code}\n' -L "$u"
           done | tee .local/cran/urls.txt
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Linux R CMD check --as-cran (CRAN incoming checks): $(grep -h '^Status:' .local/cran/check.log 2>/dev/null | tail -1 || true)"
+            echo
+            echo "| Item | Value |"; echo "|---|---|"
+            echo "| Commit | \`$(cat .local/cran/commit.txt 2>/dev/null | sed 's/^commit: //')\` |"
+            echo "| \`R CMD check\` exit status | $(sed 's/^check_status=//' .local/cran/status.txt 2>/dev/null || echo 'not recorded') |"
+            echo "| Compiler diagnostic lines | $(wc -l < .local/cran/compiler-diagnostics.txt 2>/dev/null || echo 'not recorded') |"
+            echo
+            echo "Notes and warnings reported by the check:"
+            echo '```'
+            grep -hE '^\* checking .*(NOTE|WARNING|ERROR)$' .local/cran/check.log 2>/dev/null | head -20 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4

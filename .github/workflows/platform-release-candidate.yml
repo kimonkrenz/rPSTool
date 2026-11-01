@@ -13,9 +13,9 @@ on:
           - macos-15
           - windows-latest
       ref:
-        description: "Commit SHA to validate"
-        required: true
-        default: c2a38686d337b5bdb05ca8ec963b259d7fcead3c
+        description: "Commit SHA to validate (empty = the commit this workflow was dispatched on)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.sha }}
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: release
@@ -44,29 +44,51 @@ jobs:
           dependencies: '"all"'
           extra-packages: any::rcmdcheck
       - name: Record commit and environment
+        id: env
         shell: bash
         run: |
           mkdir -p .local/rc
-          test "$(git rev-parse HEAD)" = "${{ inputs.ref }}"
+          test "$(git rev-parse HEAD)" = "${{ inputs.ref || github.sha }}"
           { echo "commit: $(git rev-parse HEAD)"; echo "runner: ${{ runner.os }} ${{ runner.arch }}"; uname -a; R --version | head -1;
             (clang --version || true) 2>&1 | head -1; (g++ --version || true) 2>&1 | head -1;
             Rscript -e 'for (p in c("arrow","sf","testthat","jsonlite","ggplot2","classInt","knitr","rmarkdown")) cat(p, as.character(packageVersion(p)), "\n"); cat("RPST_FULL_TESTS =", Sys.getenv("RPST_FULL_TESTS"), "\n")'; } | tee .local/rc/environment.txt
           Rscript -e 'stopifnot(packageVersion("arrow") >= "25.0.0", requireNamespace("arrow", quietly = TRUE), requireNamespace("sf", quietly = TRUE))'
       - name: Verify pinned vendor trees and provenance
-        run: |
-          Rscript tools/verify-vendor.R
-          Rscript tools/verify-flatgeobuf-vendor.R
-          Rscript tools/verify-arrow-abi.R
-      - name: Build-time fail-closed tool tests
+        id: vendor
         shell: bash
         run: |
+          for t in verify-vendor verify-flatgeobuf-vendor verify-arrow-abi; do
+            echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
+          done
+      - name: Build-time fail-closed tool tests and historical-fixture regression suite
+        id: tools
+        shell: bash
+        run: |
+          set -o pipefail
+          {
           for t in test-portability test-graph-constructors test-network-construction test-isovist-safety test-raster-safety \
                    test-diagnostic-fixes test-worker-limits test-fs-layer test-build-lifecycle; do
             echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
           done
+          echo "::group::warning-policy regression suite (historical fixtures)"
           Rscript tools/ci/test-warning-policy.R
-      - name: Strict platform gate (tools/ci/check-package.R)
-        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ${{ runner.os == 'macOS' && 'macos' || 'windows' }}
+          echo "::endgroup::"
+          } 2>&1 | tee .local/rc/tool-tests.log
+      - name: Strict platform gate (live R CMD check, tools/ci/check-package.R)
+        id: gate
+        shell: bash
+        run: |
+          set -o pipefail
+          Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ${{ runner.os == 'macOS' && 'macos' || 'windows' }} 2>&1 | tee .local/rc/gate.log
+      - name: Job summary
+        if: always()
+        shell: bash
+        env:
+          STEP_ENV: ${{ steps.env.outcome }}
+          STEP_VENDOR: ${{ steps.vendor.outcome }}
+          STEP_TOOLS: ${{ steps.tools.outcome }}
+          STEP_GATE: ${{ steps.gate.outcome }}
+        run: Rscript tools/ci/write-summary.R "Full gate on ${{ inputs.os }}"
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4

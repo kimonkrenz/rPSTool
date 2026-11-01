@@ -11,6 +11,21 @@ invisible(file.copy(list.files(live_policy_dir, pattern = "[.](tsv|txt)$", full.
 stopifnot(file.copy(Sys.glob("tools/ci/fixtures/pre-diagnostic-fix-inventories/*.tsv"), earlier_policy_dir, overwrite = TRUE))
 formals(read_pst_warning_policy)$policy_dir <- earlier_policy_dir
 formals(validate_pst_check)$policy_dir <- earlier_policy_dir
+# Quiet wrapper: the regression suite validates hundreds of fixtures, so the per-validation success line is
+# suppressed and counted; a rejection keeps its original reason and gains the platform/fixture context.
+validate_pst_check_reporting <- validate_pst_check
+accepted_validations <- 0L
+validate_pst_check <- function(platform, install, check, tests, exit_status,
+                               policy_dir = earlier_policy_dir, test_dir = "tests/testthat") {
+  result <- tryCatch(
+    validate_pst_check_reporting(platform, install, check, tests, exit_status,
+                                 policy_dir = policy_dir, test_dir = test_dir, report = FALSE),
+    error = function(e) stop("[warning-policy fixture: platform=", platform, ", exit_status=", exit_status,
+                             ", install/check/tests lines=", length(install), "/", length(check), "/", length(tests),
+                             "] ", conditionMessage(e), call. = FALSE))
+  accepted_validations <<- accepted_validations + 1L
+  invisible(result)
+}
 read_fixture <- function(platform, suffix) {
   # The combined isovist safety copy restores the original vendor diagnostic
   # path with #line. Migrate only this spelling in the earlier excerpts;
@@ -31,7 +46,7 @@ read_fixture <- function(platform, suffix) {
 rejections <- 0L
 reject <- function(expression) {
   error <- NULL
-  invisible(capture.output(error <- tryCatch({force(expression); NULL}, error = identity)))
+  invisible(capture.output(error <- suppressWarnings(tryCatch({force(expression); NULL}, error = identity))))
   if (!inherits(error, "error")) stop("Warning policy accepted a forbidden result")
   rejections <<- rejections + 1L
 }
@@ -623,5 +638,5 @@ for (platform in c("macos", "macos-sdk27", "windows")) {
   stopifnot(!any(grepl(eliminated, live)), identical(live, old[!grepl(eliminated, old)]))
 }
 
-message("Exact warning-policy tests passed: known inventories accepted; ",
+message("Exact warning-policy tests passed: ", accepted_validations, " known-good validations accepted; ",
         rejections, " signature/count/origin, check, test, and execution mutations rejected")

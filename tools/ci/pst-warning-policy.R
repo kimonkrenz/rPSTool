@@ -247,7 +247,7 @@ pst_read_test_log <- function(check_dir) {
 }
 
 validate_pst_check <- function(platform, install, check, tests, exit_status,
-                               policy_dir = "tools/ci", test_dir = "tests/testthat") {
+                               policy_dir = "tools/ci", test_dir = "tests/testthat", report = TRUE) {
   policy <- read_pst_warning_policy(platform, policy_dir, check)
   if (length(exit_status) != 1L || is.na(exit_status) || !exit_status %in% c(0L, 1L)) {
     stop("R CMD check execution failed")
@@ -334,8 +334,10 @@ validate_pst_check <- function(platform, install, check, tests, exit_status,
   }
   skipped <- as.integer(sub(summary_pattern, "\\1", passed[[1L]]))
   validate_test_skips(platform, tests, skipped, policy_dir, test_dir)
-  message("Exact PST warning policy passed on ", platform, ": ",
-          sum(policy$count[policy$phase == "compiler"]), " compiler diagnostics; ",
-          sum(policy$count[policy$phase == "check"]), " significant diagnostics; all other checks strict")
+  if (isTRUE(report)) {
+    message("Exact PST warning policy passed on ", platform, ": ",
+            sum(policy$count[policy$phase == "compiler"]), " compiler diagnostics; ",
+            sum(policy$count[policy$phase == "check"]), " significant diagnostics; all other checks strict")
+  }
   invisible(TRUE)
 }
