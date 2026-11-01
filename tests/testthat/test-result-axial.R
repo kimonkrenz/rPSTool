@@ -139,8 +139,10 @@ test_that("Network Integration and Reach results equal the in-memory results and
     if (!case$routine %in% c("integration", "reach")) next
     radius <- do.call(analysis_radius, case$radius)
     if (case$routine == "integration") {
-      memory <- network_integration(a, radius = radius)
-      network_integration(a, radius = radius, output_file = file, overwrite = TRUE)
+      # The oracle exercises the native engine with every radius field, so the unrestricted internal implementation is used
+      # (the public network_integration() accepts only steps radii; the public rejection is tested in test-network-integration.R and at the end of this file).
+      memory <- rPSTool:::.pst_network_integration_run(a, radius = radius)
+      rPSTool:::.pst_network_integration_run(a, radius = radius, output_file = file, overwrite = TRUE)
       persisted <- rs_read(file)
       expect_identical(persisted$node_count, as.integer(case$count))
     } else {
@@ -463,4 +465,13 @@ test_that("a failure inside PST after the arguments are valid leaves no stream, 
   expect_false(file.exists(file))
   expect_identical(rs_leftovers(dir), character())
   expect_true(rs_balanced(before))
+})
+
+test_that("the public network_integration() rejects non-steps radii also when writing a result file", {
+  skip_result_file()
+  g <- axial_graph(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1))); on.exit(ra_release(list(g)), add = TRUE)
+  file <- tempfile(fileext = ".parquet"); on.exit(unlink(file), add = TRUE)
+  expect_error(network_integration(g, radius = analysis_radius(straight = 5), output_file = file),
+               "supports only a topological steps radius")
+  expect_false(file.exists(file))
 })
