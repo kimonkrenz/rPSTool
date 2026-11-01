@@ -1,0 +1,116 @@
+name: Linux release candidate
+
+# Manual only. Full Linux development validation (all test cases, arrow installed), a separate
+# R CMD check --as-cran with CRAN incoming checks enabled, and install/registration/URL checks.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-release-candidate
+  cancel-in-progress: false
+
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  R_KEEP_PKG_SOURCE: "yes"
+  MAKEFLAGS: "-j2"
+  RPST_FULL_TESTS: "true"
+
+jobs:
+  full-gate:
+    name: Full development gate (RPST_FULL_TESTS=true, arrow)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          extra-packages: any::rcmdcheck
+      - name: Record commit and environment
+        run: |
+          mkdir -p .local/rc
+          { echo "commit: $(git rev-parse HEAD)"; R --version | head -1; gcc --version | head -1; g++ --version | head -1;
+            Rscript -e 'for (p in c("arrow","sf","testthat","jsonlite","ggplot2","classInt","knitr","rmarkdown")) cat(p, as.character(packageVersion(p)), "\n")'; } | tee .local/rc/environment.txt
+          Rscript -e 'stopifnot(packageVersion("arrow") >= "25.0.0", requireNamespace("arrow", quietly = TRUE))'
+      - name: Verify pinned vendor trees and provenance
+        run: |
+          Rscript tools/verify-vendor.R
+          Rscript tools/verify-flatgeobuf-vendor.R
+          Rscript tools/verify-arrow-abi.R
+      - name: Build-time fail-closed tool tests
+        run: |
+          for t in test-portability test-graph-constructors test-network-construction test-isovist-safety test-raster-safety \
+                   test-diagnostic-fixes test-worker-limits test-fs-layer test-fp-policy test-flatgeobuf-vendor test-arrow-abi \
+                   test-checkout-attributes test-build-lifecycle; do
+            echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
+          done
+          Rscript tools/ci/test-warning-policy.R
+      - name: Full gate (tools/ci/check-package.R)
+        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ubuntu
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-gate-logs
+          path: |
+            .local/rc
+            .local/ci-check
+          if-no-files-found: warn
+          retention-days: 30
+
+  cran-incoming:
+    name: R CMD check --as-cran with CRAN incoming checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      _R_CHECK_CRAN_INCOMING_: "true"
+      _R_CHECK_CRAN_INCOMING_REMOTE_: "true"
+      _R_CHECK_FORCE_SUGGESTS_: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          extra-packages: any::rcmdcheck
+      - name: Build and check (logs preserved, failures reported at the end)
+        shell: bash
+        run: |
+          mkdir -p .local/cran
+          echo "commit: $(git rev-parse HEAD)" | tee .local/cran/commit.txt
+          R CMD build . 2>&1 | tee .local/cran/build.log
+          tarball="$(ls rPSTool_*.tar.gz)"
+          set +e
+          R CMD check --as-cran "$tarball" 2>&1 | tee .local/cran/check.log
+          echo "check_status=${PIPESTATUS[0]}" | tee .local/cran/status.txt
+          cp -r rPSTool.Rcheck .local/cran/ 2>/dev/null || true
+          grep -E "warning:|Warning:" rPSTool.Rcheck/00install.out > .local/cran/compiler-diagnostics.txt || true
+          wc -l .local/cran/compiler-diagnostics.txt
+      - name: Install tarball, load package, check native registration
+        run: |
+          mkdir -p "$RUNNER_TEMP/lib"
+          R CMD INSTALL --library="$RUNNER_TEMP/lib" rPSTool_*.tar.gz
+          Rscript -e 'library(rPSTool, lib.loc = Sys.getenv("RUNNER_TEMP") |> file.path("lib")); r <- getDLLRegisteredRoutines("rPSTool"); n <- length(r$.Call); cat("registered .Call routines:", n, "\n"); stopifnot(n > 0)'
+      - name: Check public URLs
+        run: |
+          for u in https://github.com/kimonkrenz/rPSTool https://github.com/kimonkrenz/rPSTool/issues; do
+            printf '%s ' "$u"; curl -sS -o /dev/null -w '%{http_code}\n' -L "$u"
+          done | tee .local/cran/urls.txt
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cran-incoming-logs
+          path: .local/cran
+          if-no-files-found: warn
+          retention-days: 30
