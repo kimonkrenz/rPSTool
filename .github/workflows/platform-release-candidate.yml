@@ -1,0 +1,79 @@
+name: Platform release candidate
+
+# Manual only. Full development validation (RPST_FULL_TESTS=true, arrow, sf, testthat) on one native runner, pinned to an
+# exact commit so every platform tests the same source.
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "Runner label"
+        required: true
+        type: choice
+        options:
+          - macos-14
+          - windows-latest
+      ref:
+        description: "Commit SHA to validate"
+        required: true
+        default: c2a38686d337b5bdb05ca8ec963b259d7fcead3c
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  R_KEEP_PKG_SOURCE: "yes"
+  MAKEFLAGS: "-j2"
+  RPST_FULL_TESTS: "true"
+
+jobs:
+  validate:
+    name: Full gate on ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          extra-packages: any::rcmdcheck
+      - name: Record commit and environment
+        shell: bash
+        run: |
+          mkdir -p .local/rc
+          test "$(git rev-parse HEAD)" = "${{ inputs.ref }}"
+          { echo "commit: $(git rev-parse HEAD)"; echo "runner: ${{ runner.os }} ${{ runner.arch }}"; uname -a; R --version | head -1;
+            (clang --version || true) 2>&1 | head -1; (g++ --version || true) 2>&1 | head -1;
+            Rscript -e 'for (p in c("arrow","sf","testthat","jsonlite","ggplot2","classInt","knitr","rmarkdown")) cat(p, as.character(packageVersion(p)), "\n"); cat("RPST_FULL_TESTS =", Sys.getenv("RPST_FULL_TESTS"), "\n")'; } | tee .local/rc/environment.txt
+          Rscript -e 'stopifnot(packageVersion("arrow") >= "25.0.0", requireNamespace("arrow", quietly = TRUE), requireNamespace("sf", quietly = TRUE))'
+      - name: Verify pinned vendor trees and provenance
+        run: |
+          Rscript tools/verify-vendor.R
+          Rscript tools/verify-flatgeobuf-vendor.R
+          Rscript tools/verify-arrow-abi.R
+      - name: Build-time fail-closed tool tests
+        shell: bash
+        run: |
+          for t in test-portability test-graph-constructors test-network-construction test-isovist-safety test-raster-safety \
+                   test-diagnostic-fixes test-worker-limits test-fs-layer test-build-lifecycle; do
+            echo "::group::$t"; Rscript tools/$t.R; echo "::endgroup::"
+          done
+          Rscript tools/ci/test-warning-policy.R
+      - name: Strict platform gate (tools/ci/check-package.R)
+        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ${{ runner.os == 'macOS' && 'macos' || 'windows' }}
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.os }}-release-candidate-logs
+          path: |
+            .local/rc
+            .local/ci-check
+          if-no-files-found: warn
+          retention-days: 30
