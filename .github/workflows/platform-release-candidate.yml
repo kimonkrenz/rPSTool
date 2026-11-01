@@ -10,7 +10,7 @@ on:
         required: true
         type: choice
         options:
-          - macos-14
+          - macos-15
           - windows-latest
       ref:
         description: "Commit SHA to validate"
