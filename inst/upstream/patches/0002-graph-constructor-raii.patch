@@ -1,0 +1,46 @@
+--- a/pstalgo/src/analyses/CreateGraph.cpp
++++ b/pstalgo/src/analyses/CreateGraph.cpp
+@@ -25,6 +25,7 @@
+ #include <pstalgo/graph/AxialGraph.h>
+ #include <pstalgo/geometry/Rect.h>
+ #include <pstalgo/graph/SegmentGraph.h>
++#include <memory>
+ 
+ bool GeneratePointGroupsFromRegions(
+ 	const unsigned int* points_per_region, unsigned int region_count, 
+@@ -74,7 +75,7 @@
+ 
+ PSTADllExport HPSTAGraph PSTACreateGraph(const SPSTACreateGraphDesc* desc)
+ {
+-	auto graph = new CAxialGraph();
++	std::unique_ptr<CAxialGraph> graph(new CAxialGraph());
+ 
+ 	// Bounding Box
+ 	const auto bb = CRectd::BBFromPoints(desc->m_LineCoords, desc->m_LineCoordCount);
+@@ -145,7 +146,7 @@
+ 	// Set world origin
+ 	graph->setWorldOrigin(world_origin);
+ 
+-	return graph;
++	return graph.release();
+ }
+ 
+ PSTADllExport void PSTAFreeGraph(HPSTAGraph handle)
+@@ -215,15 +216,14 @@
+ 
+ PSTADllExport HPSTASegmentGraph PSTACreateSegmentGraph(const SPSTACreateSegmentGraphDesc* desc)
+ {
+-	auto graph = new CSegmentGraph();
++	std::unique_ptr<CSegmentGraph> graph(new CSegmentGraph());
+ 
+ 	if (!graph->Create(desc->m_LineCoords, desc->m_LineCoordCount, desc->m_Lines, desc->m_LineCount))
+ 	{
+-		delete graph;
+ 		return 0;
+ 	}
+ 
+-	return graph;
++	return graph.release();
+ }
+ 
+ PSTADllExport void PSTAFreeSegmentGraph(HPSTASegmentGraph handle)

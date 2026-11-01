@@ -1,0 +1,57 @@
+--- a/pstalgo/src/analyses/CreateJunctions.cpp
++++ b/pstalgo/src/analyses/CreateJunctions.cpp
+@@ -1,3 +1,5 @@
++#include <stdexcept>
++#line 1 "vendor/pstalgo/src/analyses/CreateJunctions.cpp"
+ /*
+ Copyright 2019 Meta Berghauser Pont
+ 
+@@ -72,6 +74,9 @@
+ 		for (auto& pt : m_Points)
+ 			pt += center;
+ 
++		if (m_Points.size() > 0x7FFFFFFFu)
++			throw std::runtime_error("CreateJunctions: too many output points");
++#line 75 "vendor/pstalgo/src/analyses/CreateJunctions.cpp"
+ 		// Process unlinks
+ 		if (desc.m_UnlinkCount)
+ 		{
+@@ -227,6 +232,9 @@
+ 
+ 	void SortAndRemoveDuplicates(std::vector<double2>& pts, bool remove_unique_points)
+ 	{
++		if (pts.size() > 0xFFFFFFFFull)
++			throw std::runtime_error("CreateJunctions: too many raw intersection points");
++#line 230 "vendor/pstalgo/src/analyses/CreateJunctions.cpp"
+ 		std::sort(pts.begin(), pts.end(), [](const double2& lhs, const double2& rhs)
+ 		{
+ 			return (lhs.x == rhs.x) ? (lhs.y < rhs.y) : (lhs.x < rhs.x);
+--- a/pstalgo/src/analyses/CreateSegmentMap.cpp
++++ b/pstalgo/src/analyses/CreateSegmentMap.cpp
+@@ -1,3 +1,5 @@
++#include <stdexcept>
++#line 1 "vendor/pstalgo/src/analyses/CreateSegmentMap.cpp"
+ /*
+ Copyright 2019 Meta Berghauser Pont
+ 
+@@ -181,6 +183,10 @@
+ 			progress.SetCurrentTask(ETask_Intersections);
+ 			std::vector<SCut> cuts;
+ 			FindCuts(lines.data(), (unsigned int)lines.size(), desc.m_ExtrudeCut, cuts, progress);
++			if (cuts.size() > 0x7FFFFFFFull ||
++				(EPSTARoadNetworkType_RoadCenterLines != desc.m_RoadNetworkType && lines.size() * 2ull + cuts.size() >= 0x80000000ull))
++				throw std::runtime_error("CreateSegmentMap: too many native points");
++#line 184 "vendor/pstalgo/src/analyses/CreateSegmentMap.cpp"
+ 
+ 			// Unlink
+ 			if (desc.m_UnlinkCount)
+@@ -714,6 +720,9 @@
+ 				const float2 v2 = p2 - p0;
+ 				if (sqr(crp(v1, v2)) > detail_threshold_sqr * v2.getLengthSqr())
+ 					break;
++				if (p2_index == s0.m_P0)
++					throw std::runtime_error("CreateSegmentMap: unsafe cyclic detail reduction");
++#line 717 "vendor/pstalgo/src/analyses/CreateSegmentMap.cpp"
+ 				// Merge
+ 				s0.m_P1 = p2_index;
+ 				auto& j2 = junctions[p2_index];

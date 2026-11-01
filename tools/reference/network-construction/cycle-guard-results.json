@@ -1,0 +1,123 @@
+[
+  {
+    "case": "empty_junctions:17",
+    "result": {
+      "success": true,
+      "count": 17,
+      "pointer_unchanged": true
+    }
+  },
+  {
+    "case": "empty_junctions:29",
+    "result": {
+      "success": true,
+      "count": 29,
+      "pointer_unchanged": true
+    }
+  },
+  {
+    "case": "open_control",
+    "result": {
+      "success": true,
+      "segments": [
+        [
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          0
+        ]
+      ]
+    }
+  },
+  {
+    "case": "square_zero_deviation",
+    "result": {
+      "success": true,
+      "segments": [
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0
+        ],
+        [
+          1.0,
+          0.0,
+          1.0,
+          1.0,
+          0
+        ],
+        [
+          1.0,
+          1.0,
+          0.0,
+          1.0,
+          0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0
+        ]
+      ]
+    }
+  },
+  {
+    "case": "large_square_default",
+    "result": {
+      "success": true,
+      "segments": [
+        [
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0
+        ],
+        [
+          10.0,
+          0.0,
+          10.0,
+          10.0,
+          0
+        ],
+        [
+          10.0,
+          10.0,
+          0.0,
+          10.0,
+          0
+        ],
+        [
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0
+        ]
+      ]
+    }
+  },
+  {
+    "case": "square_default",
+    "result": {
+      "success": false
+    }
+  },
+  {
+    "case": "collinear_loop_zero_deviation",
+    "result": {
+      "success": false
+    }
+  },
+  {
+    "case": "snapped_open_square",
+    "result": {
+      "success": false
+    }
+  }
+]

@@ -1,0 +1,39 @@
+--- a/vendor/pstalgo/src/analyses/ODBetweenness.cpp
++++ b/generated/analyses/ODBetweenness.cpp
+@@ -248,7 +248,7 @@
+ 		ClearQueue();
+ 
+ 		// Generate initial step from origin to closest line
+-		SStep step;
++		SStep step{};
+ 		step.m_Line = start_line_index;
+ 		step.m_LineCrossing = -1;
+ 		step.m_PrevTrace = -1;
+@@ -306,7 +306,9 @@
+ 			if (step.m_LineCrossing >= 0 && !UpdateShortestCrossingDist(step.m_LineCrossing, step.m_AccDist, step.IsForwards()))
+ 				continue;
+ 
+-			SStep next_step;
++			SStep next_step{};
++			if (m_Trace.size() >= static_cast<size_t>(std::numeric_limits<int>::max()))
++				throw std::runtime_error("OD trace count exceeds native signed index bounds");
+ 			next_step.m_PrevTrace = (int)m_Trace.size();
+ 
+ 			// Leave trace
+@@ -513,7 +515,7 @@
+ 		#ifdef USE_MULTIPLE_CORES
+ 			workers.resize(max(std::thread::hardware_concurrency(), 1u));
+ 		#else
+-			workers.resize(1);
++			workers.resize(std::min(rpst_worker_count(), 1u));
+ 		#endif
+ 
+ 		// Create workers
+@@ -540,6 +542,7 @@
+ 			do {
+ 				progress.ReportProgress(ctx.Progress());
+ 			} while (std::future_status::ready != task.wait_for(std::chrono::milliseconds(100)));
++			task.get();
+ 		}
+ 
+ 		// Accumulate worker scores

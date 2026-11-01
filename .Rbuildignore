@@ -1,0 +1,12 @@
+^\.gitignore$
+^\.gitattributes$
+^\.github$
+^\.local$
+^work$
+^docs$
+^tools$
+^src/[.]rpst-build$
+^CONTRIBUTING\.md$
+^cran-comments\.md$
+^README\.md$
+^\.git$

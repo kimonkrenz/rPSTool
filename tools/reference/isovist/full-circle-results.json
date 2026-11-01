@@ -1,0 +1,50 @@
+{
+  "pin": "63df80a2cf3dd289be95ea3d91667c3490719b75",
+  "verified_blobs": 132,
+  "pristine_md5": "42c16aa243ccc11e2b2e95692407ebb7",
+  "diagnostic_source_sha256": "f1890232ed01d9d49460c4160f4d1b04a073a56ca1b29490631090ace1d2385c",
+  "cases": [
+    {
+      "module": "dependency",
+      "geometry": "empty",
+      "returncode": 0,
+      "stdout": "[{\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 0}, {\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 0}]",
+      "stderr": ""
+    },
+    {
+      "module": "dependency",
+      "geometry": "inside",
+      "returncode": 0,
+      "stdout": "[{\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}, {\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}]",
+      "stderr": ""
+    },
+    {
+      "module": "dependency",
+      "geometry": "near",
+      "returncode": 0,
+      "stdout": "[{\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}, {\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}]",
+      "stderr": ""
+    },
+    {
+      "module": "trace",
+      "geometry": "empty",
+      "returncode": 0,
+      "stdout": "[{\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 0}, {\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 0}]",
+      "stderr": ""
+    },
+    {
+      "module": "trace",
+      "geometry": "inside",
+      "returncode": 0,
+      "stdout": "[{\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}, {\"vertices\": 1, \"coordinates\": [-0.015551202930510044, -1.3595293779644635e-09], \"area\": 8.63265177703523e-19, \"attraction_polygons\": 1}]",
+      "stderr": ""
+    },
+    {
+      "module": "trace",
+      "geometry": "near",
+      "returncode": -6,
+      "stdout": "",
+      "stderr": "polygon queue: vertices=1 edges=1 fov=360\niterator bounds: index=1 size=1 lap=1"
+    }
+  ]
+}

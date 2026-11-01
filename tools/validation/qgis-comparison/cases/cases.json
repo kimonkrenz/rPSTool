@@ -1,0 +1,43 @@
+{
+ "_comment": "Manual comparison cases. 'qgis' = what to set in PST for QGIS (Vector > PST). 'layer' = the QGIS layer that receives the result columns and must be exported to CSV with its id field. 'rpst' = R code, evaluated by run-rpst-cases.R with the layers of data/pst-qgis-test.gpkg available as sf objects, returning a named list of numeric vectors in layer row order; each name is the column name the plugin writes (see MAPPING.md, 'Column names'). Column names are computed from the plugin's naming rules (columnnaming.py); if your QGIS export differs, fix the name in this file, do not edit the exported CSV.",
+ "id_fields": {"axial": "seg_id", "segment": "seg_id"},
+ "cases": [
+  {
+   "id": "C01_angular_choice_unrestricted",
+   "title": "Angular Choice, unrestricted, length-weighted and unweighted, all four normalisations",
+   "layer": "segment",
+   "qgis": "Angular Choice. Weights: tick 'Length' and 'No weight'. Normalisation: tick none, Turner (NACH-style 'T'), Standard ('S') and Syntax ('C'). Radius: none. Leave angle settings at their defaults (threshold 0, precision 1).",
+   "rpst": "sg <- segment_graph(layers$segment); u <- function(n) angular_choice(sg, weigh_by_length = FALSE, normalization = n); w <- function(n) angular_choice(sg, weigh_by_length = TRUE, normalization = n); list(AC = u('none')$choice, ACT = u('turner')$normalized, ACS = u('standard')$normalized, ACC = u('syntax')$normalized, ACwl = w('none')$choice, ACwlT = w('turner')$normalized, ACwlS = w('standard')$normalized, ACwlC = w('syntax')$normalized)",
+   "note": "ACwlC is the column that exposed the weighted-syntax mismatch: the plugin divides by total_depth_weight."
+  },
+  {
+   "id": "C02_angular_choice_walking_angles",
+   "title": "Angular Choice, walking radius 250, length-weighted, non-default angle settings",
+   "layer": "segment",
+   "qgis": "Angular Choice. Weights: Length only. Normalisation: none and Syntax. Radius: walking 250. Angle threshold 15, angle precision 3 (the weighted branch forwards both).",
+   "rpst": "sg <- segment_graph(layers$segment); r <- analysis_radius(walking = 250); a <- angular_choice(sg, r, weigh_by_length = TRUE, normalization = 'none', angle_threshold = 15, angle_precision = 3); s <- angular_choice(sg, r, weigh_by_length = TRUE, normalization = 'syntax', angle_threshold = 15, angle_precision = 3); list(ACw250wl = a$choice, ACw250wlC = s$normalized)"
+  },
+  {
+   "id": "C03_angular_choice_unweighted_effective_angles",
+   "title": "Unweighted Angular Choice with non-default angle settings: compare against the settings the plugin ACTUALLY passes",
+   "layer": "segment",
+   "qgis": "Angular Choice. Weights: No weight only. Normalisation: none and Syntax. Radius: walking 250. Enter angle threshold 15, angle precision 3 in the dialog.",
+   "rpst": "sg <- segment_graph(layers$segment); r <- analysis_radius(walking = 250); a <- angular_choice(sg, r, weigh_by_length = FALSE, normalization = 'none', angle_threshold = 0, angle_precision = 1); s <- angular_choice(sg, r, weigh_by_length = FALSE, normalization = 'syntax', angle_threshold = 0, angle_precision = 1); list(ACw250 = a$choice, ACw250C = s$normalized)",
+   "note": "Source reading says the unweighted branch does not forward the dialog's angle settings (angularchoiceanalysis.py l.154-161), so the plugin uses threshold 0 / precision 1. rPSTool honours supplied settings (a deliberate difference); this case therefore passes the plugin's effective values. If the manual run shows the plugin DID use 15 / 3, rerun with those values and report it."
+  },
+  {
+   "id": "C04_network_integration_steps2",
+   "title": "Network Integration, steps radius 2, with node count and total depth",
+   "layer": "axial",
+   "qgis": "Network Integration. Radius: steps 2. Extra outputs: node count (N) and total depth (D).",
+   "rpst": "g <- axial_graph(layers$axial); r <- network_integration(g, radius = analysis_radius(steps = 2)); list(Is2 = r$integration, Is2N = r$node_count, Is2D = r$total_depth)"
+  },
+  {
+   "id": "C05_reach_steps2",
+   "title": "Reach, steps radius 2: count, length, area in square metres",
+   "layer": "axial",
+   "qgis": "Reach. Radius: steps 2. Outputs: reached count, reached length, reached area (convex hull) in m2.",
+   "rpst": "g <- axial_graph(layers$axial); r <- network_reach(g, radius = analysis_radius(steps = 2)); list(Rs2N = r$reached_count, Rs2L = r$reached_length, Rs2am = r$reached_area)"
+  }
+ ]
+}

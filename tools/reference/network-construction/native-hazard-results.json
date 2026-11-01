@@ -1,0 +1,50 @@
+[
+  {
+    "case": "empty_junctions:17",
+    "returncode": 0,
+    "stdout": "{\"success\": true, \"count\": 17, \"pointer_unchanged\": true}",
+    "stderr": ""
+  },
+  {
+    "case": "empty_junctions:29",
+    "returncode": 0,
+    "stdout": "{\"success\": true, \"count\": 29, \"pointer_unchanged\": true}",
+    "stderr": ""
+  },
+  {
+    "case": "open_control",
+    "returncode": 0,
+    "stdout": "{\"success\": true, \"segments\": [[0.0, 0.0, 2.0, 0.0, 0]]}",
+    "stderr": ""
+  },
+  {
+    "case": "square_zero_deviation",
+    "returncode": 0,
+    "stdout": "{\"success\": true, \"segments\": [[0.0, 0.0, 1.0, 0.0, 0], [1.0, 0.0, 1.0, 1.0, 0], [1.0, 1.0, 0.0, 1.0, 0], [0.0, 1.0, 0.0, 0.0, 0]]}",
+    "stderr": ""
+  },
+  {
+    "case": "large_square_default",
+    "returncode": 0,
+    "stdout": "{\"success\": true, \"segments\": [[0.0, 0.0, 10.0, 0.0, 0], [10.0, 0.0, 10.0, 10.0, 0], [10.0, 10.0, 0.0, 10.0, 0], [0.0, 10.0, 0.0, 0.0, 0]]}",
+    "stderr": ""
+  },
+  {
+    "case": "square_default",
+    "returncode": -11,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "case": "collinear_loop_zero_deviation",
+    "returncode": -11,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "case": "snapped_open_square",
+    "returncode": -11,
+    "stdout": "",
+    "stderr": ""
+  }
+]

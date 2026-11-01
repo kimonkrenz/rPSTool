@@ -1,0 +1,115 @@
+{
+  "pst_commit": "63df80a2cf3dd289be95ea3d91667c3490719b75",
+  "verified_blobs": 132,
+  "cases": 79,
+  "unaffected_controls": 73,
+  "original_unaffected_controls": 52,
+  "upstream_tests": 1,
+  "hazards": [
+    {
+      "case": {
+        "name": "small_radius_0.1_360",
+        "geometry": "empty",
+        "distance": 0.1,
+        "fov": 360,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": -11,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1237: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::back() [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; reference = TVec2<float>&]: Assertion '!this->empty()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    },
+    {
+      "case": {
+        "name": "small_radius_0.01_360",
+        "geometry": "empty",
+        "distance": 0.01,
+        "fov": 360,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": -11,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1237: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::back() [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; reference = TVec2<float>&]: Assertion '!this->empty()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    },
+    {
+      "case": {
+        "name": "small_radius_0.001_360",
+        "geometry": "empty",
+        "distance": 0.001,
+        "fov": 360,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": -11,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1237: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::back() [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; reference = TVec2<float>&]: Assertion '!this->empty()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    },
+    {
+      "case": {
+        "name": "small_radius_0.0001_360",
+        "geometry": "empty",
+        "distance": 0.0001,
+        "fov": 360,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": -11,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1237: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::back() [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; reference = TVec2<float>&]: Assertion '!this->empty()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    },
+    {
+      "case": {
+        "name": "degenerate_partial_near_polygon",
+        "geometry": "near_polygon",
+        "distance": 0.01,
+        "fov": 90,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": 0,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1149: std::vector<_Tp, _Alloc>::const_reference std::vector<_Tp, _Alloc>::operator[](size_type) const [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; const_reference = const TVec2<float>&; size_type = long unsigned int]: Assertion '__n < this->size()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    },
+    {
+      "case": {
+        "name": "degenerate_two_point_near_polygon",
+        "geometry": "near_polygon",
+        "distance": 10,
+        "fov": 0.001,
+        "direction": 0,
+        "resolution": 64
+      },
+      "baseline_returncode": 0,
+      "checked_returncode": -6,
+      "diagnostic": "/usr/include/c++/14/bits/stl_vector.h:1149: std::vector<_Tp, _Alloc>::const_reference std::vector<_Tp, _Alloc>::operator[](size_type) const [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; const_reference = const TVec2<float>&; size_type = long unsigned int]: Assertion '__n < this->size()' failed.",
+      "guarded_returncode": 0,
+      "guarded_result": {
+        "success": false
+      }
+    }
+  ],
+  "baseline_safe_sha256": "60fc9e72df15524d16da44a408038c4bdfdfea9b9197002ef4f6539ca7fdaf88",
+  "checked_safe_sha256": "60fc9e72df15524d16da44a408038c4bdfdfea9b9197002ef4f6539ca7fdaf88",
+  "guarded_safe_sha256": "60fc9e72df15524d16da44a408038c4bdfdfea9b9197002ef4f6539ca7fdaf88"
+}

@@ -1,0 +1,13 @@
+diff --git a/src/.rpst-build/analyses/CalculateIsovists.cpp b/src/.rpst-build/analyses/CalculateIsovists.cpp
+index 39403e3..13c345c 100644
+--- a/src/.rpst-build/analyses/CalculateIsovists.cpp
++++ b/src/.rpst-build/analyses/CalculateIsovists.cpp
+@@ -251,7 +251,7 @@ private:
+ 			m_Context.m_ResultPool.Return(std::move(m_Result));
+ 		}
+ 
+-		Result& Result() { return m_Result; }
++		CIsovistContext::Result& Result() { return m_Result; }
+ 
+ 	private:
+ 		CIsovistContext& m_Context;

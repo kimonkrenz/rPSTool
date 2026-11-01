@@ -1,0 +1,17 @@
+.local/
+work/
+*.Rcheck/
+*.tar.gz
+.Rhistory
+.RData
+
+# R native build outputs (kept outside the pristine vendor tree)
+src/.rpst-build/
+src/*.o
+src/*.so
+src/*.dll
+src/*.dylib
+
+# Development-only Python bytecode
+__pycache__/
+*.pyc

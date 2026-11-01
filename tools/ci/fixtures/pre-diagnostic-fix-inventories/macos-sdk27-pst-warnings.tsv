@@ -1,0 +1,5 @@
+phase	count	signature
+compiler	1	vendor/pstalgo/src/analyses/AngularChoiceAlgo.cpp:464:9: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+compiler	1	vendor/pstalgo/src/analyses/SegmentBetweenness.cpp:618:10: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+check	1	vendor/pstalgo/src/analyses/AngularChoiceAlgo.cpp:464:9: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+check	1	vendor/pstalgo/src/analyses/SegmentBetweenness.cpp:618:10: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]

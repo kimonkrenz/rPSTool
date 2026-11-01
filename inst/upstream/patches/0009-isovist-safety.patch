@@ -1,0 +1,31 @@
+--- a/pstalgo/src/analyses/CalculateIsovists.cpp
++++ b/pstalgo/src/analyses/CalculateIsovists.cpp
+@@ -0,0 +1,2 @@
++#include <stdexcept>
++#line 1 "vendor/pstalgo/src/analyses/CalculateIsovists.cpp"
+@@ -254 +256 @@
+-		Result& Result() { return m_Result; }
++		CIsovistContext::Result& Result() { return m_Result; }
+@@ -513,0 +516,12 @@
++
++	// Safety only: fail before accessing an insufficient calculated vertex array.
++	auto require_isovist_points = [&](size_t minimum)
++	{
++		if (isovist_points.size() < minimum)
++		{
++			m_LocalIsovistPool.Return(std::move(isovist_points));
++			throw std::runtime_error("Isovist has too few points for native access");
++		}
++	};
++	require_isovist_points(1);
++#line 514 "vendor/pstalgo/src/analyses/CalculateIsovists.cpp"
+@@ -615,0 +630,3 @@
++				if (desc.m_FieldOfViewDegrees < 360)
++					require_isovist_points(2);
++#line 616 "vendor/pstalgo/src/analyses/CalculateIsovists.cpp"
+@@ -744,0 +762,5 @@
++				if (desc.m_FieldOfViewDegrees < 360)
++					require_isovist_points(3);
++				else
++					require_isovist_points(2);
++#line 745 "vendor/pstalgo/src/analyses/CalculateIsovists.cpp"

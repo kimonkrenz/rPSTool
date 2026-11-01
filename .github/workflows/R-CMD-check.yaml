@@ -1,0 +1,64 @@
+name: R CMD check
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  R-CMD-check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: "yes"
+      MAKEFLAGS: "-j2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+      - name: Verify pinned vendor inventory (offline)
+        run: Rscript tools/verify-vendor.R
+      - name: Test fail-closed build portability mechanism
+        run: Rscript tools/test-portability.R
+      - name: Test fail-closed graph constructor transformation
+        run: Rscript tools/test-graph-constructors.R
+      - name: Test fail-closed network construction safety
+        run: Rscript tools/test-network-construction.R
+      - name: Verify isovist safety transformation
+        run: Rscript tools/test-isovist-safety.R
+      - name: Verify raster safety transformations
+        run: Rscript tools/test-raster-safety.R
+      - name: Verify diagnostic build-copy transformations
+        run: Rscript tools/test-diagnostic-fixes.R
+      - name: Test fail-closed central worker transformation
+        run: Rscript tools/test-worker-limits.R
+      - name: Test the result-file filesystem layer (POSIX and Win32)
+        run: Rscript tools/test-fs-layer.R
+      - name: Test exact upstream warning policy (fail closed)
+        run: Rscript tools/ci/test-warning-policy.R
+      - name: Test native build cleanup and regeneration
+        run: Rscript tools/test-build-lifecycle.R
+      - name: Strict package check with exact pinned PST warning policy
+        run: Rscript tools/ci/run-with-annotations.R tools/ci/check-package.R ${{ runner.os == 'macOS' && 'macos' || runner.os == 'Windows' && 'windows' || 'ubuntu' }}
+      - name: Upload unchanged package check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-check-results
+          path: .local/ci-check
+          if-no-files-found: warn

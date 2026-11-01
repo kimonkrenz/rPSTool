@@ -1,0 +1,11 @@
+--- a/generated/AngularChoiceAlgo.cpp
++++ b/generated/AngularChoiceAlgo.cpp
+@@ -494,6 +494,8 @@
+ 			progress.ReportProgress((float)num_processed_segments.load() / graph.GetSegmentCount());
+ 		}
+ 
++		task.get();
++
+ 		// Update progress
+ 		progress.ReportProgress((float)num_processed_segments.load() / graph.GetSegmentCount());
+ 	}

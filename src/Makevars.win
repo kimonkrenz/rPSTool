@@ -1,0 +1,409 @@
+CXX_STD = CXX17
+PKG_CPPFLAGS = -Ivendor/pstalgo/include -Ivendor/pstalgo/src/analyses -include rpst-float-overloads.h -include rpst-compat.h
+# Authoritative deterministic floating-point policy: no FMA contraction. It is applied by
+# explicit compile rules (after $(ALL_CXXFLAGS)) to every C++ unit, wrappers included,
+# rather than through PKG_CXXFLAGS, so a user CXXFLAGS cannot re-enable contraction.
+RPST_FP_FLAGS = -ffp-contract=off
+PKG_CXXFLAGS = -pthread
+PKG_LIBS = -pthread
+OBJECTS = init.o \
+  native-smoke.o \
+  pst-graph.o \
+  pst-geoparquet.o \
+  pst-flatgeobuf.o \
+  pst-result-stream.o \
+  pst-output-file.o \
+  pst-arrow-test-stream.o \
+  pst-construction.o \
+  pst-isovist.o \
+  pst-raster.o \
+  rpst-workers.o \
+  .rpst-build/BFS.o \
+  .rpst-build/Debug.o \
+  .rpst-build/Limits.o \
+  .rpst-build/PSTA.o \
+  .rpst-build/Platform.o \
+  .rpst-build/ProgressUtil.o \
+  .rpst-build/Raster.o \
+  .rpst-build/analyses/AngularChoice.o \
+  .rpst-build/analyses/AngularChoiceAlgo.o \
+  .rpst-build/analyses/AngularIntegration.o \
+  .rpst-build/analyses/AttractionDistance.o \
+  .rpst-build/analyses/AttractionReach.o \
+  .rpst-build/analyses/CalculateIsovists.o \
+  .rpst-build/analyses/Common.o \
+  .rpst-build/analyses/CreateBufferPolygons.o \
+  .rpst-build/analyses/CreateGraph.o \
+  .rpst-build/analyses/CreateJunctions.o \
+  .rpst-build/analyses/CreateSegmentMap.o \
+  .rpst-build/analyses/NetworkIntegration.o \
+  .rpst-build/analyses/ODBetweenness.o \
+  .rpst-build/analyses/RasterToPolygons.o \
+  .rpst-build/analyses/Reach.o \
+  .rpst-build/analyses/SegmentBetweenness.o \
+  .rpst-build/analyses/SegmentGroupIntegration.o \
+  .rpst-build/analyses/SegmentGrouping.o \
+  .rpst-build/analyses/VisualConnectivity.o \
+  .rpst-build/experimental/DirectedMultiDistanceGraph.o \
+  .rpst-build/experimental/FastSegmentBetweenness.o \
+  .rpst-build/experimental/ShortestPathTraversal.o \
+  .rpst-build/experimental/SparseDirectedGraph.o \
+  .rpst-build/geometry/AABSPTree.o \
+  .rpst-build/geometry/ConvexHull.o \
+  .rpst-build/geometry/Geometry.o \
+  .rpst-build/geometry/IsovistCalculator.o \
+  .rpst-build/geometry/Polygon.o \
+  .rpst-build/geometry/RegionPoints.o \
+  .rpst-build/geometry/SignedDistanceField.o \
+  .rpst-build/gfx/Blur.o \
+  .rpst-build/graph/AxialGraph.o \
+  .rpst-build/graph/GraphColoring.o \
+  .rpst-build/graph/SegmentGraph.o \
+  .rpst-build/graph/SegmentGroupGraph.o \
+  .rpst-build/graph/SimpleGraph.o \
+  .rpst-build/math/Gaussian.o \
+  .rpst-build/system/System.o \
+  .rpst-build/test/CallbackTest.o \
+  .rpst-build/utils/SimpleAlignedAllocator.o \
+  .rpst-build/utils/SphereTree.o
+
+all: $(SHLIB)
+
+# rPSTool wrapper translation units.
+native-smoke.o: native-smoke.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c native-smoke.cpp -o $@
+
+pst-construction.o: pst-construction.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-construction.cpp -o $@
+
+pst-graph.o: pst-graph.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-graph.cpp -o $@
+
+pst-graph.o: pst-segment-build.h pst-axial-build.h pst-result-stream.h pst-arrow-owner.h
+
+pst-geoparquet.o: pst-geoparquet.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-geoparquet.cpp -o $@
+
+pst-geoparquet.o: pst-arrow-owner.h pst-segment-build.h pst-axial-build.h arrow-c-abi/arrow_c_abi.h
+
+# The generated CRAN-compatible base.h (see portability/strip-flatbuffers-diagnostics.R) must exist before this
+# unit compiles and is found before any pristine FlatBuffers header (the pristine base.h is not in vendor/).
+pst-flatgeobuf.o: pst-flatgeobuf.cpp .rpst-build/flatbuffers/include/flatbuffers/base.h
+	$(CXX) -I.rpst-build/flatbuffers/include -Ivendor/flatbuffers/include -Ivendor/flatgeobuf $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-flatgeobuf.cpp -o $@
+
+pst-flatgeobuf.o: pst-segment-build.h pst-axial-build.h vendor/flatbuffers/include/flatbuffers/flatbuffers.h vendor/flatgeobuf/header_generated.h vendor/flatgeobuf/feature_generated.h
+
+pst-result-stream.o: pst-result-stream.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-result-stream.cpp -o $@
+
+pst-result-stream.o: pst-result-stream.h pst-arrow-owner.h arrow-c-abi/arrow_c_abi.h
+
+pst-output-file.o: pst-output-file.cpp pst-fs-core.h
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-output-file.cpp -o $@
+
+pst-arrow-test-stream.o: pst-arrow-test-stream.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-arrow-test-stream.cpp -o $@
+
+pst-arrow-test-stream.o: pst-arrow-owner.h arrow-c-abi/arrow_c_abi.h
+
+pst-isovist.o: pst-isovist.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-isovist.cpp -o $@
+
+pst-raster.o: pst-raster.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c pst-raster.cpp -o $@
+
+rpst-workers.o: rpst-workers.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c rpst-workers.cpp -o $@
+
+.rpst-build/BFS.o: vendor/pstalgo/src/BFS.cpp
+	mkdir -p .rpst-build
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/BFS.cpp -o $@
+
+.rpst-build/Debug.o: vendor/pstalgo/src/Debug.cpp
+	mkdir -p .rpst-build
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/Debug.cpp -o $@
+
+.rpst-build/Limits.cpp: vendor/pstalgo/src/Limits.cpp ../inst/upstream/build-inputs/Limits.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/Limits.cpp .rpst-build/Limits.cpp
+
+.rpst-build/Limits.o: .rpst-build/Limits.cpp
+	mkdir -p .rpst-build
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/Limits.cpp -o $@
+
+.rpst-build/PSTA.o: vendor/pstalgo/src/PSTA.cpp
+	mkdir -p .rpst-build
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/PSTA.cpp -o $@
+
+.rpst-build/Platform.o: vendor/pstalgo/src/Platform.cpp
+	mkdir -p .rpst-build
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/Platform.cpp -o $@
+
+.rpst-build/ProgressUtil.cpp: vendor/pstalgo/src/ProgressUtil.cpp ../inst/upstream/build-inputs/ProgressUtil.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/ProgressUtil.cpp .rpst-build/ProgressUtil.cpp
+
+.rpst-build/ProgressUtil.o: .rpst-build/ProgressUtil.cpp
+	mkdir -p .rpst-build
+	$(CXX) -Ivendor/pstalgo/src $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/ProgressUtil.cpp -o $@
+
+.rpst-build/Raster.cpp: vendor/pstalgo/src/Raster.cpp ../inst/upstream/build-inputs/Raster.cpp portability/harden-raster.R rpst-prepare
+	mkdir -p .rpst-build
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-raster.R ../inst/upstream/build-inputs/Raster.cpp .rpst-build/Raster.cpp
+
+.rpst-build/Raster.o: .rpst-build/Raster.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/Raster.cpp -o $@
+
+.rpst-build/analyses/AngularChoice.o: vendor/pstalgo/src/analyses/AngularChoice.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/AngularChoice.cpp -o $@
+
+.rpst-build/analyses/AngularChoiceAlgo.cpp: vendor/pstalgo/src/analyses/AngularChoiceAlgo.cpp ../inst/upstream/build-inputs/AngularChoiceAlgo.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/AngularChoiceAlgo.cpp .rpst-build/analyses/AngularChoiceAlgo.cpp
+
+.rpst-build/analyses/AngularChoiceAlgo.o: .rpst-build/analyses/AngularChoiceAlgo.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/AngularChoiceAlgo.cpp -o $@
+
+.rpst-build/analyses/AngularIntegration.o: vendor/pstalgo/src/analyses/AngularIntegration.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/AngularIntegration.cpp -o $@
+
+.rpst-build/analyses/AttractionDistance.cpp: vendor/pstalgo/src/analyses/AttractionDistance.cpp ../inst/upstream/build-inputs/AttractionDistance.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/AttractionDistance.cpp .rpst-build/analyses/AttractionDistance.cpp
+
+.rpst-build/analyses/AttractionDistance.o: .rpst-build/analyses/AttractionDistance.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/AttractionDistance.cpp -o $@
+
+.rpst-build/analyses/AttractionReach.cpp: vendor/pstalgo/src/analyses/AttractionReach.cpp ../inst/upstream/build-inputs/AttractionReach.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/AttractionReach.cpp .rpst-build/analyses/AttractionReach.cpp
+
+.rpst-build/analyses/AttractionReach.o: .rpst-build/analyses/AttractionReach.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/AttractionReach.cpp -o $@
+
+.rpst-build/analyses/CalculateIsovists.cpp: vendor/pstalgo/src/analyses/CalculateIsovists.cpp ../inst/upstream/build-inputs/CalculateIsovists.cpp portability/harden-isovist.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-isovist.R ../inst/upstream/build-inputs/CalculateIsovists.cpp .rpst-build/analyses/CalculateIsovists.cpp
+
+.rpst-build/analyses/CalculateIsovists.o: .rpst-build/analyses/CalculateIsovists.cpp .rpst-build/include-isovist/pstalgo/geometry/IsovistCalculator.h
+	mkdir -p .rpst-build/analyses
+	$(CXX) -I.rpst-build/include-isovist $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/CalculateIsovists.cpp -o $@
+
+.rpst-build/analyses/Common.o: vendor/pstalgo/src/analyses/Common.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/Common.cpp -o $@
+
+.rpst-build/analyses/CreateBufferPolygons.cpp: vendor/pstalgo/src/analyses/CreateBufferPolygons.cpp ../inst/upstream/build-inputs/CreateBufferPolygons.cpp portability/harden-raster.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-raster.R ../inst/upstream/build-inputs/CreateBufferPolygons.cpp .rpst-build/analyses/CreateBufferPolygons.cpp
+
+.rpst-build/analyses/CreateBufferPolygons.o: .rpst-build/analyses/CreateBufferPolygons.cpp .rpst-build/include/pstalgo/utils/Arr2d.h
+	$(CXX) -I.rpst-build/include $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/CreateBufferPolygons.cpp -o $@
+
+.rpst-build/analyses/CreateGraph.cpp: vendor/pstalgo/src/analyses/CreateGraph.cpp ../inst/upstream/build-inputs/CreateGraph.cpp portability/harden-graph-constructors.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-graph-constructors.R ../inst/upstream/build-inputs/CreateGraph.cpp .rpst-build/analyses/CreateGraph.cpp
+
+.rpst-build/analyses/CreateGraph.o: .rpst-build/analyses/CreateGraph.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/CreateGraph.cpp -o $@
+
+.rpst-build/analyses/CreateJunctions.cpp: vendor/pstalgo/src/analyses/CreateJunctions.cpp ../inst/upstream/build-inputs/CreateJunctions.cpp portability/harden-network-construction.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-network-construction.R ../inst/upstream/build-inputs/CreateJunctions.cpp .rpst-build/analyses/CreateJunctions.cpp
+
+.rpst-build/analyses/CreateJunctions.o: .rpst-build/analyses/CreateJunctions.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/CreateJunctions.cpp -o $@
+
+.rpst-build/analyses/CreateSegmentMap.cpp: vendor/pstalgo/src/analyses/CreateSegmentMap.cpp ../inst/upstream/build-inputs/CreateSegmentMap.cpp portability/harden-network-construction.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-network-construction.R ../inst/upstream/build-inputs/CreateSegmentMap.cpp .rpst-build/analyses/CreateSegmentMap.cpp
+
+.rpst-build/analyses/CreateSegmentMap.o: .rpst-build/analyses/CreateSegmentMap.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/CreateSegmentMap.cpp -o $@
+
+.rpst-build/analyses/NetworkIntegration.cpp: vendor/pstalgo/src/analyses/NetworkIntegration.cpp ../inst/upstream/build-inputs/NetworkIntegration.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/NetworkIntegration.cpp .rpst-build/analyses/NetworkIntegration.cpp
+
+.rpst-build/analyses/NetworkIntegration.o: .rpst-build/analyses/NetworkIntegration.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/NetworkIntegration.cpp -o $@
+
+.rpst-build/analyses/ODBetweenness.cpp: vendor/pstalgo/src/analyses/ODBetweenness.cpp ../inst/upstream/build-inputs/ODBetweenness.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/ODBetweenness.cpp .rpst-build/analyses/ODBetweenness.cpp
+
+.rpst-build/analyses/ODBetweenness.o: .rpst-build/analyses/ODBetweenness.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/ODBetweenness.cpp -o $@
+
+.rpst-build/analyses/RasterToPolygons.o: vendor/pstalgo/src/analyses/RasterToPolygons.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/RasterToPolygons.cpp -o $@
+
+.rpst-build/analyses/Reach.o: vendor/pstalgo/src/analyses/Reach.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/Reach.cpp -o $@
+
+.rpst-build/analyses/SegmentBetweenness.cpp: vendor/pstalgo/src/analyses/SegmentBetweenness.cpp ../inst/upstream/build-inputs/SegmentBetweenness.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/SegmentBetweenness.cpp .rpst-build/analyses/SegmentBetweenness.cpp
+
+.rpst-build/analyses/SegmentBetweenness.o: .rpst-build/analyses/SegmentBetweenness.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/SegmentBetweenness.cpp -o $@
+
+.rpst-build/analyses/SegmentGroupIntegration.cpp: vendor/pstalgo/src/analyses/SegmentGroupIntegration.cpp ../inst/upstream/build-inputs/SegmentGroupIntegration.cpp portability/limit-workers.R rpst-prepare
+	mkdir -p .rpst-build/analyses
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/limit-workers.R ../inst/upstream/build-inputs/SegmentGroupIntegration.cpp .rpst-build/analyses/SegmentGroupIntegration.cpp
+
+.rpst-build/analyses/SegmentGroupIntegration.o: .rpst-build/analyses/SegmentGroupIntegration.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/analyses/SegmentGroupIntegration.cpp -o $@
+
+.rpst-build/analyses/SegmentGrouping.o: vendor/pstalgo/src/analyses/SegmentGrouping.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/SegmentGrouping.cpp -o $@
+
+.rpst-build/analyses/VisualConnectivity.o: vendor/pstalgo/src/analyses/VisualConnectivity.cpp
+	mkdir -p .rpst-build/analyses
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/analyses/VisualConnectivity.cpp -o $@
+
+.rpst-build/experimental/DirectedMultiDistanceGraph.o: vendor/pstalgo/src/experimental/DirectedMultiDistanceGraph.cpp
+	mkdir -p .rpst-build/experimental
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/experimental/DirectedMultiDistanceGraph.cpp -o $@
+
+.rpst-build/experimental/FastSegmentBetweenness.o: vendor/pstalgo/src/experimental/FastSegmentBetweenness.cpp
+	mkdir -p .rpst-build/experimental
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/experimental/FastSegmentBetweenness.cpp -o $@
+
+.rpst-build/experimental/ShortestPathTraversal.cpp: vendor/pstalgo/src/experimental/ShortestPathTraversal.cpp ../inst/upstream/build-inputs/ShortestPathTraversal.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/experimental
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/ShortestPathTraversal.cpp .rpst-build/experimental/ShortestPathTraversal.cpp
+
+.rpst-build/experimental/ShortestPathTraversal.o: .rpst-build/experimental/ShortestPathTraversal.cpp
+	mkdir -p .rpst-build/experimental
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/experimental/ShortestPathTraversal.cpp -o $@
+
+.rpst-build/experimental/SparseDirectedGraph.o: vendor/pstalgo/src/experimental/SparseDirectedGraph.cpp
+	mkdir -p .rpst-build/experimental
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/experimental/SparseDirectedGraph.cpp -o $@
+
+.rpst-build/geometry/AABSPTree.cpp: vendor/pstalgo/src/geometry/AABSPTree.cpp ../inst/upstream/build-inputs/AABSPTree.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/geometry
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/AABSPTree.cpp .rpst-build/geometry/AABSPTree.cpp
+
+.rpst-build/geometry/AABSPTree.o: .rpst-build/geometry/AABSPTree.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/geometry/AABSPTree.cpp -o $@
+
+.rpst-build/geometry/ConvexHull.o: vendor/pstalgo/src/geometry/ConvexHull.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/geometry/ConvexHull.cpp -o $@
+
+.rpst-build/geometry/Geometry.cpp: vendor/pstalgo/src/geometry/Geometry.cpp ../inst/upstream/build-inputs/Geometry.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/geometry
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/Geometry.cpp .rpst-build/geometry/Geometry.cpp
+
+.rpst-build/geometry/Geometry.o: .rpst-build/geometry/Geometry.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/geometry/Geometry.cpp -o $@
+
+.rpst-build/geometry/IsovistCalculator.o: vendor/pstalgo/src/geometry/IsovistCalculator.cpp .rpst-build/include-isovist/pstalgo/geometry/IsovistCalculator.h
+	mkdir -p .rpst-build/geometry
+	$(CXX) -I.rpst-build/include-isovist $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/geometry/IsovistCalculator.cpp -o $@
+
+.rpst-build/geometry/Polygon.o: vendor/pstalgo/src/geometry/Polygon.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/geometry/Polygon.cpp -o $@
+
+.rpst-build/geometry/RegionPoints.o: vendor/pstalgo/src/geometry/RegionPoints.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/geometry/RegionPoints.cpp -o $@
+
+.rpst-build/geometry/SignedDistanceField.cpp: vendor/pstalgo/src/geometry/SignedDistanceField.cpp ../inst/upstream/build-inputs/SignedDistanceField.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/geometry
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/SignedDistanceField.cpp .rpst-build/geometry/SignedDistanceField.cpp
+
+.rpst-build/geometry/SignedDistanceField.o: .rpst-build/geometry/SignedDistanceField.cpp
+	mkdir -p .rpst-build/geometry
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/geometry/SignedDistanceField.cpp -o $@
+
+.rpst-build/gfx/Blur.cpp: vendor/pstalgo/src/gfx/Blur.cpp ../inst/upstream/build-inputs/Blur.cpp portability/harden-raster.R rpst-prepare
+	mkdir -p .rpst-build/gfx
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-raster.R ../inst/upstream/build-inputs/Blur.cpp .rpst-build/gfx/Blur.cpp
+
+.rpst-build/gfx/Blur.o: .rpst-build/gfx/Blur.cpp
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/gfx/Blur.cpp -o $@
+
+.rpst-build/graph/AxialGraph.cpp: vendor/pstalgo/src/graph/AxialGraph.cpp ../inst/upstream/build-inputs/AxialGraph.cpp portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/graph
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/AxialGraph.cpp .rpst-build/graph/AxialGraph.cpp
+
+.rpst-build/graph/AxialGraph.o: .rpst-build/graph/AxialGraph.cpp
+	mkdir -p .rpst-build/graph
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/graph/AxialGraph.cpp -o $@
+
+.rpst-build/graph/GraphColoring.o: vendor/pstalgo/src/graph/GraphColoring.cpp
+	mkdir -p .rpst-build/graph
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/graph/GraphColoring.cpp -o $@
+
+.rpst-build/graph/SegmentGraph.o: vendor/pstalgo/src/graph/SegmentGraph.cpp
+	mkdir -p .rpst-build/graph
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/graph/SegmentGraph.cpp -o $@
+
+.rpst-build/graph/SegmentGroupGraph.o: vendor/pstalgo/src/graph/SegmentGroupGraph.cpp
+	mkdir -p .rpst-build/graph
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/graph/SegmentGroupGraph.cpp -o $@
+
+.rpst-build/graph/SimpleGraph.o: vendor/pstalgo/src/graph/SimpleGraph.cpp
+	mkdir -p .rpst-build/graph
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/graph/SimpleGraph.cpp -o $@
+
+.rpst-build/math/Gaussian.o: vendor/pstalgo/src/math/Gaussian.cpp
+	mkdir -p .rpst-build/math
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/math/Gaussian.cpp -o $@
+
+.rpst-build/system/System.o: vendor/pstalgo/src/system/System.cpp
+	mkdir -p .rpst-build/system
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/system/System.cpp -o $@
+
+.rpst-build/test/CallbackTest.o: vendor/pstalgo/src/test/CallbackTest.cpp
+	mkdir -p .rpst-build/test
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/test/CallbackTest.cpp -o $@
+
+.rpst-build/utils/SimpleAlignedAllocator.o: vendor/pstalgo/src/utils/SimpleAlignedAllocator.cpp portability/windows-aligned-allocator.cpp
+	mkdir -p .rpst-build/utils
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c portability/windows-aligned-allocator.cpp -o $@
+
+.rpst-build/utils/SphereTree.o: vendor/pstalgo/src/utils/SphereTree.cpp
+	mkdir -p .rpst-build/utils
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/utils/SphereTree.cpp -o $@
+
+$(OBJECTS): rpst-compat.h rpst-float-overloads.h
+
+.PHONY: rpst-clean rpst-prepare
+shlib-clean: rpst-clean
+
+rpst-clean:
+	rm -rf .rpst-build
+
+.rpst-build/include-isovist/pstalgo/geometry/IsovistCalculator.h: vendor/pstalgo/include/pstalgo/geometry/IsovistCalculator.h ../inst/upstream/build-inputs/IsovistCalculator.h portability/fix-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/include-isovist/pstalgo/geometry
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-diagnostics.R ../inst/upstream/build-inputs/IsovistCalculator.h .rpst-build/include-isovist/pstalgo/geometry/IsovistCalculator.h
+
+.rpst-build/include/pstalgo/utils/Arr2d.h: vendor/pstalgo/include/pstalgo/utils/Arr2d.h ../inst/upstream/build-inputs/Arr2d.h portability/harden-raster.R rpst-prepare
+	mkdir -p .rpst-build/include/pstalgo/utils
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/harden-raster.R ../inst/upstream/build-inputs/Arr2d.h .rpst-build/include/pstalgo/utils/Arr2d.h
+
+.rpst-build/flatbuffers/include/flatbuffers/base.h: ../inst/upstream/flatbuffers/include/flatbuffers/base.h portability/strip-flatbuffers-diagnostics.R rpst-prepare
+	mkdir -p .rpst-build/flatbuffers/include/flatbuffers
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/strip-flatbuffers-diagnostics.R ../inst/upstream/flatbuffers/include/flatbuffers/base.h .rpst-build/flatbuffers/include/flatbuffers/base.h

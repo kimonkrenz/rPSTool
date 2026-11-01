@@ -1,0 +1,5 @@
+file	test
+test-flatgeobuf.R	path validation applies to FlatGeobuf input too
+test-geoparquet.R	only local regular files are accepted, before anything opens them
+test-spatial-output.R	the file-size-limit subprocess helper reports status without warnings and the limit is really enforced
+test-spatial-output.R	a full disk fails the write cleanly: error, no output, no temporary, previous output intact

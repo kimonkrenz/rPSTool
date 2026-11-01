@@ -1,0 +1,747 @@
+{
+  "pin": "63df80a2cf3dd289be95ea3d91667c3490719b75",
+  "verified_blobs": 139,
+  "upstream_tests": 9,
+  "cases": [
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        0.0,
+        0.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        17.0,
+        17.0
+      ],
+      "destination_indices": [
+        17,
+        17
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        -29.0,
+        -29.0
+      ],
+      "destination_indices": [
+        -29,
+        -29
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        "-Inf",
+        "-Inf"
+      ],
+      "destination_indices": [
+        -2147483648,
+        -2147483648
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_unlimited",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        "NaN",
+        "NaN"
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        0.0,
+        0.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        17.0,
+        17.0
+      ],
+      "destination_indices": [
+        17,
+        17
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        -29.0,
+        -29.0
+      ],
+      "destination_indices": [
+        -29,
+        -29
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        "-Inf",
+        "-Inf"
+      ],
+      "destination_indices": [
+        -2147483648,
+        -2147483648
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_10",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        "NaN",
+        "NaN"
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        0.0,
+        0.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        17.0,
+        17.0
+      ],
+      "destination_indices": [
+        17,
+        17
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        -29.0,
+        -29.0
+      ],
+      "destination_indices": [
+        -29,
+        -29
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        "-Inf",
+        "-Inf"
+      ],
+      "destination_indices": [
+        -2147483648,
+        -2147483648
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_0",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        "NaN",
+        "NaN"
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "walking_unlimited",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_unlimited",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_10",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        1.4142135381698608,
+        5.099019527435303
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "straight_0",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        -1.0,
+        -1.0
+      ],
+      "destination_indices": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": 0,
+      "index_seed": 0,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": 17,
+      "index_seed": 17,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": -29,
+      "index_seed": -29,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": "-Inf",
+      "index_seed": -2147483648,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": "+Inf",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "points",
+      "mode": "walking_unlimited",
+      "seed": "NaN",
+      "index_seed": -1,
+      "success": true,
+      "distance": [
+        2.0,
+        6.0
+      ],
+      "destination_indices": [
+        0,
+        0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_without_indices",
+      "seed": 17,
+      "success": true,
+      "distance": [
+        17.0,
+        17.0
+      ]
+    },
+    {
+      "origin": "point_groups",
+      "mode": "straight_without_indices",
+      "seed": -29,
+      "success": true,
+      "distance": [
+        -29.0,
+        -29.0
+      ]
+    }
+  ]
+}

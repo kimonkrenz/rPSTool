@@ -1,0 +1,46 @@
+--- a/vendor/pstalgo/src/analyses/AttractionReach.cpp
++++ b/generated/analyses/AttractionReach.cpp
+@@ -205,7 +205,7 @@
+ 		// Create workers
+ 		std::vector<std::unique_ptr<CWorker>> workers;
+ 		#ifdef USE_MULTIPLE_CORES
+-			workers.resize(max(std::thread::hardware_concurrency(), 1u));
++			workers.resize(max(rpst_worker_count(), 1u));
+ 		#else
+ 			workers.resize(1);
+ 		#endif
+@@ -245,6 +245,7 @@
+ 			do {
+ 				progress.ReportProgress(algo.Progress());
+ 			} while (std::future_status::ready != task.wait_for(std::chrono::milliseconds(100)));
++			task.get();
+ 		}
+ 
+ 		if (algo.IsAttractionPolygons() && desc.m_AttractionPointCount != algo.m_PolyPointIndex)
+@@ -483,6 +484,7 @@
+ 			{
+ 				if (LIMITS::MASK_STRAIGHT & m_lim.mask) 
+ 				{
++					std::unique_lock<std::mutex> scratch_lock(m_Algo.m_CriticalSection);
+ 					const float radius = sqrtf(m_lim.straightSqr);
+ 					int* pLinesIdx = NULL;
+ 					const int nFound = m_pGraph->getLinesFromPoint(pt, radius, &pLinesIdx);
+--- a/vendor/pstalgo/src/analyses/AttractionDistance.cpp
++++ b/generated/analyses/AttractionDistance.cpp
+@@ -189,7 +189,7 @@
+ 		// Start workers
+ 		std::vector<std::future<void>> tasks;
+ 		#ifdef USE_MULTIPLE_CORES
+-			tasks.resize(std::min(graph.DestinationCount(), (size_t)std::max(std::thread::hardware_concurrency(), 1u)));
++			tasks.resize(std::min(graph.DestinationCount(), (size_t)std::max(rpst_worker_count(), 1u)));
+ 		#else
+ 			tasks.resize(1);
+ 		#endif
+@@ -202,6 +202,7 @@
+ 			do {
+ 				prograss_callback.ReportProgress(ctx.Progress());
+ 			} while (std::future_status::ready != task.wait_for(std::chrono::milliseconds(100)));
++			task.get();
+ 		}
+ 
+ 		// Report done

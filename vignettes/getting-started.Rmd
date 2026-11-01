@@ -1,0 +1,242 @@
+---
+title: "Getting started with rPSTool"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with rPSTool}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+has_sf <- requireNamespace("sf", quietly = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = has_sf,
+                      fig.width = 6, fig.height = 4.6, dpi = 80)
+library(rPSTool)
+```
+
+## 1. What rPSTool does
+
+rPSTool is an R interface to the C++ analysis engine of the *Place Syntax Tool*
+(PST). The package compiles a pinned copy of the engine (PST v3.3.2) and calls
+it directly, so installing it needs neither QGIS nor a separate PST
+installation. rPSTool does not reimplement the algorithms: you build a graph from
+your lines, the engine analyses it, and R receives the engine's results.
+This vignette walks through one small workflow on the example data that ships
+with the package: inspect the data, build an axial graph, run Network
+Integration, attach the results to the map and draw it.
+
+The example data are `sf` objects, so the package **sf** is needed to run the
+code below. It is an optional dependency of rPSTool; if it is not installed the
+code chunks in this vignette are skipped.
+
+```{r no-sf, echo = FALSE, eval = !has_sf, results = "asis"}
+cat("**The sf package is not installed, so the code chunks in this vignette",
+    "were not run.**\n")
+```
+
+## 2. Load the example data
+
+`load_example_data()` takes no arguments and returns a list of three `sf`
+objects for the Barnsbury area of London.
+
+```{r load}
+ex <- load_example_data()
+names(ex)
+vapply(ex, nrow, integer(1))
+sf::st_crs(ex$axial)$epsg
+```
+
+## 3. Inspect the data
+
+The three components are the **axial map** (one line per axial line), the
+**unlinks** (points where two axial lines cross without being connected) and
+the **gate observations** (movement counts and street attributes at gates).
+
+```{r inspect}
+names(ex$axial)
+names(ex$unlinks)
+names(ex$gates)
+head(sf::st_drop_geometry(ex$axial), 3)
+```
+
+All three are in British National Grid (EPSG:27700, metres). Some points to
+keep in mind.
+
+* The four `source_*` columns of `ex$axial` (connectivity, control,
+  integration, local integration) are **historical values supplied with the
+  data**, kept unchanged. They are not rPSTool or PST results, and no rPSTool
+  function reads them.
+* The axial map is from Hillier and Iida (2005). The pedestrian and vehicle
+  movement observations in `ex$gates` were originally used in Penn, Hillier,
+  Banister and Xu (1998). The geometry was **georeferenced to British National
+  Grid and spatially transformed** by Kimon Krenz, so the coordinates are *not*
+  the original coordinates of the source data.
+* `axial_id` is the original axial-line identifier. In general identifiers are
+  unique but are not row numbers; `?hillier_iida` describes all columns.
+
+## 4. Build an axial graph
+
+`axial_graph()` hands the lines to the engine, which finds where they cross
+and keeps the resulting network in memory. Two inputs matter here. The
+**axial lines** define the network: two axial lines are connected where they
+cross. The **unlinks** list crossings that are *not* connections (for example
+where one street passes over another), and the engine removes them. Passing
+them gives the intended network.
+
+```{r graph}
+g <- axial_graph(ex$axial, unlinks = ex$unlinks)
+g
+```
+
+Things worth knowing about the graph:
+
+* It lives in native memory managed by the engine; the R object holds a
+  pointer to it, plus the counts printed above. It is released when R
+  garbage-collects the object, and copying the R object shares the same
+  native graph.
+* It cannot be saved with `saveRDS()` or sent to another R process; rebuild it
+  from the data instead.
+* Build it once and reuse it. Every analysis below takes `g` and costs only
+  the analysis itself.
+* rPSTool does no snapping, splitting or reprojection. Each `sf` feature must be a
+  straight line of exactly two vertices, as in this dataset.
+
+## 5. Run Network Integration
+
+`network_integration()` is the axial-map analysis. For every line it relates
+the topological distances (number of line changes, "steps") to all reached
+lines to the number of lines reached. Here it is run twice: unrestricted
+(every line reaches every other line), and with a radius limited to three
+steps. `analysis_radius()` describes the limits; `steps = 3` is the only one
+set.
+
+```{r integration}
+whole  <- network_integration(g)
+local3 <- network_integration(g, radius = analysis_radius(steps = 3))
+head(whole)
+```
+
+The result has one row per input line and the columns `line_id`, `integration`,
+`node_count` (the number of lines reached, including the line itself) and
+`total_depth` (the sum of the steps to the reached lines). The engine returns
+`-1` where fewer than two lines are reached, and it may return `NaN` or `Inf`
+for very small neighbourhoods; rPSTool passes these through unchanged.
+
+```{r summary}
+rbind(unrestricted = summary(whole$integration),
+      steps_3      = summary(local3$integration))
+range(whole$node_count)
+range(local3$node_count)
+```
+
+The step-limited run reaches fewer lines from each line, which is why its
+`node_count` is smaller.
+
+## 6. Join the results to the geometry
+
+The results are an ordinary data frame without geometry. Rows are in the same
+order as the lines you gave to `axial_graph()`, and `line_id` is the one-based
+row index of that input. So the *i*th result row belongs to the *i*th row of
+`ex$axial`, whatever its `axial_id`:
+
+```{r join}
+stopifnot(identical(whole$line_id, seq_len(nrow(ex$axial))))
+map <- ex$axial
+map$integration <- whole$integration
+map$integration_3 <- local3$integration
+```
+
+Join by position (or by `line_id`), not by `axial_id`: the two coincide in this
+dataset only because its identifiers happen to run from 1 to the number of
+lines. Do not rely on that for other data.
+
+## 7. Draw the map
+
+`colour_map()` turns numbers into colours from an rPSTool palette. It does not
+classify; with the default continuous mapping the range of the values is
+spread linearly over the palette (or over `limits`, if you give them). The
+plot background is your choice. Coral Day is designed for light backgrounds
+and Coral Night for dark ones (`colour_palettes()$background` lists the
+intended background of each palette).
+
+```{r plot-day}
+par(mar = c(0, 0, 1.5, 0))
+plot(sf::st_geometry(map), col = colour_map(map$integration, "coral_day"),
+     lwd = 1.5, main = "Integration, unrestricted (Coral Day)")
+```
+
+```{r plot-night}
+par(mar = c(0, 0, 1.5, 0), bg = "black", fg = "white")
+plot(sf::st_geometry(map), col = colour_map(map$integration_3, "coral_night"),
+     lwd = 1.5, main = "Integration, 3 steps (Coral Night)", col.main = "white")
+```
+
+With ggplot2, `scale_colour_rpst_c()` applies the same continuous mapping:
+
+```{r ggplot, eval = has_sf && requireNamespace("ggplot2", quietly = TRUE)}
+library(ggplot2)
+ggplot(map) +
+  geom_sf(aes(colour = integration_3), linewidth = 0.5) +
+  scale_colour_rpst_c("coral_day") +
+  theme_void() +
+  labs(colour = "Integration\n(3 steps)")
+```
+
+## 8. Interpreting the output
+
+In PST's axial analysis a line with a high integration value is, by the
+topological measure used, close to the other lines of the network (few changes
+of direction are needed to reach them), and a low value means it is relatively
+isolated. The values come from the engine's formula; rPSTool does not rescale
+them. They are comparable between lines of the same run. The
+step-limited run describes each line's local neighbourhood and the
+unrestricted run its position in the whole network, so the two sets of values
+answer different questions; compare values only within one run, and do not
+assume that values from different radii or different graphs share a scale.
+
+The example data come with a historical integration value for each line
+(`source_integration`). You can compare it with the rPSTool result as a purely
+descriptive check on the data you have just joined; this is a comparison, not
+a validation of either set of numbers.
+
+```{r compare}
+cor(whole$integration, map$source_integration)
+cor(whole$integration, map$source_integration, method = "spearman")
+max(abs(whole$integration - map$source_integration))
+```
+
+In this run the unrestricted result and the supplied column agree closely: both
+correlations are 1 to the printed precision, and the largest absolute difference
+is about 6e-06. Whether the supplied values were produced the same way is not
+documented in the package, and this agreement should not be read as a statement
+about published results. The supplied `source_local_integration` is a different
+quantity and is not compared here.
+
+The unlinks matter. Building the graph without them leaves two more crossings
+in the graph (each one a connection between two lines), which changes the
+network the engine analyses:
+
+```{r unlinks-effect}
+c(with_unlinks = g$n_crossings,
+  without_unlinks = axial_graph(ex$axial)$n_crossings)
+```
+
+## 9. Where next
+
+* `?rPSTool` gives an overview of the package and links to its function groups.
+* `vignette("pst-capabilities", package = "rPSTool")` compares rPSTool with the
+  engine and the PST plugin for QGIS and shows the other analyses (reach,
+  betweenness, angular analyses, attraction analyses, segment maps).
+* The function reference lists every function; start with `?axial_graph`,
+  `?network_integration`, `?analysis_radius`, `?colour_map` and
+  `?hillier_iida`.
+
+## References
+
+Hillier, B. and Iida, S. (2005). Network and psychological effects in urban
+movement. In *Spatial Information Theory*, LNCS 3693, 475-490.
+doi:10.1007/11556114_30
+
+Penn, A., Hillier, B., Banister, D. and Xu, J. (1998). Configurational
+modelling of urban movement networks. *Environment and Planning B: Planning
+and Design*, 25(1), 59-84. doi:10.1068/b250059

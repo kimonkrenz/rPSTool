@@ -1,0 +1,407 @@
+{
+  "pst_commit": "63df80a2cf3dd289be95ea3d91667c3490719b75",
+  "verified_blobs": 132,
+  "original_successful_controls_retained": 73,
+  "expanded_successful_controls": 74,
+  "controlled_failures": 7,
+  "probes": [
+    {
+      "baseline": {
+        "case": {
+          "name": "degenerate_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 0.01,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": 0,
+        "stderr": "",
+        "native": {
+          "success": true,
+          "points": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "area": 0.0,
+          "obstacles": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          },
+          "attraction_points": {
+            "count": 0,
+            "groups": [
+              0
+            ],
+            "indices": []
+          },
+          "attraction_polygons": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          }
+        }
+      },
+      "checked": {
+        "case": {
+          "name": "degenerate_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 0.01,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": -6,
+        "stderr": "/usr/include/c++/14/bits/stl_vector.h:1149: std::vector<_Tp, _Alloc>::const_reference std::vector<_Tp, _Alloc>::operator[](size_type) const [with _Tp = TVec2<float>; _Alloc = std::allocator<TVec2<float> >; const_reference = const TVec2<float>&; size_type = long unsigned int]: Assertion '__n < this->size()' failed.",
+        "stdout": ""
+      },
+      "guarded": {
+        "case": {
+          "name": "degenerate_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 0.01,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": 0,
+        "stderr": "",
+        "native": {
+          "success": false
+        }
+      }
+    },
+    {
+      "baseline": {
+        "case": {
+          "name": "safe_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 1,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": 0,
+        "stderr": "",
+        "native": {
+          "success": true,
+          "points": [
+            [
+              0.7076752185821533,
+              0.7076751589775085
+            ],
+            [
+              0.7736318707466125,
+              0.6349031925201416
+            ],
+            [
+              0.832137942314148,
+              0.5560168027877808
+            ],
+            [
+              0.8826301693916321,
+              0.47177568078041077
+            ],
+            [
+              0.924622118473053,
+              0.38299107551574707
+            ],
+            [
+              0.957709550857544,
+              0.29051801562309265
+            ],
+            [
+              0.9815737009048462,
+              0.1952471286058426
+            ],
+            [
+              0.995984673500061,
+              0.09809591621160507
+            ],
+            [
+              1.000803828239441,
+              -1.4913139168015732e-08
+            ],
+            [
+              0.995984673500061,
+              -0.09809594601392746
+            ],
+            [
+              0.9815736413002014,
+              -0.19524715840816498
+            ],
+            [
+              0.957709550857544,
+              -0.29051804542541504
+            ],
+            [
+              0.924622118473053,
+              -0.38299107551574707
+            ],
+            [
+              0.8826301693916321,
+              -0.47177571058273315
+            ],
+            [
+              0.832137942314148,
+              -0.5560168623924255
+            ],
+            [
+              0.7736318111419678,
+              -0.6349032521247864
+            ],
+            [
+              0.7076751589775085,
+              -0.7076751589775085
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "area": 0.7853981852531433,
+          "obstacles": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          },
+          "attraction_points": {
+            "count": 1,
+            "groups": [
+              1
+            ],
+            "indices": [
+              0
+            ]
+          },
+          "attraction_polygons": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          }
+        }
+      },
+      "checked": {
+        "case": {
+          "name": "safe_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 1,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": 0,
+        "stderr": "",
+        "native": {
+          "success": true,
+          "points": [
+            [
+              0.7076752185821533,
+              0.7076751589775085
+            ],
+            [
+              0.7736318707466125,
+              0.6349031925201416
+            ],
+            [
+              0.832137942314148,
+              0.5560168027877808
+            ],
+            [
+              0.8826301693916321,
+              0.47177568078041077
+            ],
+            [
+              0.924622118473053,
+              0.38299107551574707
+            ],
+            [
+              0.957709550857544,
+              0.29051801562309265
+            ],
+            [
+              0.9815737009048462,
+              0.1952471286058426
+            ],
+            [
+              0.995984673500061,
+              0.09809591621160507
+            ],
+            [
+              1.000803828239441,
+              -1.4913139168015732e-08
+            ],
+            [
+              0.995984673500061,
+              -0.09809594601392746
+            ],
+            [
+              0.9815736413002014,
+              -0.19524715840816498
+            ],
+            [
+              0.957709550857544,
+              -0.29051804542541504
+            ],
+            [
+              0.924622118473053,
+              -0.38299107551574707
+            ],
+            [
+              0.8826301693916321,
+              -0.47177571058273315
+            ],
+            [
+              0.832137942314148,
+              -0.5560168623924255
+            ],
+            [
+              0.7736318111419678,
+              -0.6349032521247864
+            ],
+            [
+              0.7076751589775085,
+              -0.7076751589775085
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "area": 0.7853981852531433,
+          "obstacles": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          },
+          "attraction_points": {
+            "count": 1,
+            "groups": [
+              1
+            ],
+            "indices": [
+              0
+            ]
+          },
+          "attraction_polygons": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          }
+        }
+      },
+      "guarded": {
+        "case": {
+          "name": "safe_partial_straddling_points",
+          "geometry": "straddling_points",
+          "distance": 1,
+          "fov": 90,
+          "direction": 0,
+          "resolution": 64
+        },
+        "returncode": 0,
+        "stderr": "",
+        "native": {
+          "success": true,
+          "points": [
+            [
+              0.7076752185821533,
+              0.7076751589775085
+            ],
+            [
+              0.7736318707466125,
+              0.6349031925201416
+            ],
+            [
+              0.832137942314148,
+              0.5560168027877808
+            ],
+            [
+              0.8826301693916321,
+              0.47177568078041077
+            ],
+            [
+              0.924622118473053,
+              0.38299107551574707
+            ],
+            [
+              0.957709550857544,
+              0.29051801562309265
+            ],
+            [
+              0.9815737009048462,
+              0.1952471286058426
+            ],
+            [
+              0.995984673500061,
+              0.09809591621160507
+            ],
+            [
+              1.000803828239441,
+              -1.4913139168015732e-08
+            ],
+            [
+              0.995984673500061,
+              -0.09809594601392746
+            ],
+            [
+              0.9815736413002014,
+              -0.19524715840816498
+            ],
+            [
+              0.957709550857544,
+              -0.29051804542541504
+            ],
+            [
+              0.924622118473053,
+              -0.38299107551574707
+            ],
+            [
+              0.8826301693916321,
+              -0.47177571058273315
+            ],
+            [
+              0.832137942314148,
+              -0.5560168623924255
+            ],
+            [
+              0.7736318111419678,
+              -0.6349032521247864
+            ],
+            [
+              0.7076751589775085,
+              -0.7076751589775085
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "area": 0.7853981852531433,
+          "obstacles": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          },
+          "attraction_points": {
+            "count": 1,
+            "groups": [
+              1
+            ],
+            "indices": [
+              0
+            ]
+          },
+          "attraction_polygons": {
+            "count": 0,
+            "groups": [],
+            "indices": []
+          }
+        }
+      }
+    }
+  ]
+}

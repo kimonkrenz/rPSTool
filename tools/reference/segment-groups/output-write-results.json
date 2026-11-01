@@ -1,0 +1,1520 @@
+{
+  "pin": "63df80a2cf3dd289be95ea3d91667c3490719b75",
+  "cases": [
+    {
+      "case": "isolated",
+      "coords": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0
+        ],
+        "colors": [
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "isolated",
+      "coords": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0
+        ],
+        "colors": [
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "isolated",
+      "coords": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0
+        ],
+        "colors": [
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain_split",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": true,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain_split",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": true,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_chain_split",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 1,
+      "split": true,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "disconnected",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        5,
+        0,
+        6,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0,
+            17.0
+          ],
+          "node_count": [
+            17,
+            17
+          ],
+          "total_depth": [
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0,
+            29.0
+          ],
+          "node_count": [
+            29,
+            29
+          ],
+          "total_depth": [
+            29.0,
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "disconnected",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        5,
+        0,
+        6,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0,
+            17.0
+          ],
+          "node_count": [
+            17,
+            17
+          ],
+          "total_depth": [
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0,
+            29.0
+          ],
+          "node_count": [
+            29,
+            29
+          ],
+          "total_depth": [
+            29.0,
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "disconnected",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        5,
+        0,
+        6,
+        0
+      ],
+      "angle": 1,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0,
+            17.0
+          ],
+          "node_count": [
+            17,
+            17
+          ],
+          "total_depth": [
+            17.0,
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0,
+            29.0
+          ],
+          "node_count": [
+            29,
+            29
+          ],
+          "total_depth": [
+            29.0,
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_loop",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "angle": 90,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_loop",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "angle": 90,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "merged_loop",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "angle": 90,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": true,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            17.0
+          ],
+          "node_count": [
+            17
+          ],
+          "total_depth": [
+            17.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            29.0
+          ],
+          "node_count": [
+            29
+          ],
+          "total_depth": [
+            29.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "singleton_chain_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            0.21089662611484528,
+            "Inf",
+            0.21089662611484528
+          ],
+          "node_count": [
+            3,
+            3,
+            3
+          ],
+          "total_depth": [
+            3.0,
+            2.0,
+            3.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            0.21089662611484528,
+            "Inf",
+            0.21089662611484528
+          ],
+          "node_count": [
+            3,
+            3,
+            3
+          ],
+          "total_depth": [
+            3.0,
+            2.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "singleton_chain_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "node_count": [
+            1,
+            1,
+            1
+          ],
+          "total_depth": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "node_count": [
+            1,
+            1,
+            1
+          ],
+          "total_depth": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "singleton_chain_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0
+        ],
+        "colors": [
+          0,
+          0,
+          0
+        ],
+        "group_count": 1,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            "NaN",
+            "Inf",
+            "NaN"
+          ],
+          "node_count": [
+            2,
+            3,
+            2
+          ],
+          "total_depth": [
+            1.0,
+            2.0,
+            1.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            "NaN",
+            "Inf",
+            "NaN"
+          ],
+          "node_count": [
+            2,
+            3,
+            2
+          ],
+          "total_depth": [
+            1.0,
+            2.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "mixed_isolated_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0,
+        10,
+        0,
+        11,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "radius": "unlimited",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            0.21089662611484528,
+            "Inf",
+            0.21089662611484528,
+            -1.0
+          ],
+          "node_count": [
+            3,
+            3,
+            3,
+            0
+          ],
+          "total_depth": [
+            3.0,
+            2.0,
+            3.0,
+            0.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            0.21089662611484528,
+            "Inf",
+            0.21089662611484528,
+            -1.0
+          ],
+          "node_count": [
+            3,
+            3,
+            3,
+            0
+          ],
+          "total_depth": [
+            3.0,
+            2.0,
+            3.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "mixed_isolated_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0,
+        10,
+        0,
+        11,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "radius": "steps_zero",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "node_count": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "total_depth": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "node_count": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "total_depth": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "mixed_isolated_control",
+      "coords": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        3,
+        0,
+        10,
+        0,
+        11,
+        0
+      ],
+      "angle": 0,
+      "split": false,
+      "grouping": {
+        "ids": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "colors": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "group_count": 2,
+        "color_count": 1
+      },
+      "analysis_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "radius": "walking_zero",
+      "outputs_unwritten": false,
+      "runs": [
+        {
+          "seed": 17,
+          "success": true,
+          "integration": [
+            "NaN",
+            "Inf",
+            "NaN",
+            -1.0
+          ],
+          "node_count": [
+            2,
+            3,
+            2,
+            0
+          ],
+          "total_depth": [
+            1.0,
+            2.0,
+            1.0,
+            0.0
+          ]
+        },
+        {
+          "seed": 29,
+          "success": true,
+          "integration": [
+            "NaN",
+            "Inf",
+            "NaN",
+            -1.0
+          ],
+          "node_count": [
+            2,
+            3,
+            2,
+            0
+          ],
+          "total_depth": [
+            1.0,
+            2.0,
+            1.0,
+            0.0
+          ]
+        }
+      ]
+    }
+  ]
+}

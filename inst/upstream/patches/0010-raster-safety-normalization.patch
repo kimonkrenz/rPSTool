@@ -1,0 +1,44 @@
+--- a/pstalgo/src/Raster.cpp
++++ b/pstalgo/src/Raster.cpp
+@@ -0,0 +1,2 @@
++#include <new>
++#line 1 "vendor/pstalgo/src/Raster.cpp"
+@@ -39,0 +42,3 @@
++		if (width > std::numeric_limits<uint32_t>::max() / RasterFormatPixelSize(format) ||
++			static_cast<uint64_t>(m_Pitch) * m_Height > std::numeric_limits<uint32_t>::max())
++			throw std::length_error("Raster allocation exceeds native unsigned bounds");
+@@ -40,0 +46,2 @@
++		if (!m_Bits && m_Pitch && m_Height) throw std::bad_alloc();
++#line 41 "vendor/pstalgo/src/Raster.cpp"
+--- a/pstalgo/src/gfx/Blur.cpp
++++ b/pstalgo/src/gfx/Blur.cpp
+@@ -0,0 +1 @@
++#line 1 "vendor/pstalgo/src/gfx/Blur.cpp"
+@@ -35 +36,3 @@
+-		auto* blur_kernel = (float*)alloca((radius + 1) * sizeof(float));
++		std::vector<float> kernel_storage(static_cast<size_t>(radius) + 1);
++		auto* blur_kernel = kernel_storage.data();
++#line 36 "vendor/pstalgo/src/gfx/Blur.cpp"
+@@ -77 +80 @@
+-		const auto max_thread_count = std::max(std::thread::hardware_concurrency(), 1u);
++		const auto max_thread_count = std::max(rpst_worker_count(), 1u);
+@@ -98 +101 @@
+-				task.wait();
++				task.get();
+--- a/pstalgo/include/pstalgo/utils/Arr2d.h
++++ b/pstalgo/include/pstalgo/utils/Arr2d.h
+@@ -0,0 +1,2 @@
++#include <new>
++#line 1 "vendor/pstalgo/include/pstalgo/utils/Arr2d.h"
+@@ -113,0 +116 @@
++			if (m_Height < 2) return;
+@@ -118,0 +122,2 @@
++			if (!rowBuffer && strideBytes) throw std::bad_alloc();
++#line 119 "vendor/pstalgo/include/pstalgo/utils/Arr2d.h"
+--- a/pstalgo/src/analyses/CreateBufferPolygons.cpp
++++ b/pstalgo/src/analyses/CreateBufferPolygons.cpp
+@@ -0,0 +1 @@
++#line 1 "vendor/pstalgo/src/analyses/CreateBufferPolygons.cpp"
+@@ -274 +275 @@
+-				const auto max_range = std::max(abs(min), abs(max));
++				const auto max_range = std::max(std::abs(min), std::abs(max));

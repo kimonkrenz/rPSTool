@@ -1,0 +1,87 @@
+* using log directory ‘/Users/runner/work/rPST/rPST/check/rPST.Rcheck’
+* using R version 4.6.1 (2026-06-24)
+* using platform: aarch64-apple-darwin23
+* R was compiled by
+    Apple clang version 17.0.0 (clang-1700.3.19.1)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.6.2
+* using session charset: UTF-8
+* current time: 2026-10-06 20:41:09 UTC
+* using options ‘--no-manual --as-cran’
+* checking for file ‘rPST/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘rPST’ version ‘0.0.0.9000’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking serialization versions ... OK
+* checking whether package ‘rPST’ can be installed ... [46s/28s] WARNING
+Found the following significant warnings:
+  vendor/pstalgo/src/Limits.cpp:161:10: warning: enumeration value '_DIST_COUNT' not handled in switch [-Wswitch]
+  vendor/pstalgo/src/Limits.cpp:176:10: warning: enumeration value 'EPSTADistanceType_Weights' not handled in switch [-Wswitch]
+  vendor/pstalgo/src/Raster.cpp:51:11: warning: enumeration value 'RasterFormat_Undefined' not handled in switch [-Wswitch]
+  vendor/pstalgo/src/analyses/CreateBufferPolygons.cpp:58:11: warning: use of bitwise '&' with boolean operands [-Wbitwise-instead-of-logical]
+  vendor/pstalgo/src/geometry/SignedDistanceField.cpp:286:12: warning: use of bitwise '&' with boolean operands [-Wbitwise-instead-of-logical]
+  vendor/pstalgo/src/geometry/SignedDistanceField.cpp:296:12: warning: use of bitwise '&' with boolean operands [-Wbitwise-instead-of-logical]
+  vendor/pstalgo/src/geometry/SignedDistanceField.cpp:420:8: warning: use of bitwise '|' with boolean operands [-Wbitwise-instead-of-logical]
+  vendor/pstalgo/src/geometry/SignedDistanceField.cpp:425:11: warning: use of bitwise '&' with boolean operands [-Wbitwise-instead-of-logical]
+See ‘/Users/runner/work/rPST/rPST/check/rPST.Rcheck/00install.out’ for details.
+* used C compiler: ‘Apple clang version 21.0.0 (clang-2100.1.1.101)’
+* used C++ compiler: ‘Apple clang version 21.0.0 (clang-2100.1.1.101)’
+* used SDK: ‘MacOSX26.5.sdk’
+* checking C++ specification ... INFO
+  specified C++17
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking line endings in C/C++/Fortran sources/headers ... OK
+* checking line endings in Makefiles ... OK
+* checking compilation flags in Makevars ... OK
+* checking for GNU extensions in Makefiles ... OK
+* checking for portable use of $(BLAS_LIBS) and $(LAPACK_LIBS) ... OK
+* checking use of PKG_*FLAGS in Makefiles ... OK
+* checking use of SHLIB_OPENMP_*FLAGS in Makefiles ... OK
+* checking pragmas in C/C++ headers and code ... OK
+* checking compilation flags used ... OK
+* checking compiled code ... OK
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... OK
+  Running ‘testthat.R’
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+Status: 1 WARNING

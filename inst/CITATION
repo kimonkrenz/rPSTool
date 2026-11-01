@@ -1,0 +1,55 @@
+## Voluntary citation guidance only. This file is NOT a licence notice; the legal
+## notices are in inst/COPYRIGHTS and inst/licenses/. See docs/licensing.md.
+
+## `meta` is supplied by citation() from the installed DESCRIPTION.
+vers <- meta$Version
+## The year comes from the package metadata, never from the current date: DESCRIPTION's Date field if present, otherwise the
+## year of the build timestamp (Packaged); NA if neither is usable, in which case the year is left unspecified.
+yr <- local({
+  d <- if (!is.null(meta$Date) && !is.na(meta$Date)) meta$Date else meta$Packaged
+  y <- if (length(d)) regmatches(d[1L], regexpr("[0-9]{4}", d[1L])) else character()
+  if (length(y) == 1L && nzchar(y)) y else NA_character_
+})
+yr_txt <- if (is.na(yr)) "n.d." else yr
+
+bibentry(
+  "Manual",
+  key = "rPSTool",
+  title = paste0("rPSTool: ", sub("^rPSTool: ", "", meta$Title)),
+  author = person("Kimon", "Krenz"),
+  year = if (is.na(yr)) "n.d." else yr,
+  note = paste0("R package version ", vers),
+  textVersion = paste0(
+    "Krenz K (", yr_txt, "). rPSTool: ", meta$Title, ". R package version ", vers, "."),
+  header = "To cite the rPSTool R package:"
+)
+
+bibentry(
+  "Misc",
+  key = "PST-3.3.2",
+  title = paste("PST (Place Syntax Tool), including the pstalgo C++ library,",
+                "version 3.3.2 (commit 63df80a2cf3dd289be95ea3d91667c3490719b75)"),
+  author = c(person("Alexander", "Ståhle"), person("Lars", "Marcus"),
+             person("Daniel", "Koch"), person("Martin", "Fitger"),
+             person("Anders", "Karlström"), person("Tobias", "Nordström"),
+             person("Ann", "Legeby"), person("Gianna", "Stavroulaki"),
+             person("Meta", "Berghauser Pont"), person("Pablo", "Miranda")),
+  organization = paste("KTH School of Architecture; Chalmers School of Architecture (SMoG);",
+                       "Spacescape AB (developing organisations)"),
+  year = "n.d.",
+  howpublished = "Software",
+  url = "https://github.com/SMoG-Chalmers/PST",
+  note = paste("Bundled by rPSTool as PST v3.3.2. Authors as listed in the PST for QGIS v3.3.2 plugin metadata;",
+               "2019 is the upstream copyright year, not a release date, and no release date or",
+               "peer-reviewed methods reference is recorded in the bundled files.",
+               "Reference constructed by the rPSTool maintainers from the README; not an officially",
+               "endorsed upstream citation."),
+  textVersion = paste(
+    "Ståhle A, Marcus L, Koch D, Fitger M, Karlström A, Nordström T, Legeby A,",
+    "Stavroulaki G, Berghauser Pont M, Miranda P (n.d.). PST (Place Syntax Tool), including the pstalgo C++",
+    "library, version 3.3.2 (commit 63df80a2cf3dd289be95ea3d91667c3490719b75). Developed by",
+    "KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB.",
+    "Software. https://github.com/SMoG-Chalmers/PST (reference constructed by the rPSTool maintainers from the",
+    "upstream QGIS plugin metadata; not an officially endorsed upstream citation)."),
+  header = "If your analysis relies on the PST engine, please also credit it:"
+)

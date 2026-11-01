@@ -1,0 +1,32 @@
+--- a/0002-generated/CreateGraph.cpp
++++ b/generated/CreateGraph.cpp
+@@ -258,11 +258,11 @@
+ 		return 0;
+ 	}
+ 
+-	auto graph = new CSegmentGroupGraph();
++	std::unique_ptr<CSegmentGroupGraph> graph(new CSegmentGroupGraph());
+ 
+ 	graph->Create(*segment_graph, desc->m_GroupIndexPerSegment, desc->m_GroupCount);
+ 
+-	return graph;
++	return graph.release();
+ }
+ 
+ PSTADllExport void PSTAFreeSegmentGroupGraph(HPSTASegmentGroupGraph handle)
+--- a/vendor/pstalgo/src/analyses/SegmentGroupIntegration.cpp
++++ b/generated/SegmentGroupIntegration.cpp
+@@ -1,3 +1,4 @@
++#line 1 "vendor/pstalgo/src/analyses/SegmentGroupIntegration.cpp"
+ /*
+ Copyright 2019 Meta Berghauser Pont
+ 
+@@ -170,7 +171,7 @@
+ 	first_node_per_group[0] = 0;
+ 
+ 	// Multi-threading capability metrics
+-	const uint32 max_threads = USE_MULTIPLE_CORES ? max(thread::hardware_concurrency(), 1u) : 1;
++	const uint32 max_threads = USE_MULTIPLE_CORES ? max(rpst_worker_count(), 1u) : 1;
+ 	const uint32 groups_per_thread = (uint32)(graph.GroupCount() + max_threads - 1) / max_threads;
+ 
+ 	// Progress counter

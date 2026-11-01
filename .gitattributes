@@ -1,0 +1,37 @@
+# Preserve the exact upstream bytes on every CI/development platform.
+src/vendor/pstalgo/** -text
+inst/upstream/PST_README.txt -text
+inst/upstream/PST_LICENSE -text
+inst/upstream/build-inputs/** -text
+# Byte-pinned (SHA-256/MD5-verified) third-party trees: FlatBuffers headers and the FlatBuffers build-copy input,
+# the FlatGeobuf schemas/generated headers, their manifests, and the vendored Arrow C ABI header. A platform
+# line-ending conversion (e.g. core.autocrlf=true on Windows) would change the hashed bytes.
+src/vendor/flatbuffers/** -text
+src/vendor/flatgeobuf/** -text
+inst/upstream/flatbuffers/** -text
+src/arrow-c-abi/arrow_c_abi.h -text
+# Exact upstream bytes and unified-diff context retain upstream whitespace.
+# Keep normal whitespace checks for all rPSTool-authored source.
+inst/upstream/build-inputs/SegmentGroupIntegration.cpp whitespace=-blank-at-eol
+inst/upstream/patches/0004-segment-groups-build-safety.patch whitespace=-blank-at-eol,-space-before-tab
+inst/upstream/build-inputs/AttractionReach.cpp whitespace=-blank-at-eol
+inst/upstream/build-inputs/AttractionDistance.cpp whitespace=-blank-at-eol
+inst/upstream/patches/0005-attraction-worker-safety.patch whitespace=-blank-at-eol,-space-before-tab
+inst/upstream/build-inputs/ODBetweenness.cpp whitespace=-blank-at-eol
+inst/upstream/patches/0006-od-betweenness-safety.patch whitespace=-blank-at-eol,-space-before-tab
+inst/upstream/patches/0007-angular-worker-exceptions.patch whitespace=-blank-at-eol,-space-before-tab
+
+inst/upstream/build-inputs/CreateJunctions.cpp whitespace=-blank-at-eol
+inst/upstream/patches/0008-network-construction-safety.patch whitespace=-blank-at-eol,-space-before-tab
+inst/upstream/build-inputs/CreateSegmentMap.cpp whitespace=-blank-at-eol
+inst/upstream/build-inputs/Blur.cpp whitespace=-blank-at-eol
+inst/upstream/build-inputs/CreateBufferPolygons.cpp whitespace=-blank-at-eol
+inst/upstream/build-inputs/Limits.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/ProgressUtil.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/AABSPTree.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/SignedDistanceField.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/ShortestPathTraversal.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/NetworkIntegration.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/AxialGraph.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/Geometry.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/IsovistCalculator.h whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
