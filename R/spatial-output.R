@@ -105,6 +105,14 @@
 # Result columns that already exist in the source: with overwrite = FALSE this is an error naming them; with overwrite = TRUE
 # they are replaced in the NEW file (the source is never modified).
 .pst_spatial_existing_columns <- function(source_names, result_names, overwrite) {
+  # a source column that differs from a result name only by letter case is ambiguous for case-insensitive readers: never
+  # replaced or duplicated, with or without overwrite
+  case_only <- source_names[tolower(source_names) %in% tolower(result_names) & !(source_names %in% result_names)]
+  if (length(case_only))
+    stop("The source column '", case_only[[1L]], "' differs from the result column '",
+         result_names[match(tolower(case_only[[1L]]), tolower(result_names))],
+         "' only by letter case; replacing or adding it would be ambiguous for case-insensitive readers. Rename the source ",
+         "column; overwrite does not apply.", call. = FALSE)
   existing <- intersect(result_names, source_names)
   if (length(existing) && !isTRUE(overwrite))
     stop("Analysis output columns already exist in the source: ", paste(existing, collapse = ", "),

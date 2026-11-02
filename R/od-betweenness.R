@@ -25,9 +25,9 @@
 #'   object (zero features allowed). Origin order is preserved.
 #' @param radius Distance limits created by [analysis_radius()].
 #' @param distance `"walking"` (default) or `"angular"`.
-#' @param origin_weight_name,destination_weight_name `NULL`, or short names for `origin_weights` and
-#'   `destination_weights` used in the result column names (`..._wo<name>_wd<name>`); see `weight_name` in
-#'   [network_betweenness()].
+#' @param origin_weight_name,destination_weight_name Required whenever `origin_weights`, respectively
+#'   `destination_weights`, is supplied (each is checked independently), and an error otherwise: descriptive names used
+#'   in the result column names (`..._wo<name>_wd<name>`); see `weight_name` in [network_betweenness()].
 #' @param destination_mode `"all"` (default) or `"closest"`.
 #' @param origin_weights `NULL` for unit weights, or one finite value per origin. Zero and negative values are
 #'   passed unchanged.
@@ -58,10 +58,11 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   .pst_sf_analysis_crs(graph, origins)
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
-  origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_weight_name, "origin_weight_name", "wo")
+  origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_weight_name, "origin_weight_name", "wo", "origin_weights")
   destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_weight_name,
-                                            "destination_weight_name", "wd")
+                                            "destination_weight_name", "wd", "destination_weights")
   cols <- .pst_nm_od_betweenness(radius, distance, destination_mode, origin_weight, destination_weight)
+  .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "od_betweenness",

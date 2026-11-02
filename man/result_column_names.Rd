@@ -22,13 +22,15 @@ Omitted where the analysis has none (Network Reach, segment groups, \code{distan
 \item \strong{Radius:} \code{rl}, \code{rw}, \code{rs}, \code{ra}, \code{ram} followed by the full value (\code{rw3000}, \code{rs3}, \code{rw0p5}; \code{p} is the decimal
 point and thousands are never abbreviated), every active restriction in the order straight, walking, steps,
 angular, axmeter; \code{rg} when unrestricted.
-\item \strong{Weight:} \code{wl} length weighting, \code{wu} unit weights (weight totals of an unweighted run), \verb{w<name>} user weights
-named with \code{weight_name}, \code{wv} user weights without a name, \verb{wo<name>} and \verb{wd<name>} origin and destination weights
-of \code{\link[=od_betweenness]{od_betweenness()}}.
+\item \strong{Weight:} none when unweighted (including the unit-weight totals of an unweighted Angular Integration), \code{wl}
+length weighting, \verb{w<name>} custom weights, whose name must be supplied with \code{weight_name}, and \verb{wo<name>} and
+\verb{wd<name>} origin and destination weights of \code{\link[=od_betweenness]{od_betweenness()}}.
 \item \strong{Normalisation:} \code{t} Turner, \code{a} NAIN, \code{c} NACH, \code{h} Hillier, \code{s} standard, \code{f} Freeman, \code{y} Network Betweenness
 \code{syntax}, \code{n} raw.
 \item \strong{Diagnostics:} \code{nc} node count, \code{td} total depth, \code{tw} total weight, \code{tdw} total depth weight, \code{rc} reached
-count, \code{rln} reached length, \code{rca} reached area, \code{di} destination index.
+count, \code{rln} reached length, \code{rca} reached area, \code{di} destination index; \code{anc} and \code{atd} are the node count and total
+depth of Attraction Betweenness. The diagnostics of weighted and attraction runs carry the weight component,
+because PST skips origins without positive weight.
 \item \strong{Parameters:} written only when different from the default, in a fixed order: \verb{at<v>} \code{angle_threshold}, \verb{ap<v>}
 \code{angle_precision}, \verb{or<x>} \code{origin}, \verb{dc<x>} \code{decay}, \verb{dk<v>} \code{decay_constant}, \verb{ds<x>} \code{distribution}, \verb{cl<x>}
 \code{collection}, \verb{pe<v>} \code{point_edge_weight}, \verb{pi<v>} \code{polygon_point_interval}, \verb{dm<x>} \code{destination_mode}.
