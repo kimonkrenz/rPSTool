@@ -6,8 +6,9 @@ adr_ref <- function() dget(test_path("fixtures", "attraction-decay-default-direc
 adr_graph <- function(ref) axial_graph(matrix(as.double(unlist(ref$graph$x)), ncol = 4L, byrow = TRUE))
 adr_points <- function(ref) matrix(as.double(unlist(ref$graph$points)), ncol = 2L, byrow = TRUE)
 adr_call <- function(g, ref, case, ...) {
+  capacity <- as.double(unlist(ref$graph$values))
   attraction_reach(g, adr_points(ref), radius = do.call(analysis_radius, case$radius),
-                       distance = case$distance, attraction_values = as.double(unlist(ref$graph$values)), ...)
+                       distance = case$distance, attraction_values = capacity, ...)
 }
 
 test_that("omitted decay_constant is 0 for constant decay and 1 for power, curve and divide", {

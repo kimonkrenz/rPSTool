@@ -37,6 +37,9 @@ test_that("both attraction bindings match supported pinned native modes", {
       args$radius <- do.call(analysis_radius, args$radius)
       for (field in c("points_per_polygon", "attraction_values", "line_weights"))
         if (!is.null(args[[field]])) args[[field]] <- at_vector(args[[field]])
+      # weights are named after the object they are passed as: hand do.call the symbols, not the values
+      for (field in c("attraction_values", "line_weights"))
+        if (!is.null(args[[field]])) { assign(field, args[[field]]); args[[field]] <- as.name(field) }
       out <- do.call(if (case$analysis == "reach") attraction_reach else attraction_distance,
                      c(list(graph=g), args))
       expect_identical(out$origin_id, seq_along(case$scores))
@@ -134,8 +137,9 @@ test_that("malformed attraction inputs fail at the native boundary without damag
     expect_error(reach(a,decay_constant=bad))
   }
   for (bad in list(-1,NA,Inf,1e40,1e-300,"1"))
-    expect_error(distance(a,distance="weights",line_weights=rep(bad,2)))
-  expect_error(distance(a,line_weights=c(1,2)), "requires")
+  { bad_weights <- rep(bad,2); expect_error(distance(a,distance="weights",line_weights=bad_weights)) }
+  lw <- c(1,2)
+  expect_error(distance(a,line_weights=lw), "requires")
   expect_error(distance(a,distance="weights"), "is required")
   for (bad in list(-1,Inf,NA,1e-300,"0")) expect_error(distance(a,point_edge_weight=bad))
   for (bad in list(NA,1,c(TRUE,FALSE),"yes")) expect_error(distance(a,destination_indices=bad))
@@ -145,8 +149,9 @@ test_that("malformed attraction inputs fail at the native boundary without damag
                          NULL,NULL,NULL,"bad",0,"divide","mean"), "Unsupported decay")
   expect_error(at_native("attraction_distance",g$ptr,analysis_radius(),"lines","axmeter",a,
                          NULL,NULL,NULL,0,TRUE), "Unsupported distance")
-  expect_identical(attraction_distance(g,a,distance="weights",line_weights=c(0,0))$attraction_distance,c(0,0))
-  expect_identical(attraction_reach(g,a,attraction_values=-1)$attraction_reach,c(0,0))
+  zero_cost <- c(0,0); negative_value <- -1
+  expect_identical(attraction_distance(g,a,distance="weights",line_weights=zero_cost)$attraction_distance,c(0,0))
+  expect_identical(attraction_reach(g,a,attraction_values=negative_value)$attraction_reach,c(0,0))
   at_native("graph_release",g$ptr)
 })
 

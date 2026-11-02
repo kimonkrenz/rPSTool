@@ -1,3 +1,21 @@
+
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+wt_rep_1_3 <- rep(1,3)
+wt_0 <- 0
+wt_2 <- 2
+wt_c_1_10_1 <- c(1,-10,1)
+wt_c_2_0_1 <- c(2,0,1)
+wt_c_2_3_4 <- c(2,3,4)
+wt_c_5_0_4 <- c(5,0,4)
+wt_1_3 <- 1:3
+wt_c_1_2_3 <- c(1,2,3)
+wt_c_1_1_1 <- c(1,-1,1)
+wt_c_1l_1l_1l <- c(1L,-1L,1L)
+wt_rep_1e_45_3 <- rep(1e-45,3)
+wt_rep_m1e_45_3 <- rep(-1e-45,3)
+wt_c_1_0_1 <- c(1,0,1)
+wt_rep_1_999 <- rep(1,999)
+
 origin_native <- function(name, ...) .Call(get(paste0("C_rpst_", name), asNamespace("rPSTool")), ...)
 origin_chain <- function() cbind(0:2, 0, 1:3, 0)
 origin_points <- function() rbind(c(0.5,0), c(2.5,0))
@@ -59,7 +77,7 @@ test_that("zero and negative weights retain raw semantics and missing diagnostic
         expect_identical(is.na(out$normalized), if (norm == "standard") rep(FALSE,3) else c(FALSE,TRUE,FALSE))
       }
     }
-    unit <- network_betweenness(g, distance = distance, weights = rep(1,3))
+    unit <- network_betweenness(g, distance = distance, weights = wt_rep_1_3)
     plain <- network_betweenness(g, distance = distance)
     # Three unit lines add PST's endpoint (1) and self (0.25) contributions.
     expect_identical(unit$betweenness, plain$betweenness + 1.25)
@@ -68,20 +86,20 @@ test_that("zero and negative weights retain raw semantics and missing diagnostic
     sparse <- network_betweenness(g, distance = distance, attraction_points = matrix(c(0.5,0),1))
     expect_identical(sparse$node_count, c(3L,NA_integer_,NA_integer_))
     expect_identical(is.na(sparse$total_depth), c(FALSE,TRUE,TRUE))
-    zero <- network_betweenness(g, distance = distance, weights = 0,
+    zero <- network_betweenness(g, distance = distance, weights = wt_0,
                            attraction_points = matrix(c(0.5,0),1))
     expect_identical(zero$betweenness, rep(0,3))
     expect_identical(zero$node_count, rep(NA_integer_,3))
     expect_identical(zero$total_depth, rep(NA_real_,3))
-    expect_identical(network_betweenness(g, distance = distance, weights = 0,
+    expect_identical(network_betweenness(g, distance = distance, weights = wt_0,
       attraction_points = matrix(c(0.5,0),1), normalization = "standard")$normalized, rep(1,3))
     for (norm in c("freeman", "syntax"))
-      expect_identical(network_betweenness(g, distance = distance, weights = 0,
+      expect_identical(network_betweenness(g, distance = distance, weights = wt_0,
         attraction_points = matrix(c(0.5,0),1), normalization = norm)$normalized, rep(NA_real_,3))
   }
   single <- axial_graph(matrix(c(0,0,1,0),1))
-  expect_identical(network_betweenness(single, weights = 2)$betweenness, 1)
-  signed <- network_betweenness(g, weights = c(1,-10,1), normalization = "syntax")
+  expect_identical(network_betweenness(single, weights = wt_2)$betweenness, 1)
+  signed <- network_betweenness(g, weights = wt_c_1_10_1, normalization = "syntax")
   # A written normalizer NaN is distinct from rPSTool's missing skipped row.
   expect_identical(is.nan(signed$normalized), c(TRUE,FALSE,TRUE))
   expect_true(is.na(signed$normalized[2]) && !is.nan(signed$normalized[2]))
@@ -92,13 +110,14 @@ test_that("PST accumulates attractions and preserves paired row permutation", {
   p <- rbind(c(0.25,0),c(0.75,0),c(2.5,0))
   for (distance in c("walking", "steps", "angular", "axmeter")) {
     implicit <- network_betweenness(g, distance = distance, attraction_points = p)
-    expect_identical(implicit, network_betweenness(g, distance = distance, weights = rep(1,3), attraction_points = p))
-    expect_identical(implicit, network_betweenness(g, distance = distance, weights = c(2,0,1)))
-    unequal <- network_betweenness(g, distance = distance, weights = c(2,3,4), attraction_points = p)
-    expect_identical(unequal, network_betweenness(g, distance = distance, weights = c(5,0,4)))
+    expect_identical(implicit, network_betweenness(g, distance = distance, weights = wt_rep_1_3, attraction_points = p))
+    expect_identical(implicit, network_betweenness(g, distance = distance, weights = wt_c_2_0_1))
+    unequal <- network_betweenness(g, distance = distance, weights = wt_c_2_3_4, attraction_points = p)
+    expect_identical(unequal, network_betweenness(g, distance = distance, weights = wt_c_5_0_4))
     order <- c(3L,1L,2L)
+    wt_reordered <- c(2,3,4)[order]
     expect_identical(unequal, network_betweenness(g, distance = distance,
-      weights = c(2,3,4)[order], attraction_points = p[order,]))
+      weights = wt_reordered, attraction_points = p[order,]))
     away <- origin_points(); away[,2] <- c(2,-2)
     expect_identical(network_betweenness(g, distance = distance, attraction_points = away),
                      network_betweenness(g, distance = distance, attraction_points = origin_points()))
@@ -171,11 +190,11 @@ test_that("point and weight validation fails closed in the native boundary", {
   named <- p; colnames(named) <- c("y", "x")
   expect_identical(network_reach(g,origins=named),network_reach(g,origins=p))
   expect_identical(network_betweenness(g,attraction_points=named),network_betweenness(g,attraction_points=p))
-  expect_identical(network_betweenness(g,weights=1:3),network_betweenness(g,weights=c(1,2,3)))
-  expect_identical(network_betweenness(g,weights=c(1,-1,1)),network_betweenness(g,weights=c(1L,-1L,1L)))
+  expect_identical(network_betweenness(g,weights=wt_1_3),network_betweenness(g,weights=wt_c_1_2_3))
+  expect_identical(network_betweenness(g,weights=wt_c_1_1_1),network_betweenness(g,weights=wt_c_1l_1l_1l))
   # A representable subnormal weight is allowed; only narrowing to zero fails.
-  expect_no_error(network_betweenness(g,weights=rep(1e-45,3)))
-  expect_no_error(network_betweenness(g,weights=rep(-1e-45,3)))
+  expect_no_error(network_betweenness(g,weights=wt_rep_1e_45_3))
+  expect_no_error(network_betweenness(g,weights=wt_rep_m1e_45_3))
   # Points are independent: their mutual distance need not fit native float
   # squared storage when each point/network extent does fit.
   distant <- rbind(c(1e19,0),c(-1e19,0))
@@ -191,7 +210,7 @@ test_that("optional modes retain exact graph-family tags, liveness and native co
   a <- axial_graph(origin_chain()); s <- segment_graph(origin_chain())
   p <- origin_points()
   calls <- list(function(g) network_reach(g,origins=p),
-                function(g) network_betweenness(g,weights=c(1,0,1)),
+                function(g) network_betweenness(g,weights=wt_c_1_0_1),
                 function(g) network_betweenness(g,attraction_points=p))
   fake <- structure(list(ptr=s$ptr,type="axial",n_lines=3L),class="pst_graph")
   for (fn in calls) {
@@ -203,10 +222,10 @@ test_that("optional modes retain exact graph-family tags, liveness and native co
     expect_error(origin_native("reach_points",ptr,analysis_radius(),p),"Invalid pst_graph native pointer")
     expect_error(origin_native("betweenness_weighted",ptr,analysis_radius(),"steps","none",c(1,0,1),p),"Invalid pst_graph native pointer")
   }
-  raw <- network_betweenness(a,weights=c(1,0,1))
+  raw <- network_betweenness(a,weights=wt_c_1_0_1)
   a$n_lines <- 999L; a$n_crossings <- -1L; a$pst_version <- "forged"
-  expect_identical(network_betweenness(a,weights=c(1,0,1)),raw)
-  expect_error(network_betweenness(a,weights=rep(1,999)),"exactly one value")
+  expect_identical(network_betweenness(a,weights=wt_c_1_0_1),raw)
+  expect_error(network_betweenness(a,weights=wt_rep_1_999),"exactly one value")
   origin_native("graph_release",a$ptr)
   for (fn in calls) expect_error(fn(a),"no longer live")
   origin_native("graph_release",a$ptr) # repeated release is safe

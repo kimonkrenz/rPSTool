@@ -25,9 +25,16 @@
 #'   object (zero features allowed). Origin order is preserved.
 #' @param radius Distance limits created by [analysis_radius()].
 #' @param distance `"walking"` (default) or `"angular"`.
-#' @param origin_weight_name,destination_weight_name Required whenever `origin_weights`, respectively
-#'   `destination_weights`, is supplied (each is checked independently), and an error otherwise: descriptive names used
-#'   in the result column names (`..._wo<name>_wd<name>`); see `weight_name` in [network_betweenness()].
+#' @section Naming custom weights:
+#' Custom weights are named in the result columns (`..._wo<name>_wd<name>`; the two vectors are named independently) after the R expression you
+#' supply, so no extra argument is needed: an object name (`origin_weights = population`) or a literal data-frame column (`destination_weights = data$jobs`
+#' or `destination_weights = data[["jobs"]]`). An anonymous vector (`c(1, 2, 3)`) or a calculation (`data$population / 1000`) has
+#' no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+#' run of characters outside `a-z`, `0-9` and `_` becomes one `_`, and leading and trailing underscores are dropped
+#' (`Jobs-2021` gives `jobs_2021`); a name with no letter or digit left is an error. The original name is kept in the result
+#' metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+#' are named by the wrapper's variable, and `do.call()` with values cannot be named (pass named objects instead). The name
+#' is a label only: it does not check that the same name always means the same values.
 #' @param destination_mode `"all"` (default) or `"closest"`.
 #' @param origin_weights `NULL` for unit weights, or one finite value per origin. Zero and negative values are
 #'   passed unchanged.
@@ -47,7 +54,9 @@
 od_betweenness <- function(graph, origins, radius = analysis_radius(),
     distance = "walking", destination_mode = "all", origin_weights = NULL,
     destination_weights = NULL, output_file = NULL, overwrite = FALSE,
-    spatial_output_file = NULL, origin_weight_name = NULL, destination_weight_name = NULL) {
+    spatial_output_file = NULL) {
+  origin_expr <- substitute(origin_weights)
+  destination_expr <- substitute(destination_weights)
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file)
   .pst_validate_radius(radius)
@@ -58,9 +67,8 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   .pst_sf_analysis_crs(graph, origins)
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
-  origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_weight_name, "origin_weight_name", "wo", "origin_weights")
-  destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_weight_name,
-                                            "destination_weight_name", "wd", "destination_weights")
+  origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_expr, "origin_weights", "wo")
+  destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_expr, "destination_weights", "wd")
   cols <- .pst_nm_od_betweenness(radius, distance, destination_mode, origin_weight, destination_weight)
   .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
@@ -68,9 +76,9 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
       output_file, overwrite, "od_betweenness",
       list(radius = .pst_radius_parameters(radius), distance = distance, destination_mode = destination_mode,
            origins = NROW(origins), origin_weights = .pst_count_or_null(origin_weights),
-           origin_weight_name = origin_weight_name,
+           origin_weight_name = origin_weight$name,
            destination_weights = .pst_count_or_null(destination_weights),
-           destination_weight_name = destination_weight_name),
+           destination_weight_name = destination_weight$name),
       graph, ptr, c("line_id", .pst_nm_names(cols)),
       "native line order (source feature order); no external feature identifiers",
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_od_betweenness_stream, ptr, origins, radius, distance,

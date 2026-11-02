@@ -4,6 +4,12 @@
 # independently from the fixture's own NA positions. A written NaN/Inf/-1/0 is a value, never a null; an unwritten
 # diagnostic is a null, never a number.
 
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+wt_c_1_2 <- c(1, 2)
+wt_c_1_na_1 <- c(1, NA, 1)
+wt_c_1_0_1 <- c(1, 0, 1)
+wt_c_1_2345678_0_1 <- c(1.2345678, 0, 1)
+
 skip_masked_file <- function() {
   skip_if_not_installed("arrow", "25.0.0")
 }
@@ -36,8 +42,9 @@ test_that("persisted Segment Betweenness equals the in-memory result and the pin
     points <- if (is.null(case$points)) NULL else do.call(rbind, case$points)
     for (norm in c("none", names(case$normalizations))) {
       label <- paste(case$network, case$name, case$distance, norm)
-      args <- list(graph = g, radius = radius, distance = case$distance, normalization = norm, weights = case$weights,
-                   attraction_points = points)
+      case_weights <- case$weights   # weights are named after the object passed: hand do.call the symbol
+      args <- list(graph = g, radius = radius, distance = case$distance, normalization = norm,
+                   weights = if (!is.null(case_weights)) quote(case_weights), attraction_points = points)
       memory <- do.call(network_betweenness, args)
       out <- do.call(network_betweenness, c(args, list(output_file = file, overwrite = TRUE)))
       persisted <- rs_read(file)
@@ -134,7 +141,7 @@ test_that("persisted Segment Betweenness matches in memory for weighted sweeps, 
       set.seed(seed); w <- sample(c(-2, -1, 0, 0, 1, 2.5), nrow(x), replace = TRUE)
       for (distance in c("walking", "steps", "angular", "axmeter"))
         for (norm in c("none", "standard", "freeman", "syntax")) {
-          args <- list(graph = g, radius = analysis_radius(steps = 3), distance = distance, normalization = norm, weights = w)
+          args <- list(graph = g, radius = analysis_radius(steps = 3), distance = distance, normalization = norm, weights = quote(w))
           memory <- do.call(network_betweenness, args)
           do.call(network_betweenness, c(args, list(output_file = file, overwrite = TRUE)))
           d <- rs_diff_tables(rs_read(file), memory)
@@ -183,19 +190,19 @@ test_that("Segment Betweenness file route rejects bad calls before any file exis
   on.exit({ ma_graph_release(g); rs_native("segment_graph_release", s$ptr) }, add = TRUE)
   before <- rs_baseline()
   expect_identical(names(formals(rPSTool::network_betweenness)), c("graph", "radius", "distance", "normalization", "weights",
-                                                      "attraction_points", "output_file", "overwrite", "spatial_output_file", "weight_name"))
+                                                      "attraction_points", "output_file", "overwrite", "spatial_output_file"))
   bad <- list(function() network_betweenness(g, output_file = file, overwrite = NA),
               function() network_betweenness(g, distance = "bogus", output_file = file),
               function() network_betweenness(g, normalization = "bogus", output_file = file),
-              function() network_betweenness(g, weights = c(1, 2), output_file = file),
-              function() network_betweenness(g, weights = c(1, NA, 1), output_file = file),
+              function() network_betweenness(g, weights = wt_c_1_2, output_file = file),
+              function() network_betweenness(g, weights = wt_c_1_na_1, output_file = file),
               function() network_betweenness(g, radius = list(), output_file = file),
               function() network_betweenness(s, output_file = file),
               function() network_betweenness(g, output_file = ""),
               function() network_betweenness(g, output_file = dir))
   for (f in bad) expect_error(f())
   expect_identical(list.files(dir, all.files = TRUE, no.. = TRUE), character())
-  network_betweenness(g, weights = c(1, 0, 1), output_file = file)
+  network_betweenness(g, weights = wt_c_1_0_1, output_file = file)
   md5 <- rs_md5(file)
   expect_error(network_betweenness(g, output_file = file), "already exists")
   expect_error(network_betweenness(s, output_file = file, overwrite = TRUE))
@@ -216,7 +223,7 @@ test_that("Segment Betweenness metadata records the call, the native size and no
   file <- file.path(dir, "r.parquet")
   g <- axial_graph(cbind(0:2, 0, 1:3, 0)); on.exit(ma_graph_release(g), add = TRUE)
   g$n_lines <- 999L
-  network_betweenness(g, analysis_radius(steps = 2), "walking", "freeman", weights = c(1.2345678, 0, 1), output_file = file)
+  network_betweenness(g, analysis_radius(steps = 2), "walking", "freeman", weights = wt_c_1_2345678_0_1, output_file = file)
   md <- rs_pq(file)$GetSchema()$metadata
   expect_identical(md[["rpst:function"]], "network_betweenness"); expect_identical(md[["rpst:graph_type"]], "axial")
   expect_identical(md[["rpst:graph_rows"]], "3")

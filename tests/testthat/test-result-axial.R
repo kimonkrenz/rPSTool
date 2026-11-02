@@ -5,6 +5,10 @@
 # ownership protocol itself is tested in test-result-stream.R; the shared writer in test-result-file.R and
 # test-result-publication.R.
 
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+origin_wt_c_1_2 <- c(1, 2)
+capacity_c_1_3 <- c(1, 3)
+
 skip_result_file <- function() {
   skip_if_not_installed("arrow", "25.0.0")
 }
@@ -96,8 +100,8 @@ test_that("OD Betweenness results equal the in-memory results and the direct-PST
     args <- case$args
     args$origins <- ra_rows(args$origins)
     args$radius <- do.call(analysis_radius, args$radius)
-    for (field in c("origin_weights", "destination_weights"))
-      if (!is.null(args[[field]])) args[[field]] <- as.double(unlist(args[[field]]))
+    for (field in c("origin_weights", "destination_weights"))   # named objects, passed to do.call as symbols
+      if (!is.null(args[[field]])) { assign(field, as.double(unlist(args[[field]]))); args[[field]] <- as.name(field) }
     memory <- do.call(od_betweenness, c(list(graph = g), args))
     do.call(od_betweenness, c(list(graph = g), args, list(output_file = file, overwrite = TRUE)))
     persisted <- rs_read(file)
@@ -224,22 +228,21 @@ test_that("a zero-row result (no junctions or points of the requested origin kin
 })
 
 test_that("public signatures append output_file/overwrite/spatial_output_file and leave every earlier formal untouched", {
-  # weight_name arguments (output naming) are appended after them, so no earlier positional argument moves
+  # the weight names of the output-naming scheme are inferred from the call: no argument was added for them
   expect_identical(names(formals(rPSTool::network_integration)),
                    c("graph", "steps", "radius", "junctions", "junction_output", "output_file", "overwrite", "spatial_output_file"))
   expect_identical(names(formals(rPSTool::network_reach)), c("graph", "radius", "origins", "output_file", "overwrite", "spatial_output_file"))
   expect_identical(names(formals(rPSTool::od_betweenness)),
                    c("graph", "origins", "radius", "distance", "destination_mode", "origin_weights",
-                     "destination_weights", "output_file", "overwrite", "spatial_output_file",
-                     "origin_weight_name", "destination_weight_name"))
+                     "destination_weights", "output_file", "overwrite", "spatial_output_file"))
   expect_identical(names(formals(rPSTool::attraction_reach)),
                    c("graph", "attraction_points", "radius", "origin", "distance", "points_per_polygon",
                      "polygon_point_interval", "attraction_values", "decay", "decay_constant", "distribution",
-                     "collection", "output_file", "overwrite", "spatial_output_file", "weight_name"))
+                     "collection", "output_file", "overwrite", "spatial_output_file"))
   expect_identical(names(formals(rPSTool::attraction_distance)),
                    c("graph", "attraction_points", "radius", "origin", "distance", "points_per_polygon",
                      "polygon_point_interval", "line_weights", "point_edge_weight", "destination_indices",
-                     "output_file", "overwrite", "spatial_output_file", "weight_name"))
+                     "output_file", "overwrite", "spatial_output_file"))
   for (f in list(rPSTool::network_integration, rPSTool::network_reach, rPSTool::od_betweenness,
                  rPSTool::attraction_reach, rPSTool::attraction_distance)) {
     expect_null(formals(f)$output_file)
@@ -265,7 +268,7 @@ test_that("argument errors and unsupported combinations are rejected before any 
     reach_graph_type = function() network_reach(s, output_file = file),
     integration_graph_type = function() network_integration(s, output_file = file),
     od_mode = function() od_betweenness(g, pts, destination_mode = "x", output_file = file),
-    od_weights = function() od_betweenness(g, pts, origin_weights = c(1, 2), output_file = file),
+    od_weights = function() od_betweenness(g, pts, origin_weights = origin_wt_c_1_2, output_file = file),
     ar_origin = function() attraction_reach(g, pts, origin = "bogus", output_file = file),
     ar_decay = function() attraction_reach(g, pts, decay = "bogus", output_file = file),
     ad_straight_group = function() attraction_distance(g, pts, origin = "point_groups", distance = "straight",
@@ -346,7 +349,7 @@ test_that("file metadata records function, parameters, native graph size, order 
   p <- jsonlite::fromJSON(meta()[["rpst:parameters"]])
   expect_identical(p$distance, "angular"); expect_identical(p$destination_mode, "closest")
   attraction_reach(g, rbind(c(10, 10), c(80, 10)), origin = "junctions", distance = "steps", decay = "power",
-                       decay_constant = 2, collection = "max", attraction_values = c(1, 3),
+                       decay_constant = 2, collection = "max", attraction_values = capacity_c_1_3,
                        output_file = file, overwrite = TRUE)
   md <- meta(); p <- jsonlite::fromJSON(md[["rpst:parameters"]])
   expect_identical(md[["rpst:function"]], "attraction_reach")

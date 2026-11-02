@@ -50,25 +50,12 @@ legacy_frame <- function(x) {
   names(x)[known] <- roles[known]
   x
 }
-# Custom weights must be named (weight_name etc.). The pinned-PST numerical
-# tests exercise values, not names, so the adapter supplies a descriptive
-# identifier for any weight vector a test passes without one. Name behaviour
-# itself is tested through explicit rPSTool:: calls in test-output-naming.R.
-legacy_weight_names <- c(weights = "weight_name", attraction_values = "weight_name", line_weights = "weight_name",
-                         origin_weights = "origin_weight_name",
-                         destination_weights = "destination_weight_name")
-legacy_default_names <- c(weights = "population", attraction_values = "capacity", line_weights = "travel_cost",
-                          origin_weights = "population", destination_weights = "jobs")
+# The wrapper forwards `...` untouched, so the public functions still see the caller's own expressions (weight names are
+# inferred from them); only the result is mapped to the legacy role names, and invisible results stay invisible.
 legacy_wrap <- function(name) {
   real <- getExportedValue("rPSTool", name)
   function(...) {
-    args <- as.list(match.call(real, as.call(c(list(as.name("real")), list(...))))[-1L])
-    for (w in intersect(names(legacy_weight_names), names(args))) {
-      nm <- legacy_weight_names[[w]]
-      if (!is.null(args[[w]]) && !(nm %in% names(args)))
-        args[[nm]] <- legacy_default_names[[w]]
-    }
-    out <- withVisible(do.call(real, args))
+    out <- withVisible(real(...))
     if (out$visible) legacy_frame(out$value) else invisible(legacy_frame(out$value))
   }
 }

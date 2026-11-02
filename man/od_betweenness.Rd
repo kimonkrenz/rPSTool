@@ -14,9 +14,7 @@ od_betweenness(
   destination_weights = NULL,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL,
-  origin_weight_name = NULL,
-  destination_weight_name = NULL
+  spatial_output_file = NULL
 )
 }
 \arguments{
@@ -39,10 +37,6 @@ polygon or point group). Zero and negative values are excluded by PST.}
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}.}
-
-\item{origin_weight_name, destination_weight_name}{Required whenever \code{origin_weights}, respectively
-\code{destination_weights}, is supplied (each is checked independently), and an error otherwise: descriptive names used
-in the result column names (\verb{..._wo<name>_wd<name>}); see \code{weight_name} in \code{\link[=network_betweenness]{network_betweenness()}}.}
 }
 \value{
 A data frame in line order with one-based \code{line_id} and \verb{od_<d>_<radius>} (for example \code{od_w_rw800}; see \link{result_column_names}) (double, widened from single
@@ -70,6 +64,19 @@ PST runs this analysis on a single worker thread regardless of any thread cap. \
 compatible with the graph's (known versus unknown included); a known geographic CRS is rejected and nothing is
 reprojected.
 }
+\section{Naming custom weights}{
+
+Custom weights are named in the result columns (\verb{..._wo<name>_wd<name>}; the two vectors are named independently) after the R expression you
+supply, so no extra argument is needed: an object name (\code{origin_weights = population}) or a literal data-frame column (\code{destination_weights = data$jobs}
+or \code{destination_weights = data[["jobs"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
+no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
+(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
+metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
+is a label only: it does not check that the same name always means the same values.
+}
+
 \examples{
 g <- axial_graph(cbind(0:2, 0, 1:3, 0), points = rbind(c(1.5, 0.5), c(3.5, 0)))
 od_betweenness(g, rbind(c(-0.5, 0)))

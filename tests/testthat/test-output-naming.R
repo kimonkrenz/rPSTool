@@ -103,77 +103,127 @@ test_that("attraction and OD parameters appear only when they differ from the de
   expect_identical(cols(rPSTool::attraction_reach(a, pts, r, origin = "points", distance = "walking")), "ar_w_rw800_orp")
 })
 
-test_that("custom weights require a name; names are normalised strictly", {
-  a <- naming_axial(); r <- analysis_radius(walking = 800); w <- c(1, 2)
-  p <- rbind(c(0.5, 0.5), c(1.5, 0.5))
-  bet <- function(...) cols(rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = w, ...))
-  # the exact required message, raised before any computation
-  expect_error(bet(), "Custom weights require weight_name. Supply a descriptive identifier, for example weight_name = \"population\".",
-               fixed = TRUE)
-  expect_identical(bet(weight_name = "population")[1L], "at_w_rw800_wpopulation_n")
-  expect_identical(bet(weight_name = "Population")[1L], "at_w_rw800_wpopulation_n")
-  expect_identical(bet(weight_name = "Jobs 2021")[1L], "at_w_rw800_wjobs_2021_n")
-  expect_identical(bet(weight_name = "jobs_2021")[1L], "at_w_rw800_wjobs_2021_n")
-  expect_identical(bet(weight_name = "wjobs_2021")[1L], "at_w_rw800_wwjobs_2021_n")   # the prefix is always added
-  # runs of other characters become one '_', outer underscores go; the result is never truncated
-  for (same in c("Jobs-2021", "Jobs/2021", "Jobs  2021", "JOBS 2021", " jobs_2021 ", "Jobs (2021)"))
-    expect_identical(bet(weight_name = same)[1L], "at_w_rw800_wjobs_2021_n", info = same)
-  expect_identical(bet(weight_name = "Population (%)")[1L], "at_w_rw800_wpopulation_n")
-  expect_identical(bet(weight_name = "caf\u00e9 x")[1L], "at_w_rw800_wcaf_x_n")
-  expect_identical(bet(weight_name = "a.b.c")[1L], "at_w_rw800_wa_b_c_n")
-  # only an empty name or one without a letter or digit is an error
-  for (bad in c("", "!!", "---", " ", "(%)", NA_character_))
-    expect_error(bet(weight_name = bad), "weight_name", info = bad)
-  expect_error(bet(weight_name = c("a", "b")), "one non-empty string")
-  expect_error(bet(weight_name = 1), "one non-empty string")
-  expect_error(bet(weight_name = "l"), "reserved")
-  expect_error(bet(weight_name = " L! "), "reserved")
-  expect_error(rPSTool::network_betweenness(a, r, distance = "walking", weight_name = "x"), "supplied without weights")
-  # the same rules and the same pre-computation timing for all four custom-weight APIs
-  pts <- rbind(c(0.5, 0.5)); o <- rbind(c(0.2, 0))
-  expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1), "Custom weights require weight_name")
-  expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1, weight_name = "!!"), "weight_name")
-  expect_error(rPSTool::attraction_distance(a, pts, distance = "weights", line_weights = rep(1, 3)), "Custom weights require weight_name")
-  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1), "Custom weights require origin_weight_name")
-  expect_error(rPSTool::od_betweenness(a, o, r, destination_weights = rep(1, 2)), "Custom weights require destination_weight_name")
-  # origin and destination names are validated independently
-  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "pop",
-                                       destination_weights = rep(1, 2), destination_weight_name = "%%"), "destination_weight_name")
-  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "--",
-                                       destination_weights = rep(1, 2), destination_weight_name = "jobs"), "origin_weight_name")
-  expect_error(rPSTool::od_betweenness(a, o, r, origin_weight_name = "pop"), "supplied without origin_weights")
-  expect_identical(cols(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "Pop 1",
-                                                destination_weights = rep(1, 2), destination_weight_name = "jobs")),
-                   "od_w_rw800_wopop_1_wdjobs")
-  expect_identical(cols(rPSTool::od_betweenness(a, o, r, destination_weights = rep(1, 2), destination_weight_name = "jobs")), "od_w_rw800_wdjobs")
-  expect_identical(cols(rPSTool::attraction_distance(a, pts, distance = "weights", line_weights = rep(1, 3), weight_name = "cost"))[1L],
-                   "ad_d_rg_wcost")
-  expect_identical(cols(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1, weight_name = "capacity")),
-                   "ar_w_rw800_wcapacity")
+# Weight names are inferred from the expression passed to the weight argument, so these tests build real calls.
+nm_call <- function(expr, ..., env = parent.frame()) {
+  a <- naming_axial(); r <- analysis_radius(walking = 800); p <- rbind(c(0.5, 0.5), c(1.5, 0.5))
+  e <- new.env(parent = env); e$a <- a; e$r <- r; e$p <- p
+  for (n in names(list(...))) assign(n, list(...)[[n]], envir = e)
+  eval(expr, e)
+}
+bet_name <- function(weights_expr, ..., env = parent.frame()) {
+  call <- substitute(rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = W), list(W = weights_expr))
+  cols(nm_call(call, ..., env = env))[1L]
+}
+
+test_that("weights are named after the R object or data-frame column passed", {
+  population <- c(1, 2)
+  expect_identical(bet_name(quote(population)), "at_w_rw800_wpopulation_n")
+  d <- data.frame(population = c(1, 2), jobs = c(3, 4))
+  expect_identical(bet_name(quote(d$population), d = d), "at_w_rw800_wpopulation_n")
+  expect_identical(bet_name(quote(d[["jobs"]]), d = d), "at_w_rw800_wjobs_n")
+  expect_identical(bet_name(quote(d$"jobs"), d = d), "at_w_rw800_wjobs_n")
+  # a name assigned first is the only way to use a calculated or anonymous vector
+  population_thousands <- d$population / 1000
+  expect_identical(bet_name(quote(population_thousands)), "at_w_rw800_wpopulation_thousands_n")
+  # weights given positionally are named too
+  a <- naming_axial(); r <- analysis_radius(walking = 800); p <- rbind(c(0.5, 0.5), c(1.5, 0.5)); jobs <- c(1, 2)
+  expect_identical(cols(rPSTool::network_betweenness(a, r, "walking", "none", jobs, p))[1L], "at_w_rw800_wjobs_n")
 })
 
-test_that("the original weight name is recorded in the metadata manifest, not truncated", {
-  a <- naming_axial(); r <- analysis_radius(walking = 800)
-  res <- rPSTool::network_betweenness(a, r, distance = "walking", weights = c(1, 2, 3), weight_name = "Jobs 2021")
-  man <- attr(res, "rpst_manifest")$columns
-  expect_true(all(man$weight_name %in% "Jobs 2021"))
-  expect_true(all(grepl("_wjobs_2021", man$name[man$weight_name %in% "Jobs 2021"])))
+test_that("anonymous vectors and calculated expressions are rejected before any computation", {
+  a <- naming_axial(); r <- analysis_radius(walking = 800); d <- data.frame(population = c(1, 2, 3))
+  msg <- "Cannot infer a weight name from this expression. Assign the weights to a named R object or use a data-frame column."
+  expect_error(rPSTool::network_betweenness(a, r, weights = c(1, 2, 3)), msg, fixed = TRUE)
+  expect_error(rPSTool::network_betweenness(a, r, weights = d$population / 1000), msg, fixed = TRUE)
+  expect_error(rPSTool::network_betweenness(a, r, weights = rep(1, 3)), msg, fixed = TRUE)
+  expect_error(rPSTool::network_betweenness(a, r, weights = 1:3), msg, fixed = TRUE)
+  expect_error(rPSTool::network_betweenness(a, r, weights = d[["population"]] * 2), msg, fixed = TRUE)
+  col <- "population"
+  expect_error(rPSTool::network_betweenness(a, r, weights = d[[col]]), msg, fixed = TRUE)    # a computed key is not a literal column
+  expect_error(rPSTool::network_betweenness(a, r, weights = d[, "population"]), msg, fixed = TRUE)
+  w <- c(1, 2, 3)
+  expect_error(do.call(rPSTool::network_betweenness, list(a, r, weights = w)), msg, fixed = TRUE)   # values, not expressions
+  expect_error((function(...) rPSTool::network_betweenness(a, r, ...))(weights = c(1, 2, 3)), msg, fixed = TRUE)
+  expect_error(rPSTool::network_betweenness(a, r, weights = w, normalization = "bogus"), "normalization")   # other errors are unchanged
+})
+
+test_that("a wrapper function names the weights after its own variable; this is documented behaviour", {
+  a <- naming_axial(); r <- analysis_radius(walking = 800); pts <- rbind(c(0.5, 0.5), c(1.5, 0.5))
+  wrapper <- function(w) cols(rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = pts, weights = w))[1L]
+  population <- c(1, 2)
+  expect_identical(wrapper(population), "at_w_rw800_ww_n")          # the wrapper's formal, not the caller's object
+  forward <- function(...) cols(rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = pts, ...))[1L]
+  expect_identical(forward(weights = population), "at_w_rw800_wpopulation_n")   # `...` keeps the caller's expression
+})
+
+test_that("weight names are normalised automatically", {
+  for (n in c("Jobs 2021", "Jobs-2021", "Jobs/2021", "Jobs  2021", "JOBS 2021", " jobs_2021 ", "Jobs (2021)", "jobs_2021"))
+    expect_identical(bet_name(as.name(n), env = list2env(stats::setNames(list(c(1, 2)), n))), "at_w_rw800_wjobs_2021_n", info = n)
+  expect_identical(bet_name(quote(Population), Population = c(1, 2)), "at_w_rw800_wpopulation_n")
+  expect_identical(bet_name(as.name("Population (%)"), `Population (%)` = c(1, 2)), "at_w_rw800_wpopulation_n")
+  expect_identical(bet_name(quote(wjobs_2021), wjobs_2021 = c(1, 2)), "at_w_rw800_wwjobs_2021_n")   # the prefix is always added
+  accented <- paste0("caf", intToUtf8(233L), " x")   # non-ASCII letters are not in [a-z0-9_]
+  expect_identical(bet_name(as.name(accented), env = list2env(stats::setNames(list(c(1, 2)), accented))), "at_w_rw800_wcaf_x_n")
+  expect_identical(bet_name(quote(a.b.c), a.b.c = c(1, 2)), "at_w_rw800_wa_b_c_n")
+  # only a name with no letter or digit left is an error, and `l` would read as length weighting
+  for (n in c("!!", "---", "(%)", "_"))
+    expect_error(bet_name(as.name(n), env = list2env(stats::setNames(list(c(1, 2)), n))), "no letter or digit", info = n)
+  expect_error(bet_name(quote(l), l = c(1, 2)), "reserved")
+  expect_error(bet_name(as.name(" L! "), ` L! ` = c(1, 2)), "reserved")
+})
+
+test_that("all four custom-weight APIs infer names, and origin and destination are independent", {
+  a <- naming_axial(); r <- analysis_radius(walking = 800); pts <- rbind(c(0.5, 0.5)); o <- rbind(c(0.2, 0))
+  capacity <- 1; travel_cost <- rep(1, 3); population <- 1; jobs <- rep(1, 2)
+  expect_identical(cols(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = capacity)), "ar_w_rw800_wcapacity")
+  expect_identical(cols(rPSTool::attraction_distance(a, pts, distance = "weights", line_weights = travel_cost))[1L], "ad_d_rg_wtravel_cost")
+  expect_identical(cols(rPSTool::od_betweenness(a, o, r, origin_weights = population, destination_weights = jobs)), "od_w_rw800_wopopulation_wdjobs")
+  expect_identical(cols(rPSTool::od_betweenness(a, o, r, origin_weights = population)), "od_w_rw800_wopopulation")
+  expect_identical(cols(rPSTool::od_betweenness(a, o, r, destination_weights = jobs)), "od_w_rw800_wdjobs")
+  # one anonymous vector is enough to fail, and the message is the same
+  msg <- "Cannot infer a weight name"
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = population, destination_weights = rep(1, 2)), msg)
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, destination_weights = jobs), msg)
+  expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1), msg)
+  expect_error(rPSTool::attraction_distance(a, pts, distance = "weights", line_weights = rep(1, 3)), msg)
+  # a name that normalises to nothing is rejected for its own argument only
+  `!!` <- 1
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = `!!`, destination_weights = jobs), "origin_weights")
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = population, destination_weights = `!!`), "destination_weights")
+  # the naming arguments of the earlier design no longer exist
+  expect_error(rPSTool::network_betweenness(a, r, weights = population, weight_name = "x"), "unused argument")
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = population, origin_weight_name = "x"), "unused argument")
+})
+
+test_that("the original inferred name is recorded in the metadata manifest, not truncated", {
+  cols_ <- rPSTool:::.pst_nm_network_betweenness(analysis_radius(walking = 800), "walking", "none",
+                                                 list(code = "wjobs_2021", name = "Jobs 2021"), FALSE)
+  expect_true(all(vapply(cols_, function(x) identical(x$weight_name, "Jobs 2021"), NA)))
+  expect_true(all(grepl("_wjobs_2021", vapply(cols_, function(x) x$name, ""))))
+  json <- rPSTool:::.pst_json(rPSTool:::.pst_nm_manifest(cols_))
+  expect_match(json, "Jobs 2021", fixed = TRUE)
+  g <- naming_axial(); population <- c(1, 2, 3)
+  res <- rPSTool::network_betweenness(g, analysis_radius(walking = 800), distance = "walking", weights = population)
+  expect_identical(cols(res), c("nb_w_rw800_wpopulation_n", "nc_w_rw800_wpopulation", "td_w_rw800_wpopulation"))
 })
 
 test_that("unweighted analyses carry no weight component; weighted diagnostics are tagged", {
-  a <- naming_axial(); r <- analysis_radius(walking = 800)
+  a <- naming_axial(); r <- analysis_radius(walking = 800); pop <- c(1, 2, 3)
   expect_identical(cols(rPSTool::network_betweenness(a, r, distance = "walking")), c("nb_w_rw800_n", "nc_w_rw800", "td_w_rw800"))
-  expect_identical(cols(rPSTool::network_betweenness(a, r, distance = "walking", weights = c(1, 2, 3), weight_name = "pop")),
+  expect_identical(cols(rPSTool::network_betweenness(a, r, distance = "walking", weights = pop)),
                    c("nb_w_rw800_wpop_n", "nc_w_rw800_wpop", "td_w_rw800_wpop"))
   expect_identical(cols(rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = rbind(c(0.5, 0.5)))),
                    c("at_w_rw800_n", "anc_w_rw800", "atd_w_rw800"))
+  expect_identical(cols(rPSTool::network_betweenness(a, r, distance = "walking", weights = NULL)), c("nb_w_rw800_n", "nc_w_rw800", "td_w_rw800"))
 })
 
 test_that("weights do not change the numerical results, only the names", {
   a <- naming_axial(); r <- analysis_radius(walking = 800); p <- rbind(c(0.5, 0.5), c(1.5, 0.5))
-  x <- rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = c(1, 2), weight_name = "w")
-  y <- rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = c(1, 2), weight_name = "other")
+  w <- c(1, 2); other <- c(1, 2)
+  x <- rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = w)
+  y <- rPSTool::network_betweenness(a, r, distance = "walking", attraction_points = p, weights = other)
   expect_identical(unname(as.list(x)), unname(as.list(y)))
+  expect_false(identical(names(x), names(y)))
 })
 
 test_that("positional identifiers keep their names and result names are unique", {

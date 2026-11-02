@@ -1,3 +1,15 @@
+
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+origin_wt_10 <- 10
+dest_wt_c_4_1 <- c(4,1)
+origin_wt_m10 <- -10
+dest_wt_c_0_m1 <- c(0,-1)
+dest_wt_1 <- 1
+dest_wt_c_0_1 <- c(0,1)
+origin_wt_c_2_3 <- c(2,3)
+dest_wt_numeric <- numeric()
+dest_wt_c_1_2_3 <- c(1,2,3)
+
 od_native <- function(name, ...) .Call(get(paste0("C_rpst_", name), asNamespace("rPSTool")), ...)
 od_rows <- function(x, width = 2L) matrix(as.double(unlist(x)), ncol = width, byrow = TRUE)
 od_graph <- function(case) {
@@ -12,8 +24,9 @@ od_graph <- function(case) {
 od_call <- function(g,args) {
   args$origins <- od_rows(args$origins)
   args$radius <- do.call(analysis_radius,args$radius)
+  # weights are named after the object they are passed as: hand do.call the symbols, not the values
   for (field in c("origin_weights","destination_weights"))
-    if (!is.null(args[[field]])) args[[field]] <- as.double(unlist(args[[field]]))
+    if (!is.null(args[[field]])) { assign(field, as.double(unlist(args[[field]]))); args[[field]] <- as.name(field) }
   do.call(od_betweenness,c(list(graph=g),args))
 }
 od_compare <- function(actual,expected) {
@@ -62,11 +75,11 @@ test_that("the five upstream OD regressions and untouched graph analyses remain 
   expect_equal(od_betweenness(g,origin)$od_betweenness,c(1,1,.5))
   expect_equal(od_betweenness(g,origin,analysis_radius(walking=3.9))$od_betweenness,c(1,1,0))
   expect_equal(od_betweenness(g,origin,analysis_radius(walking=4.1))$od_betweenness,c(1,1,.5))
-  expect_equal(od_betweenness(g,origin,origin_weights=10)$od_betweenness,c(10,10,5))
-  expect_equal(od_betweenness(g,origin,origin_weights=10,destination_weights=c(4,1))$od_betweenness,c(10,10,2))
+  expect_equal(od_betweenness(g,origin,origin_weights=origin_wt_10)$od_betweenness,c(10,10,5))
+  expect_equal(od_betweenness(g,origin,origin_weights=origin_wt_10,destination_weights=dest_wt_c_4_1)$od_betweenness,c(10,10,2))
   expect_identical(network_integration(g),baseline)
-  expect_identical(od_betweenness(g,origin,origin_weights=-10)$od_betweenness,c(0,0,0))
-  expect_identical(od_betweenness(g,origin,destination_weights=c(0,-1))$od_betweenness,c(0,0,0))
+  expect_identical(od_betweenness(g,origin,origin_weights=origin_wt_m10)$od_betweenness,c(0,0,0))
+  expect_identical(od_betweenness(g,origin,destination_weights=dest_wt_c_0_m1)$od_betweenness,c(0,0,0))
   od_native("graph_release",g$ptr)
 })
 
@@ -74,11 +87,12 @@ test_that("OD weights target native sampled points and preserve pinned radius qu
   g <- axial_graph(rbind(c(0,0,3,0),c(3,0,6,0)),points=rbind(c(1,1),c(2,1)),
                  points_per_polygon=2,polygon_point_interval=.5)
   expect_gt(g$n_points,g$n_point_groups)
-  expect_error(od_betweenness(g,rbind(c(0,0)),destination_weights=1),"native graph point")
-  expect_length(od_betweenness(g,rbind(c(0,0)),destination_weights=rep(1,g$n_points))$od_betweenness,2L)
+  expect_error(od_betweenness(g,rbind(c(0,0)),destination_weights=dest_wt_1),"native graph point")
+  dest_wt_native <- rep(1,g$n_points)
+  expect_length(od_betweenness(g,rbind(c(0,0)),destination_weights=dest_wt_native)$od_betweenness,2L)
   od_native("graph_release",g$ptr)
   g <- axial_graph(rbind(c(0,0,10,0)),points=rbind(c(1,0),c(9,2)))
-  args <- list(graph=g,origins=rbind(c(1,0)),radius=analysis_radius(walking=0),destination_weights=c(0,1))
+  args <- list(graph=g,origins=rbind(c(1,0)),radius=analysis_radius(walking=0),destination_weights=quote(dest_wt_c_0_1))
   expect_identical(do.call(od_betweenness,args)$od_betweenness,0)
   args$distance <- "angular"
   expect_identical(do.call(od_betweenness,args)$od_betweenness,1)
@@ -95,8 +109,8 @@ test_that("OD input/output lifetimes, native graph kinds and liveness are enforc
   saved <- out
   origins[,] <- 99;ow[] <- -1;dw[] <- 0
   gc()
-  expect_identical(od_betweenness(g,rbind(c(-.5,0),c(2.5,1)),origin_weights=c(2,3),
-                                     destination_weights=c(4,1)),saved)
+  expect_identical(od_betweenness(g,rbind(c(-.5,0),c(2.5,1)),origin_weights=origin_wt_c_2_3,
+                                     destination_weights=dest_wt_c_4_1),saved)
   clone <- unserialize(serialize(g,NULL))
   expect_error(od_betweenness(clone,origins),"no longer live")
   od_native("graph_release",g$ptr);od_native("graph_release",g$ptr)
@@ -143,7 +157,7 @@ test_that("OD native validation fails safely and zero-sized sets remain genuine"
   od_native("graph_release",g$ptr)
   no_dest <- axial_graph(rbind(c(0,0,3,0)))
   expect_identical(od_betweenness(no_dest,rbind(c(0,1)))$od_betweenness,0)
-  expect_identical(od_betweenness(no_dest,rbind(c(0,1)),destination_weights=numeric())$od_betweenness,0)
+  expect_identical(od_betweenness(no_dest,rbind(c(0,1)),destination_weights=dest_wt_numeric)$od_betweenness,0)
   od_native("graph_release",no_dest$ptr)
 })
 
@@ -154,7 +168,7 @@ test_that("axmeter radius is rejected before OD Betweenness calculation; support
   expect_error(od_betweenness(g,o,radius=analysis_radius(axmeter=5,walking=100)),"axmeter radius is not supported")
   expect_error(od_betweenness(g,o,radius=analysis_radius(axmeter=5),distance="angular"),"axmeter radius is not supported")
   # rejection is raised before the calculation and before any output writer is reached
-  expect_error(od_betweenness(g,o,radius=analysis_radius(axmeter=1),destination_weights=c(1,2,3)),"axmeter radius is not supported")
+  expect_error(od_betweenness(g,o,radius=analysis_radius(axmeter=1),destination_weights=dest_wt_c_1_2_3),"axmeter radius is not supported")
   f <- tempfile(fileext=".parquet"); on.exit(unlink(f),add=TRUE)
   expect_error(od_betweenness(g,o,radius=analysis_radius(axmeter=1),output_file=f),"axmeter radius is not supported")
   expect_false(file.exists(f))
