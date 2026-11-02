@@ -10,23 +10,14 @@ The function help pages describe the same points where they apply.
 
 **Affects:** `angular_choice()`, and to a lesser extent `angular_integration()`.
 
-PST gathers Angular Choice scores with a recursive procedure that has no depth limit and runs on a worker thread
-with the operating system's default stack. The recursion depth is set by the longest chain of consecutive
-shortest-path steps (equal-cost ties included) that is reachable within the radius, not by the number of segments in the
-network. A very long, nearly straight sequence of short segments analysed with an unrestricted or large radius can
-exhaust the stack and terminate the R process without an R error.
+PST's Angular Choice calculation recurses once per step along a chain of consecutive shortest-path steps, with no depth limit.
+On a very long, nearly straight chain of short segments, analysed with an unrestricted or large radius, the stack can be
+exhausted and the R process terminates without an R error. rPSTool has no safeguard against this. The failure has been
+reproduced on synthetic chains (for example 8,000 segments on macOS ARM64); the usable depth depends on the platform.
 
-**What has been observed.** An unrestricted 8,000-segment collinear chain terminated the process on macOS ARM64, while a
-radius-limited run of the same chain succeeded. On Linux with an 8 MB thread stack, chains of tens of thousands of segments
-completed. The failure has only been reproduced on synthetic chains, and no realistic street network is known to reach such
-depths. The usable depth depends on the platform, compiler and flags; it has not been measured on Windows.
-
-**Workaround.** Restrict the radius. A `steps` radius bounds the depth by its value, and a `walking` or `straight` radius
-bounds it by the number of segments that fit inside. An `angular` radius does not bound runs of near-collinear segments.
-Save your work before running an unrestricted analysis on a network with long straight chains of short segments.
-rPSTool contains no safeguard against this: it does not change PST's traversal and does not check the depth beforehand, so the failure
-is a process crash, not an R error. If a run must be avoided or has failed, use a `steps`, `walking` or `straight` radius. Details:
-[angular controls](docs/compatibility/angular-controls.md).
+**What to do.** Restrict the radius: a `steps` radius bounds the depth by its value, and a `walking` or `straight` radius by
+the number of segments that fit inside. An `angular` radius does not bound runs of near-collinear segments. Save your work
+before running an unrestricted analysis on a network with long straight chains of short segments.
 
 ### Combined radius limits can be very slow
 

@@ -57,6 +57,7 @@ The incoming URL checks returned HTTP 404 because the then-intended repository U
   with an 8 MB stack: about 64,000 segments). PST's traversal is not modified; the limitation is documented in `angular_choice()`
   and [angular controls](compatibility/angular-controls.md). If CRAN requires a correction it will be addressed then with minimum
   impact on performance.
+* **Vignette GeoParquet example:** `vignettes/getting-started.Rmd`, Example 2, awaits execution with `arrow` installed in the final CRAN validation (see `cran-comments.md`).
 * **Windows file output:** implemented with the Win32 API and covered by the full development suite on Windows at `4119f2b` (item 1). On Windows a replacement with `overwrite = TRUE` fails, leaving the old file intact, while another process holds the destination open without sharing it for deletion.
 * **No Q-level evidence:** no real PST for QGIS comparison has been recorded; see
   [`tools/validation/qgis-comparison/`](../tools/validation/qgis-comparison/README.md) and
