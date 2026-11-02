@@ -123,7 +123,7 @@ test_that("float columns are stored as float32 and counts as int32; the schema i
   schema <- rs_pq(file)$GetSchema()
   types <- vapply(schema$fields, function(f) f$type$ToString(), "")
   expect_identical(unname(types), c("int32", "float", "int32", "float", "float", "float"))
-  expect_identical(schema$names, c("segment_id", "choice", "node_count", "total_depth", "total_depth_weight", "normalized"))
+  expect_identical(schema$names, c("segment_id", "ac_a_rs4_wl_n", "nc_a_rs4", "td_a_rs4", "tdw_a_rs4_wl", "ac_a_rs4_wl_c"))
   expect_false(any(vapply(schema$fields, function(f) f$nullable, NA)))
   # floats are exactly representable: widening the stored float32 reproduces the in-memory double bit for bit
   memory <- angular_choice(g, weigh_by_length = TRUE, normalization = "syntax", radius = analysis_radius(steps = 4))
@@ -147,14 +147,14 @@ test_that("the pst_result_file descriptor is returned invisibly and in-memory ca
   expect_true(withVisible(angular_integration(g))$visible)
   expect_s3_class(angular_choice(g), "data.frame")
   # new arguments are appended: every earlier formal keeps its position
-  expect_identical(names(formals(angular_integration)),
+  expect_identical(names(formals(rPSTool::angular_integration)),
                    c("graph", "steps", "radius", "weigh_by_length", "normalization", "angle_threshold",
                      "angle_precision", "weight_outputs", "output_file", "overwrite", "spatial_output_file"))
-  expect_identical(names(formals(angular_choice)),
+  expect_identical(names(formals(rPSTool::angular_choice)),
                    c("graph", "radius", "weigh_by_length", "normalization", "angle_threshold", "angle_precision",
                      "output_file", "overwrite", "spatial_output_file"))
-  expect_null(formals(angular_choice)$output_file)
-  expect_false(formals(angular_choice)$overwrite)
+  expect_null(formals(rPSTool::angular_choice)$output_file)
+  expect_false(formals(rPSTool::angular_choice)$overwrite)
   expect_error(angular_choice(g, overwrite = NA), "overwrite must be TRUE or FALSE")
   expect_error(angular_choice(g, output_file = file, overwrite = "yes"), "overwrite must be TRUE or FALSE")
 })

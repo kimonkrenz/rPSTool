@@ -188,7 +188,7 @@ test_that("non-finite and unreachable native values are stored as values, never 
   network_integration(g, steps = 0, output_file = file)
   persisted <- rs_read(file); rs_expect_same(persisted, memory)
   expect_true(all(is.nan(persisted$integration) | persisted$integration == -1 | is.infinite(persisted$integration)))
-  expect_identical(rs_pq(file)$GetSchema()$GetFieldByName("integration")$nullable, FALSE)
+  expect_identical(rs_pq(file)$GetSchema()$GetFieldByName("ni_s_rs0")$nullable, FALSE)
   # unreachable attraction distance keeps native -1 and the signed destination index -1
   far <- rbind(c(100, 100))
   memory <- attraction_distance(g, far, analysis_radius(walking = 1), distance = "walking")

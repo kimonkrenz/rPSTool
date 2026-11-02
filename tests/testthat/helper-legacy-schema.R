@@ -68,7 +68,8 @@ legacy_wrap <- function(name) {
       if (!is.null(args[[w]]) && !(nm %in% names(args)))
         args[[nm]] <- legacy_default_names[[w]]
     }
-    legacy_frame(do.call(real, args))
+    out <- withVisible(do.call(real, args))
+    if (out$visible) legacy_frame(out$value) else invisible(legacy_frame(out$value))
   }
 }
 angular_integration <- legacy_wrap("angular_integration")
