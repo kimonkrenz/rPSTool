@@ -102,6 +102,7 @@ network_integration <- function(graph, steps = NULL, radius = NULL, junctions = 
   ptr <- .pst_analysis_graph(graph, FALSE)
   steps <- .pst_resolve_radius(steps, radius, FALSE)
   overwrite <- .pst_flag(overwrite, "overwrite")
+  .pst_nm_names(.pst_nm_network_integration(steps))   # generated names are validated before any native work
   .pst_spatial_request(output_file, spatial_output_file, !isTRUE(junctions), "network_integration with junctions = TRUE (one result per junction)")
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
     if (isTRUE(junctions))

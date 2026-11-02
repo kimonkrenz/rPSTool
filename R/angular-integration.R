@@ -87,11 +87,12 @@ angular_integration <- function(graph, steps = NULL, radius = NULL,
   if (!.pst_is_scalar_call(plan, normalization))
     return(.pst_angular_integration_multi(graph, ptr, plan, weigh_by_length, normalization, angle_threshold,
                                           angle_precision, weight_outputs, output_file, overwrite, spatial_output_file))
+  cols <- .pst_nm_angular_integration(steps, weigh_by_length, weight_outputs, normalization,
+                                      angle_threshold, angle_precision)
+  result_names <- .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
     weights <- .pst_flag(weigh_by_length, "weigh_by_length") || .pst_flag(weight_outputs, "weight_outputs")
-    cols <- .pst_nm_angular_integration(steps, weigh_by_length, weight_outputs, normalization,
-                                        angle_threshold, angle_precision)
-    columns <- c("segment_id", .pst_nm_names(cols))
+    columns <- c("segment_id", result_names)
     rows <- .Call(C_rpst_segment_graph_info, ptr)
     parameters <- list(radius = .pst_radius_parameters(steps), weigh_by_length = weigh_by_length,
                        normalization = normalization, angle_threshold = angle_threshold,
@@ -112,7 +113,6 @@ angular_integration <- function(graph, steps = NULL, radius = NULL,
     result$total_weight <- out[[4L]]
     result$total_depth_weight <- out[[5L]]
   }
-  names(result) <- c("segment_id", .pst_nm_names(.pst_nm_angular_integration(
-    steps, weigh_by_length, weight_outputs, normalization, angle_threshold, angle_precision)))
+  names(result) <- c("segment_id", result_names)
   result
 }

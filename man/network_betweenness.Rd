@@ -35,10 +35,10 @@ underflow to zero). Supply one per line, or one per attraction point when \code{
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
 see \link{pst_result_file}. In a result file, the \code{NA} values described below are stored as nulls.}
 
-\item{weight_name}{\code{NULL}, or a short name for \code{weights} (for example \code{"population"}) used in the result column
-names (\code{..._wpopulation_...}). Without it, user weights are labelled \code{wv}. The name is lower-cased and every
-other character than letters, digits and \verb{_} becomes \verb{_}; the original is kept in the result metadata. It is a
-label only: it does not check that the same name always means the same values.}
+\item{weight_name}{Required whenever \code{weights} is supplied, and an error otherwise: a descriptive name for the
+weights (for example \code{"population"}) used in the result column names (\code{..._wpopulation_...}). It is lower-cased,
+spaces become \verb{_}, and only the letters a-z, digits and \verb{_} are allowed; anything else is an error. The original is
+kept in the result metadata. It is a label only: it does not check that the same name always means the same values.}
 }
 \value{
 A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with

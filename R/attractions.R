@@ -47,9 +47,10 @@
 #'   and each feature becomes one group (an empty polygon is a zero-count group). Empty collections, multipart, mixed,
 #'   Z/M and empty POINT features are rejected.
 #' @param radius Distance limits created by [analysis_radius()].
-#' @param weight_name `NULL`, or a short name for the weight vector (`attraction_values` or `line_weights`) used in
-#'   the result column names (`..._wpopulation`). Without it, user weights are labelled `wv`. The name is lower-cased
-#'   and every other character than letters, digits and `_` becomes `_`; the original is kept in the result metadata.
+#' @param weight_name Required whenever `attraction_values` (`attraction_reach()`) or `line_weights`
+#'   (`attraction_distance()`) is supplied, and an error otherwise: a descriptive name for the weights (for example
+#'   `"population"`) used in the result column names (`..._wpopulation`). It is lower-cased, spaces become `_`, and only
+#'   the letters a-z, digits and `_` are allowed; anything else is an error. The original is kept in the result metadata.
 #'   It is a label only: it does not check that the same name always means the same values.
 #' @param origin `"lines"`, `"junctions"`, `"points"` or `"point_groups"`. Points and point groups are those retained
 #'   when the graph was built, not newly supplied origins.
@@ -105,9 +106,10 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
   attraction_points <- converted$points
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
-  weight <- .pst_nm_user_weight(!is.null(attraction_values), weight_name, "weight_name")
+  weight <- .pst_nm_user_weight(!is.null(attraction_values), weight_name, "weight_name", "w", "attraction_values")
   cols <- .pst_nm_attraction_reach(radius, origin, distance, weight, decay, decay_constant, distribution, collection,
                                    polygon_point_interval)
+  .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_reach",
@@ -146,9 +148,10 @@ attraction_distance <- function(graph, attraction_points, radius = analysis_radi
   attraction_points <- converted$points
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
-  weight <- .pst_nm_user_weight(!is.null(line_weights), weight_name, "weight_name")
+  weight <- .pst_nm_user_weight(!is.null(line_weights), weight_name, "weight_name", "w", "line_weights")
   cols <- .pst_nm_attraction_distance(radius, origin, distance, weight, point_edge_weight, polygon_point_interval,
                                       isTRUE(destination_indices))
+  .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_distance",
