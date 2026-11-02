@@ -1,5 +1,4 @@
-# The output-column naming scheme (docs/output-naming.md). These tests call the real public functions (`rPSTool::`), not the
-# legacy-name adapter that the numerical regression tests use.
+# The output-column naming scheme (docs/output-naming.md), asserted through the real public functions (`rPSTool::`).
 naming_segments <- function() rPSTool::segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))
 naming_axial <- function() rPSTool::axial_graph(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1), c(2, -1, 2, 1)),
                                                  points = rbind(c(0.5, 0.5), c(1.5, 0.5)))

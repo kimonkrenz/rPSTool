@@ -17,41 +17,45 @@ test_that("Angular Integration matches pinned upstream chain and square oracles"
     g <- segment_graph(case$segments)
     original <- angular_integration(g)
     expect_s3_class(original, "data.frame")
-    expect_identical(names(original), c("segment_id", "integration", "node_count", "total_depth"))
+    expect_identical(names(original), c("segment_id", "ai_a_rg_t", "nc_a_rg", "td_a_rg"))
     expect_identical(original$segment_id, seq_len(nrow(case$segments)))
-    expect_type(original$integration, "double")
-    expect_type(original$total_depth, "double")
-    expect_identical(original$node_count, case$node_count)
-    expect_true(angular_matches_upstream(original$total_depth, case$total_depth, ref$tolerance))
-    expect_true(angular_matches_upstream(original$integration, case$integration, ref$tolerance))
+    expect_type(pick(original, "^ai_"), "double")
+    expect_type(pick(original, "^td_"), "double")
+    expect_identical(pick(original, "^nc_"), case$node_count)
+    expect_true(angular_matches_upstream(pick(original, "^td_"), case$total_depth, ref$tolerance))
+    expect_true(angular_matches_upstream(pick(original, "^ai_"), case$integration, ref$tolerance))
     raw <- native_angular(g$ptr)
-    expect_identical(original$integration, raw[[1L]])
-    expect_identical(original$node_count, raw[[2L]])
-    expect_identical(original$total_depth, raw[[3L]])
+    expect_identical(pick(original, "^ai_"), raw[[1L]])
+    expect_identical(pick(original, "^nc_"), raw[[2L]])
+    expect_identical(pick(original, "^td_"), raw[[3L]])
     pointer <- g$ptr
     g$n_segments <- 999L
     expect_identical(angular_integration(g), original)
-    expect_identical(angular_integration(g, steps = 2147483647), original)
+    # An explicit step limit is named by the limit rather than the "global" token,
+    # so only the values (not the column names) are identical to the unlimited run.
+    limited <- angular_integration(g, steps = 2147483647)
+    expect_match(names(limited)[[2L]], "^ai_a_rs2147483647_t$")
+    expect_identical(unname(as.list(limited)), unname(as.list(original)))
     expect_identical(g$ptr, pointer)
   }
   g <- segment_graph(ref$chain$segments)
   for (case in ref$chain$steps) {
-    expect_identical(angular_integration(g, case$limit)$node_count, case$node_count)
-    expect_identical(angular_integration(g, as.double(case$limit))$node_count, case$node_count)
+    expect_identical(pick(angular_integration(g, case$limit), "^nc_"), case$node_count)
+    expect_identical(pick(angular_integration(g, as.double(case$limit)), "^nc_"), case$node_count)
   }
 })
 
 test_that("endpoint equality alone establishes segment connectivity", {
-  counts <- function(x) angular_integration(segment_graph(x))$node_count
+  counts <- function(x) pick(angular_integration(segment_graph(x)), "^nc_")
   expect_identical(counts(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1))), c(1L, 1L))
   expect_identical(counts(rbind(c(0, 0, 2, 0), c(1, 0, 1, 1))), c(1L, 1L))
   expect_identical(counts(rbind(c(0, 0, 1, 0), c(1, 0, 1, 1))), c(2L, 2L))
   expect_identical(counts(rbind(c(0, 0, 1, 0), c(1 + 1e-10, 0, 1, 1))), c(1L, 1L))
   expect_identical(counts(rbind(c(0, 0, 1, 0), c(1, 0, 1, 1)) + 1e6), c(2L, 2L))
   single <- angular_integration(segment_graph(matrix(c(0, 0, 3, 0), 1)))
-  expect_identical(single$node_count, 1L)
-  expect_identical(single$total_depth, 0)
-  expect_identical(single$integration, 0)
+  expect_identical(pick(single, "^nc_"), 1L)
+  expect_identical(pick(single, "^td_"), 0)
+  expect_identical(pick(single, "^ai_"), 0)
 })
 
 test_that("runtime graph compatibility cannot be forged with R metadata", {
@@ -71,8 +75,8 @@ test_that("runtime graph compatibility cannot be forged with R metadata", {
     expect_error(native_segment(name, axial$ptr), "Invalid pst_segment_graph native pointer")
     expect_error(.Call(get(paste0("C_rpst_graph_", name), envir = asNamespace("rPSTool")), segment$ptr), "Invalid pst_graph native pointer")
   }
-  expect_identical(angular_integration(segment)$node_count, c(2L, 2L))
-  expect_identical(network_integration(axial)$node_count, c(2L, 2L))
+  expect_identical(pick(angular_integration(segment), "^nc_"), c(2L, 2L))
+  expect_identical(pick(network_integration(axial), "^nc_"), c(2L, 2L))
 })
 
 test_that("invalid owners, parameters and unsupported masks fail safely", {
@@ -97,7 +101,7 @@ test_that("invalid owners, parameters and unsupported masks fail safely", {
   expect_error(angular_integration(high_degree), "at most 32 endpoint incidences")
   expect_error(native_angular(high_degree$ptr), "at most 32 endpoint incidences")
   supported <- segment_graph(star[1:32, ])
-  expect_identical(angular_integration(supported)$node_count, rep(32L, 32))
+  expect_identical(pick(angular_integration(supported), "^nc_"), rep(32L, 32))
   expect_error(.Call("rpst_angular_integration", high_degree$ptr, NULL, PACKAGE = "rPSTool"))
   expect_identical(getDLLRegisteredRoutines("rPSTool")$.Call$rpst_angular_integration$numParameters, 2L)
 })
@@ -108,9 +112,9 @@ test_that("asymmetric segment row ordering is retained", {
   order <- c(3L, 1L, 2L)
   result <- angular_integration(segment_graph(x[order, ]))
   expect_identical(result$segment_id, 1:3)
-  expect_identical(result$integration, baseline$integration[order])
-  expect_identical(result$node_count, baseline$node_count[order])
-  expect_identical(result$total_depth, baseline$total_depth[order])
+  expect_identical(pick(result, "^ai_"), pick(baseline, "^ai_")[order])
+  expect_identical(pick(result, "^nc_"), pick(baseline, "^nc_")[order])
+  expect_identical(pick(result, "^td_"), pick(baseline, "^td_")[order])
 })
 
 test_that("results outlive owners and analyses neither acquire nor free graphs", {
@@ -126,6 +130,6 @@ test_that("results outlive owners and analyses neither acquire nor free graphs",
   rm(alias)
   gc()
   expect_identical(native_segment("lifecycle") - before, c(1, 1, 0))
-  expect_identical(result$total_depth, rep(4, 4))
-  expect_identical(result$node_count, rep(4L, 4))
+  expect_identical(pick(result, "^td_"), rep(4, 4))
+  expect_identical(pick(result, "^nc_"), rep(4L, 4))
 })

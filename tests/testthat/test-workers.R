@@ -56,7 +56,7 @@ test_that("one central fail-closed policy controls all exposed worker engines", 
     expect_error(network_betweenness(a),"RPST_NUM_THREADS")
     expect_error(angular_choice(s),"RPST_NUM_THREADS")
     expect_error(angular_integration(s),"RPST_NUM_THREADS")
-    expect_identical(network_reach(a)$reached_count,rep(5L,5))
-    expect_identical(network_integration(a)$node_count,rep(5L,5))
+    expect_identical(pick(network_reach(a), "^rc_"),rep(5L,5))
+    expect_identical(pick(network_integration(a), "^nc_"),rep(5L,5))
   }
 })

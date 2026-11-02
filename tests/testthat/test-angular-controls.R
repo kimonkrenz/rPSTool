@@ -37,19 +37,19 @@ test_that("angular controls and native normalizers match direct PST (a stratifie
         if (case$routine=="integration") {
           args$weight_outputs <- TRUE
           out <- do.call(angular_integration,args)
-          expect_identical(names(out),c("segment_id","integration","node_count","total_depth","total_weight","total_depth_weight"))
-          angular_controls_compare(out$integration,case$normalized[[norm]])
-          angular_controls_compare(out$total_weight,case$weights)
-          angular_controls_compare(out$total_depth_weight,case$depth_weights)
+          expect_length(names(out),6L)   # segment_id, ai, nc, td, tw, tdw: each selected below by its real name
+          angular_controls_compare(pick(out, "^ai_"),case$normalized[[norm]])
+          angular_controls_compare(pick(out, "^tw_"),case$weights)
+          angular_controls_compare(pick(out, "^tdw_"),case$depth_weights)
         } else {
           out <- do.call(angular_choice,args)
-          angular_controls_compare(out$choice,case$scores)
-          angular_controls_compare(out$normalized,case$normalized[[norm]])
-          if (case$weighted) angular_controls_compare(out$total_depth_weight,case$depth_weights)
+          angular_controls_compare(pick(out, re_ac_raw),case$scores)
+          angular_controls_compare(pick(out, re_ac_norm),case$normalized[[norm]])
+          if (case$weighted) angular_controls_compare(pick(out, "^tdw_"),case$depth_weights)
         }
         expect_identical(out$segment_id,seq_along(case$counts))
-        expect_identical(out$node_count,as.integer(unlist(case$counts)))
-        angular_controls_compare(out$total_depth,case$depths)
+        expect_identical(pick(out, "^nc_"),as.integer(unlist(case$counts)))
+        angular_controls_compare(pick(out, "^td_"),case$depths)
       }
     }
   }
@@ -60,16 +60,16 @@ test_that("angular defaults and exclusion of origin weight remain explicit", {
   default <- angular_integration(g)
   expect_identical(unname(as.list(default[-1])),old)
   expect_identical(angular_integration(g,NULL,NULL,FALSE,"turner",0,1,FALSE),default)
-  expect_identical(names(default),c("segment_id","integration","node_count","total_depth"))
+  expect_identical(names(default),c("segment_id","ai_a_rg_t","nc_a_rg","td_a_rg"))
   weighted <- angular_integration(g,weigh_by_length=TRUE)
-  expect_identical(weighted$total_weight,c(8,6,4))
-  expect_identical(weighted$integration,c(8,6,4))
-  expect_identical(angular_integration(g,weight_outputs=TRUE)$total_weight,rep(2,3))
-  expect_identical(angular_integration(g,steps=0,weigh_by_length=TRUE)$total_weight,rep(0,3))
+  expect_identical(pick(weighted, "^tw_"),c(8,6,4))
+  expect_identical(pick(weighted, "^ai_"),c(8,6,4))
+  expect_identical(pick(angular_integration(g,weight_outputs=TRUE), "^tw_"),rep(2,3))
+  expect_identical(pick(angular_integration(g,steps=0,weigh_by_length=TRUE), "^tw_"),rep(0,3))
   square <- segment_graph(rbind(c(0,0,3,0),c(3,0,3,3),c(3,3,0,3),c(0,3,0,0)))
-  expect_identical(angular_integration(square,angle_threshold=90)$total_depth,rep(4,4))
-  expect_identical(angular_integration(square,angle_threshold=90.1)$total_depth,rep(0,4))
-  expect_identical(angular_integration(square,angle_precision=7)$total_depth,rep(4,4))
+  expect_identical(pick(angular_integration(square,angle_threshold=90), "^td_"),rep(4,4))
+  expect_identical(pick(angular_integration(square,angle_threshold=90.1), "^td_"),rep(0,4))
+  expect_identical(pick(angular_integration(square,angle_precision=7), "^td_"),rep(4,4))
   angular_controls_native("segment_graph_release",g$ptr)
   angular_controls_native("segment_graph_release",square$ptr)
 })
@@ -118,19 +118,19 @@ test_that("syntax-normalised Choice uses total_depth_weight when length-weighted
   for (radius in list(analysis_radius(), analysis_radius(walking = 7), analysis_radius(angular = 90))) {
     weighted <- angular_choice(g, radius = radius, weigh_by_length = TRUE, normalization = "syntax")
     unweighted <- angular_choice(g, radius = radius, weigh_by_length = FALSE, normalization = "syntax")
-    expect_equal(weighted$normalized, log10(weighted$choice + 1) / log10(2 + weighted$total_depth_weight), tolerance = 1e-6)
-    expect_equal(unweighted$normalized, log10(unweighted$choice + 1) / log10(2 + unweighted$total_depth), tolerance = 1e-6)
+    expect_equal(pick(weighted, re_ac_norm), log10(pick(weighted, re_ac_raw) + 1) / log10(2 + pick(weighted, "^tdw_")), tolerance = 1e-6)
+    expect_equal(pick(unweighted, re_ac_norm), log10(pick(unweighted, re_ac_raw) + 1) / log10(2 + pick(unweighted, "^td_")), tolerance = 1e-6)
     # unequal segment lengths make the two depth arrays differ, so the choice of array is observable
-    expect_false(isTRUE(all.equal(weighted$total_depth, weighted$total_depth_weight)))
-    expect_false(isTRUE(all.equal(weighted$normalized, log10(weighted$choice + 1) / log10(2 + weighted$total_depth), tolerance = 1e-6)))
+    expect_false(isTRUE(all.equal(pick(weighted, "^td_"), pick(weighted, "^tdw_"))))
+    expect_false(isTRUE(all.equal(pick(weighted, re_ac_norm), log10(pick(weighted, re_ac_raw) + 1) / log10(2 + pick(weighted, "^td_")), tolerance = 1e-6)))
     # multi-normalisation / multi-radius paths use the same rule as the scalar call
     multi <- angular_choice(g, radius = radius, weigh_by_length = TRUE, normalization = c("syntax", "turner"))
-    expect_identical(multi$choice_syntax, weighted$normalized)
+    expect_identical(pick(multi, "^ac_.*_c$"), pick(weighted, re_ac_norm))
   }
   multi_radius <- angular_choice(g, radius = analysis_radius(walking = c(5, 8)), weigh_by_length = TRUE, normalization = "syntax")
-  for (tag in c("w5", "w8")) {
-    scalar <- angular_choice(g, radius = analysis_radius(walking = as.numeric(sub("w", "", tag))), weigh_by_length = TRUE, normalization = "syntax")
-    expect_identical(multi_radius[[paste0("choice_syntax_", tag)]], scalar$normalized)
+  for (value in c(5, 8)) {
+    scalar <- angular_choice(g, radius = analysis_radius(walking = value), weigh_by_length = TRUE, normalization = "syntax")
+    expect_identical(multi_radius[[paste0("ac_a_rw", value, "_wl_c")]], pick(scalar, re_ac_norm))
   }
 })
 
@@ -143,24 +143,24 @@ test_that("length-weighted syntax Choice is identical in memory, in Parquet and 
     g <- segment_graph(src)
     for (weighted in c(TRUE, FALSE)) {
       mem <- angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax")
-      depth <- if (weighted) mem$total_depth_weight else mem$total_depth
-      expect_equal(mem$normalized, log10(mem$choice + 1) / log10(2 + depth), tolerance = 1e-6)
+      depth <- if (weighted) pick(mem, "^tdw_") else pick(mem, "^td_")
+      expect_equal(pick(mem, re_ac_norm), log10(pick(mem, re_ac_raw) + 1) / log10(2 + depth), tolerance = 1e-6)
       # the two depth arrays must differ for weighting to be observable on this network
-      expect_false(isTRUE(all.equal(mem$total_depth, mem$total_depth_weight)))
+      expect_false(isTRUE(all.equal(pick(mem, "^td_"), pick(mem, "^tdw_"))))
       pq <- file.path(dir, "r.parquet")
       angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax",
                          output_file = pq, overwrite = TRUE)
-      expect_identical(rs_read(pq)$normalized, mem$normalized)
+      expect_identical(pick(rs_read(pq), re_ac_norm), pick(mem, re_ac_norm))
       sp <- file.path(dir, paste0("o.", so_ext[[format]]))
       angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax",
                          spatial_output_file = sp, overwrite = TRUE)
-      expect_identical(so_read(sp, format)$attrs$normalized, mem$normalized)
+      expect_identical(pick(so_read(sp, format)$attrs, re_ac_norm), pick(mem, re_ac_norm))
       multi <- angular_choice(g, radius = analysis_radius(walking = c(30, 12)), weigh_by_length = weighted, normalization = "syntax")
-      expect_identical(multi$choice_syntax_w30, mem$normalized)
+      expect_identical(multi[[paste0("ac_a_rw30_", if (weighted) "wl_", "c")]], pick(mem, re_ac_norm))
       mpq <- file.path(dir, "m.parquet")
       angular_choice(g, radius = analysis_radius(walking = c(30, 12)), weigh_by_length = weighted, normalization = "syntax",
                          output_file = mpq, overwrite = TRUE)
-      expect_identical(as.data.frame(rs_read_parquet(mpq))[[paste0("ac_a_rw30_", if (weighted) "wl_", "c")]], mem$normalized)
+      expect_identical(as.data.frame(rs_read_parquet(mpq))[[paste0("ac_a_rw30_", if (weighted) "wl_", "c")]], pick(mem, re_ac_norm))
     }
   }
 })

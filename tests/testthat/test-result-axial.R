@@ -51,8 +51,11 @@ test_that("attraction results equal the in-memory results and the direct-PST ref
     args <- case$args
     args$attraction_points <- ra_rows(args$attraction_points)
     args$radius <- do.call(analysis_radius, args$radius)
-    for (field in c("points_per_polygon", "attraction_values", "line_weights"))
-      if (!is.null(args[[field]])) args[[field]] <- as.double(unlist(args[[field]]))
+    if (!is.null(args$points_per_polygon)) args$points_per_polygon <- as.double(unlist(args$points_per_polygon))
+    # Weight identifiers are inferred from the expression passed to the weight arguments, and do.call() would pass the
+    # evaluated vectors. Bind each weight to a name and hand do.call the symbol, exactly as a user would write it.
+    for (field in c("attraction_values", "line_weights"))
+      if (!is.null(args[[field]])) { assign(field, as.double(unlist(args[[field]]))); args[[field]] <- as.name(field) }
     fn <- if (case$analysis == "reach") attraction_reach else attraction_distance
     # distance cases are run with and without the optional native destination index
     for (indices in if (case$analysis == "distance") c(isTRUE(args$destination_indices), !isTRUE(args$destination_indices)) else NA) {
@@ -62,13 +65,13 @@ test_that("attraction results equal the in-memory results and the direct-PST ref
       out <- do.call(fn, c(list(graph = g), args, list(output_file = file, overwrite = TRUE)))
       persisted <- rs_read(file)
       note(label, rs_diff_tables(persisted, memory))
-      if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
+      if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
       if (!identical(persisted$origin_id, seq_along(case$scores))) note(label, "origin_id")
       note(label, rs_diff_reference(persisted[[2L]], case$scores, tolerance = 2e-6))
       if (case$analysis == "distance" && isTRUE(indices)) {
         # the pinned reference holds the native indices only for the cases that requested them
         if (isTRUE(case$args$destination_indices) &&
-            !identical(persisted$destination_index, as.integer(unlist(case$indices)))) note(label, "destination_index")
+            !identical(pick(persisted, "^di_"), as.integer(unlist(case$indices)))) note(label, "destination_index")
         if (length(persisted) != 3L) note(label, "missing destination_index")
       } else if (length(persisted) != 2L) note(label, "unexpected column")
       classes <- classes + ra_nonfinite(persisted)
@@ -108,7 +111,7 @@ test_that("OD Betweenness results equal the in-memory results and the direct-PST
     label <- paste(name, length(problems))
     if (nzchar(d <- rs_diff_tables(persisted, memory))) problems <- c(problems, paste(label, d))
     if (!identical(persisted$line_id, seq_along(case$scores))) problems <- c(problems, paste(label, "line_id"))
-    if (nzchar(d <- rs_diff_reference(persisted$od_betweenness, case$scores, tolerance = 2e-6)))
+    if (nzchar(d <- rs_diff_reference(pick(persisted, "^od_"), case$scores, tolerance = 2e-6)))
       problems <- c(problems, paste(label, d))
   }
   expect_identical(problems, character())
@@ -128,11 +131,11 @@ test_that("Network Integration and Reach results equal the in-memory results and
   expect_identical(network_integration(g, output_file = file)$columns, c("line_id", "ni_s_rg", "nc_s_rg", "td_s_rg"))
   persisted <- rs_read(file)
   note("ni", rs_diff_tables(persisted, memory))
-  expect_identical(persisted$node_count, ni$node_count)
-  expect_identical(persisted$total_depth, ni$total_depth)
+  expect_identical(pick(persisted, "^nc_"), ni$node_count)
+  expect_identical(pick(persisted, "^td_"), ni$total_depth)
   for (case in ni$steps) {
     network_integration(g, steps = case$limit, output_file = file, overwrite = TRUE)
-    expect_identical(rs_read(file)$node_count, case$node_count)
+    expect_identical(pick(rs_read(file), "^nc_"), case$node_count)
     note(paste("steps", case$limit), rs_diff_tables(rs_read(file), network_integration(g, steps = case$limit)))
   }
   # (b) every radius combination of the official-wrapper oracle for integration and (line) reach
@@ -145,15 +148,15 @@ test_that("Network Integration and Reach results equal the in-memory results and
     if (case$routine == "integration") {
       # The oracle exercises the native engine with every radius field, so the unrestricted internal implementation is used
       # (the public network_integration() accepts only steps radii; the public rejection is tested in test-network-integration.R and at the end of this file).
-      memory <- legacy_ni_run(a, radius = radius)
-      legacy_ni_run(a, radius = radius, output_file = file, overwrite = TRUE)
+      memory <- rPSTool:::.pst_network_integration_run(a, radius = radius)
+      rPSTool:::.pst_network_integration_run(a, radius = radius, output_file = file, overwrite = TRUE)
       persisted <- rs_read(file)
-      expect_identical(persisted$node_count, as.integer(case$count))
+      expect_identical(pick(persisted, "^nc_"), as.integer(case$count))
     } else {
       memory <- network_reach(a, radius)
       network_reach(a, radius, output_file = file, overwrite = TRUE)
       persisted <- rs_read(file)
-      expect_identical(persisted$reached_count, as.integer(case$count))
+      expect_identical(pick(persisted, "^rc_"), as.integer(case$count))
     }
     note(paste(case$routine, checked), rs_diff_tables(persisted, memory))
     checked <- checked + 1
@@ -171,9 +174,9 @@ test_that("Network Integration and Reach results equal the in-memory results and
     out <- network_reach(nets[[case$network]], radius, points, output_file = file, overwrite = TRUE)
     persisted <- rs_read(file)
     note(paste("origins", origins_checked), rs_diff_tables(persisted, memory))
-    expect_identical(names(persisted), c("origin_id", "reached_count", "reached_length", "reached_area"))
+    expect_columns(persisted, c("^origin_id$", "^rc_", "^rln_", "^rca_"))
     expect_identical(persisted$origin_id, seq_len(nrow(points)))
-    expect_identical(persisted$reached_count, as.integer(case$count))
+    expect_identical(pick(persisted, "^rc_"), as.integer(case$count))
     expect_identical(out$rows, nrow(points))
     origins_checked <- origins_checked + 1
   }
@@ -191,15 +194,15 @@ test_that("non-finite and unreachable native values are stored as values, never 
   memory <- network_integration(g, steps = 0)
   network_integration(g, steps = 0, output_file = file)
   persisted <- rs_read(file); rs_expect_same(persisted, memory)
-  expect_true(all(is.nan(persisted$integration) | persisted$integration == -1 | is.infinite(persisted$integration)))
+  expect_true(all(is.nan(pick(persisted, "^ni_")) | pick(persisted, "^ni_") == -1 | is.infinite(pick(persisted, "^ni_"))))
   expect_identical(rs_pq(file)$GetSchema()$GetFieldByName("ni_s_rs0")$nullable, FALSE)
   # unreachable attraction distance keeps native -1 and the signed destination index -1
   far <- rbind(c(100, 100))
   memory <- attraction_distance(g, far, analysis_radius(walking = 1), distance = "walking")
   attraction_distance(g, far, analysis_radius(walking = 1), distance = "walking", output_file = file, overwrite = TRUE)
   persisted <- rs_read(file); rs_expect_same(persisted, memory)
-  expect_true(any(persisted$attraction_distance == -1))
-  expect_true(any(persisted$destination_index == -1L))
+  expect_true(any(pick(persisted, "^ad_") == -1))
+  expect_true(any(pick(persisted, "^di_") == -1L))
   types <- vapply(rs_read_parquet(file, as_data_frame = FALSE)$schema$fields, function(f) f$type$ToString(), "")
   expect_identical(unname(types), c("int32", "float", "int32"))
 })
@@ -217,9 +220,9 @@ test_that("a zero-row result (no junctions or points of the requested origin kin
     expect_identical(out$rows, 0L)
     expect_identical(nrow(memory), 0L)
     persisted <- rs_read(file)
-    expect_identical(names(persisted), c("origin_id", "attraction_reach"))
+    expect_columns(persisted, c("^origin_id$", "^ar_"))
     expect_identical(length(persisted$origin_id), 0L)
-    expect_identical(typeof(persisted$attraction_reach), typeof(memory$attraction_reach))
+    expect_identical(typeof(pick(persisted, "^ar_")), typeof(pick(memory, "^ar_")))
     expect_equal(rs_pq(file)$num_rows, 0)
     memory <- attraction_distance(g, pts, origin = origin, distance = "steps")
     attraction_distance(g, pts, origin = origin, distance = "steps", output_file = file, overwrite = TRUE)

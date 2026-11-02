@@ -52,20 +52,20 @@ test_that("junction integration matches direct PST and retains existing line res
     g <- axial_case_graph(case)
     for (expected in case$integrations) {
       radius <- do.call(analysis_radius, expected$radius)
-      result <- legacy_ni_run(g, radius = radius, junctions = TRUE)
+      result <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE)
       expect_identical(names(result), c("lines", "junctions"))
-      expect_identical(result$lines, legacy_ni_run(g, radius = radius))
+      expect_identical(result$lines, rPSTool:::.pst_network_integration_run(g, radius = radius))
       expect_identical(result$lines$line_id, seq_along(expected$scores))
-      expect_identical(result$lines$node_count, as.integer(unlist(expected$counts)))
-      axial_exact_classes(result$lines$integration, axial_vector(expected$scores))
-      expect_identical(result$lines$total_depth, axial_vector(expected$depths))
+      expect_identical(pick(result$lines, "^nc_"), as.integer(unlist(expected$counts)))
+      axial_exact_classes(pick(result$lines, "^ni_"), axial_vector(expected$scores))
+      expect_identical(pick(result$lines, "^td_"), axial_vector(expected$depths))
       expect_identical(result$junctions$junction_id, seq_along(expected$junction_scores))
       expect_type(result$junctions$x, "double")
       expect_type(result$junctions$y, "double")
       actual_coords <- matrix(c(result$junctions$x, result$junctions$y), ncol=2L)
       expect_identical(actual_coords, axial_rows(expected$junction_coords))
-      axial_exact_classes(result$junctions$integration, axial_vector(expected$junction_scores))
-      expect_identical(result, legacy_ni_run(g, radius = radius, junctions = TRUE))
+      axial_exact_classes(pick(result$junctions, "^nj_"), axial_vector(expected$junction_scores))
+      expect_identical(result, rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE))
     }
     axial_native("graph_release", g$ptr)
   }
@@ -76,10 +76,10 @@ test_that("fresh junction seeds preserve native small-neighbourhood and multipli
   g <- axial_graph(chain)
   # nLines is the number of pairwise crossing records in this constructor.
   # At a two-line join it is 1; PST adds both -1 scores divided by 1.
-  expect_identical(network_integration(g, steps=0, junctions=TRUE)$junctions$integration, rep(-2,4))
+  expect_identical(pick(network_integration(g, steps=0, junctions=TRUE)$junctions, "^nj_"), rep(-2,4))
   out <- network_integration(g, steps=1, junctions=TRUE)
-  expect_true(all(is.nan(out$junctions$integration[c(1,4)])))
-  expect_identical(out$junctions$integration[2:3], c(Inf,Inf))
+  expect_true(all(is.nan(pick(out$junctions, "^nj_")[c(1,4)])))
+  expect_identical(pick(out$junctions, "^nj_")[2:3], c(Inf,Inf))
   before <- network_integration(g, junctions=TRUE)
   for (i in 1:10) {
     network_integration(g, steps=0, junctions=TRUE)
@@ -88,7 +88,7 @@ test_that("fresh junction seeds preserve native small-neighbourhood and multipli
   s <- axial_graph(matrix(c(0,0,1,0),1))
   empty <- network_integration(s, junctions=TRUE)$junctions
   expect_identical(nrow(empty),0L)
-  expect_identical(vapply(empty,typeof,""), c(junction_id="integer",x="double",y="double",integration="double"))
+  expect_identical(vapply(empty,typeof,""), c(junction_id="integer",x="double",y="double",nj_s_rg="double"))
   expect_identical(dim(axial_crossing_coords(s)),c(0L,2L))
 })
 
@@ -182,7 +182,7 @@ test_that("owners keep no construction inputs and inspection outputs survive gra
   expect_identical(axial_native("graph_lifecycle")-before,c(1,1,0))
   expect_identical(lengths,c(2,2))
   expect_identical(unname(coords),matrix(c(1,0),1))
-  expect_identical(result$lines$node_count,c(2L,2L))
+  expect_identical(pick(result$lines, "^nc_"),c(2L,2L))
   expect_identical(state[[2L]],c(1L,1L))
   before <- axial_native("graph_lifecycle")
   for (i in 1:40) {

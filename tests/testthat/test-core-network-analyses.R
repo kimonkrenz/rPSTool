@@ -31,9 +31,9 @@ test_that("Reach reproduces every pinned line-origin oracle", {
     list(analysis_radius(angular=1), c(3L,3L,3L), c(9,9,9), c(0,0,0)))
   for (case in cases) {
     out <- network_reach(g, case[[1]])
-    expect_identical(out$reached_count, case[[2]])
-    expect_identical(out$reached_length, case[[3]])
-    expect_true(core_relative(out$reached_area, case[[4]], TRUE))
+    expect_identical(pick(out, "^rc_"), case[[2]])
+    expect_identical(pick(out, "^rln_"), case[[3]])
+    expect_true(core_relative(pick(out, "^rca_"), case[[4]], TRUE))
     native <- core_native("reach", g$ptr, case[[1]])
     expect_identical(unname(as.list(out[-1])), native)
   }
@@ -41,26 +41,26 @@ test_that("Reach reproduces every pinned line-origin oracle", {
   for (case in list(list(analysis_radius(),4L,12,9), list(analysis_radius(angular=80),1L,3,0),
                    list(analysis_radius(angular=100),3L,9,9), list(analysis_radius(angular=190),4L,12,9))) {
     out <- network_reach(g,case[[1]])
-    expect_identical(out$reached_count,rep(case[[2]],4))
-    expect_identical(out$reached_length,rep(case[[3]],4))
-    expect_true(core_relative(out$reached_area,rep(case[[4]],4), TRUE))
+    expect_identical(pick(out, "^rc_"),rep(case[[2]],4))
+    expect_identical(pick(out, "^rln_"),rep(case[[3]],4))
+    expect_true(core_relative(pick(out, "^rca_"),rep(case[[4]],4), TRUE))
   }
 })
 
 test_that("Segment Betweenness reproduces all pinned raw score oracles", {
   g <- axial_graph(core_chain(5,1))
   out <- network_betweenness(g,analysis_radius(steps=4))
-  expect_identical(out$betweenness,c(0,3,4,3,0))
+  expect_identical(pick(out, re_nb_raw),c(0,3,4,3,0))
   for (bottom in c(-0.1,0)) {
     p <- rbind(c(-2,0),c(-1,0),c(0,0.1),c(0,bottom),c(1,0),c(2,0))
     x <- cbind(p[c(1,2,3,2,4,5),],p[c(2,3,5,4,5,6),])
     out <- network_betweenness(axial_graph(x),analysis_radius(angular=45),"angular")
-    expect_identical(out$betweenness,if (bottom<0) c(0,1.5,1.5,1.5,1.5,0) else c(0,1,1,2,2,0))
+    expect_identical(pick(out, re_nb_raw),if (bottom<0) c(0,1.5,1.5,1.5,1.5,0) else c(0,1,1,2,2,0))
   }
   for (distance in c("walking","steps","angular","axmeter")) {
     out <- network_betweenness(g,distance=distance)
-    expect_identical(out$betweenness,c(0,3,4,3,0))
-    expect_identical(out$node_count,rep(5L,5))
+    expect_identical(pick(out, re_nb_raw),c(0,3,4,3,0))
+    expect_identical(pick(out, "^nc_"),rep(5L,5))
     raw <- core_native("betweenness",g$ptr,analysis_radius(),distance,"none")
     expect_identical(unname(as.list(out[-1])),raw[1:3])
   }
@@ -69,53 +69,53 @@ test_that("Segment Betweenness reproduces all pinned raw score oracles", {
 test_that("Angular Choice reproduces pinned radius and weighting oracles", {
   g <- segment_graph(core_chain())
   out <- angular_choice(g)
-  expect_true(core_relative(out$choice,c(0,6,8,6,0)))
-  expect_identical(out$node_count,rep(5L,5))
-  expect_true(core_relative(out$total_depth,rep(0,5)))
+  expect_true(core_relative(pick(out, re_ac_raw),c(0,6,8,6,0)))
+  expect_identical(pick(out, "^nc_"),rep(5L,5))
+  expect_true(core_relative(pick(out, "^td_"),rep(0,5)))
   weighted <- angular_choice(g,weigh_by_length=TRUE)
-  expect_true(core_relative(weighted$choice,c(36,90,108,90,36)))
-  expect_true(core_relative(weighted$total_depth_weight,rep(0,5)))
+  expect_true(core_relative(pick(weighted, re_ac_raw),c(36,90,108,90,36)))
+  expect_true(core_relative(pick(weighted, "^tdw_"),rep(0,5)))
   for (field in c("straight","walking","steps")) {
     for (limit in c(0,1,if (field=="steps") 2 else 3)) {
       radius <- do.call(analysis_radius,setNames(list(limit),field))
       expected <- if (limit==0 || (field!="steps" && limit==1)) rep(1L,5) else
         if (field=="steps" && limit==2) c(3L,4L,5L,4L,3L) else c(2L,3L,3L,3L,2L)
-      expect_identical(angular_choice(g,radius)$node_count,expected)
+      expect_identical(pick(angular_choice(g,radius), "^nc_"),expected)
     }
   }
-  expect_identical(angular_choice(g,analysis_radius(angular=1))$node_count,rep(5L,5))
+  expect_identical(pick(angular_choice(g,analysis_radius(angular=1)), "^nc_"),rep(5L,5))
   g <- segment_graph(core_square())
   out <- angular_choice(g)
-  expect_true(core_relative(out$choice,rep(1,4)))
-  expect_true(core_relative(out$total_depth,rep(4,4)))
+  expect_true(core_relative(pick(out, re_ac_raw),rep(1,4)))
+  expect_true(core_relative(pick(out, "^td_"),rep(4,4)))
   for (angle in c(80,100)) {
     out <- angular_choice(g,analysis_radius(angular=angle))
-    expect_identical(out$node_count,rep(if(angle==80) 1L else 3L,4))
-    expect_true(core_relative(out$total_depth,rep(if(angle==80) 0 else 2,4)))
+    expect_identical(pick(out, "^nc_"),rep(if(angle==80) 1L else 3L,4))
+    expect_true(core_relative(pick(out, "^td_"),rep(if(angle==80) 0 else 2,4)))
   }
   weighted <- angular_choice(g,weigh_by_length=TRUE)
-  expect_true(core_relative(weighted$choice,rep(36,4)))
-  expect_true(core_relative(weighted$total_depth_weight,rep(12,4)))
+  expect_true(core_relative(pick(weighted, re_ac_raw),rep(36,4)))
+  expect_true(core_relative(pick(weighted, "^tdw_"),rep(12,4)))
   raw <- core_native("angular_choice",g$ptr,analysis_radius(),TRUE,"none")
   expect_identical(unname(as.list(weighted[-1])),raw[1:4])
 })
 
 test_that("exported normalization preserves raw results", {
   g <- axial_graph(core_chain(5,1))
-  expect_identical(network_betweenness(g,normalization="standard")$normalized,c(0,0.75,1,0.75,0))
-  expect_true(core_relative(network_betweenness(g,normalization="freeman")$normalized,c(0,0.5,2/3,0.5,0)))
+  expect_identical(pick(network_betweenness(g,normalization="standard"), re_nb_norm),c(0,0.75,1,0.75,0))
+  expect_true(core_relative(pick(network_betweenness(g,normalization="freeman"), re_nb_norm),c(0,0.5,2/3,0.5,0)))
   # Expected only: normalization equations are never used in implementation.
   raw <- network_betweenness(g)
-  expected <- log10(raw$betweenness+1)/log10(raw$total_depth+2)
-  expect_true(core_relative(network_betweenness(g,normalization="syntax")$normalized,expected))
+  expected <- log10(pick(raw, re_nb_raw)+1)/log10(pick(raw, "^td_")+2)
+  expect_true(core_relative(pick(network_betweenness(g,normalization="syntax"), re_nb_norm),expected))
   s <- segment_graph(core_chain())
-  expect_identical(angular_choice(s,normalization="standard")$normalized,c(0,0.75,1,0.75,0))
-  expect_true(core_relative(angular_choice(s,normalization="turner")$normalized,c(0,0.5,2/3,0.5,0)))
+  expect_identical(pick(angular_choice(s,normalization="standard"), re_ac_norm),c(0,0.75,1,0.75,0))
+  expect_true(core_relative(pick(angular_choice(s,normalization="turner"), re_ac_norm),c(0,0.5,2/3,0.5,0)))
   for (weighted in c(FALSE,TRUE)) {
     raw <- angular_choice(s,weigh_by_length=weighted)
-    expected <- log10(raw$choice+1)/log10(raw$total_depth+2)
+    expected <- log10(pick(raw, re_ac_raw)+1)/log10(pick(raw, "^td_")+2)
     normalized <- angular_choice(s,weigh_by_length=weighted,normalization="syntax")
-    expect_true(core_relative(normalized$normalized,expected))
+    expect_true(core_relative(pick(normalized, re_ac_norm),expected))
     expect_identical(normalized[names(raw)],raw)
   }
 })
@@ -131,10 +131,10 @@ test_that("shared radii are additive and legacy steps remain identical", {
   expect_error(angular_integration(s,steps=1,radius=analysis_radius()),"either steps or radius")
   for (field in c("straight","walking","angular")) {
     r <- do.call(analysis_radius,setNames(list(if(field=="angular") 1 else 3),field))
-    expect_identical(angular_integration(s,radius=r)$node_count,angular_choice(s,r)$node_count)
+    expect_identical(pick(angular_integration(s,radius=r), "^nc_"),pick(angular_choice(s,r), "^nc_"))
   }
   r <- analysis_radius(straight=3,walking=6,steps=2,angular=1,axmeter=100)
-  expect_identical(network_reach(a,r)$reached_count,c(2L,3L,3L,3L,2L))
+  expect_identical(pick(network_reach(a,r), "^rc_"),c(2L,3L,3L,3L,2L))
 })
 
 test_that("all new entry points enforce graph tags and liveness before access", {
@@ -163,7 +163,7 @@ test_that("all new entry points enforce graph tags and liveness before access", 
   g <- segment_graph(star)
   expect_error(angular_choice(g),"at most 32 endpoint incidences")
   expect_error(core_native("angular_choice",g$ptr,analysis_radius(),FALSE,"none"),"at most 32 endpoint incidences")
-  expect_identical(angular_choice(segment_graph(star[1:32,]))$node_count,rep(32L,32))
+  expect_identical(pick(angular_choice(segment_graph(star[1:32,])), "^nc_"),rep(32L,32))
 })
 
 test_that("invalid radii and modes fail in R and native conversion", {
@@ -250,25 +250,25 @@ test_that("all radius fields and centrality modes match direct official-wrapper 
     radius <- do.call(analysis_radius,case$radius)
     out <- switch(case$routine,
       reach=network_reach(a,radius),
-      integration=legacy_ni_run(a,radius=radius),
+      integration=rPSTool:::.pst_network_integration_run(a,radius=radius),
       betweenness=network_betweenness(a,radius,case$distance),
       angular_choice=angular_choice(s,radius,case$weighted),
       angular_integration=angular_integration(s,radius=radius))
-    count <- if (case$routine=="reach") out$reached_count else out$node_count
-    score <- out[[if (case$routine=="reach") "reached_length" else
-      if (case$routine=="betweenness") "betweenness" else
-        if (case$routine=="angular_choice") "choice" else "integration"]]
-    depth <- if (case$routine=="reach") out$reached_area else out$total_depth
+    count <- if (case$routine=="reach") pick(out, "^rc_") else pick(out, "^nc_")
+    score <- pick(out, switch(case$routine,
+      reach="^rln_", betweenness=re_nb_raw, angular_choice=re_ac_raw,
+      integration="^ni_", angular_integration="^ai_"))
+    depth <- if (case$routine=="reach") pick(out, "^rca_") else pick(out, "^td_")
     expect_identical(count,as.integer(case$count),info=case$routine)
     expect_true(core_relative(score,case$score),info=paste(case$routine,case$distance))
     expect_true(core_relative(depth,case$depth),info=paste(case$routine,case$distance))
     if (case$routine=="angular_choice" && case$weighted)
-      expect_true(core_relative(out$total_depth_weight,case$extra))
+      expect_true(core_relative(pick(out, "^tdw_"),case$extra))
     for (norm in names(case$normalizations)) {
       normalized <- if (case$routine=="betweenness")
         network_betweenness(a,radius,case$distance,norm) else
         angular_choice(s,radius,case$weighted,norm)
-      expect_true(core_relative(normalized$normalized,case$normalizations[[norm]]))
+      expect_true(core_relative(pick(normalized, if (case$routine=="betweenness") re_nb_norm else re_ac_norm),case$normalizations[[norm]]))
       expect_identical(normalized[names(out)],out)
     }
   }
@@ -277,12 +277,12 @@ test_that("all radius fields and centrality modes match direct official-wrapper 
 test_that("small neighbourhood normalization and native float narrowing are preserved", {
   a <- axial_graph(matrix(c(0,0,3,0),nrow=1))
   s <- segment_graph(matrix(c(0,0,3,0),nrow=1))
-  expect_identical(network_betweenness(a,normalization="standard")$normalized,1)
-  expect_identical(network_betweenness(a,normalization="freeman")$normalized,0)
-  expect_identical(network_betweenness(a,normalization="syntax")$normalized,0)
-  expect_identical(angular_choice(s,normalization="standard")$normalized,1)
-  expect_identical(angular_choice(s,normalization="turner")$normalized,0)
-  expect_identical(angular_choice(s,normalization="syntax")$normalized,0)
+  expect_identical(pick(network_betweenness(a,normalization="standard"), re_nb_norm),1)
+  expect_identical(pick(network_betweenness(a,normalization="freeman"), re_nb_norm),0)
+  expect_identical(pick(network_betweenness(a,normalization="syntax"), re_nb_norm),0)
+  expect_identical(pick(angular_choice(s,normalization="standard"), re_ac_norm),1)
+  expect_identical(pick(angular_choice(s,normalization="turner"), re_ac_norm),0)
+  expect_identical(pick(angular_choice(s,normalization="syntax"), re_ac_norm),0)
   # Float rounds this limit to exactly three. Widening the output is lossless.
   a <- axial_graph(core_chain(3))
   expect_identical(network_reach(a,analysis_radius(walking=3-1e-8)),network_reach(a,analysis_radius(walking=3)))

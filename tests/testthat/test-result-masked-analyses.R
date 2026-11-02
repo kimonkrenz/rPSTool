@@ -49,25 +49,25 @@ test_that("persisted Segment Betweenness equals the in-memory result and the pin
       out <- do.call(network_betweenness, c(args, list(output_file = file, overwrite = TRUE)))
       persisted <- rs_read(file)
       note(label, rs_diff_tables(persisted, memory))
-      if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
+      if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
       if (!identical(ma_nullable(file), ma_flags(norm))) note(label, "nullable flags")
       if (!identical(ma_types(file), c("int32", "float", "int32", "float", if (norm != "none") "float"))) note(label, "types")
       # fixture parity, and nulls from the fixture's own NA positions (not from rPSTool's computation)
-      note(label, rs_diff_reference(persisted$betweenness, case$score))
-      if (!identical(persisted$node_count, as.integer(case$count))) note(label, "node_count")
-      note(label, rs_diff_reference(persisted$total_depth, case$depth))
-      if (!identical(rs_null_kind(persisted$total_depth), is.na(case$depth))) note(label, "total_depth nulls")
+      note(label, rs_diff_reference(pick(persisted, re_nb_raw), case$score))
+      if (!identical(pick(persisted, "^a?nc_"), as.integer(case$count))) note(label, "node_count")
+      note(label, rs_diff_reference(pick(persisted, "^a?td_"), case$depth))
+      if (!identical(rs_null_kind(pick(persisted, "^a?td_")), is.na(case$depth))) note(label, "total_depth nulls")
       if (ma_nulls(file, 1L) != 0L) note(label, "raw betweenness has nulls")
       if (ma_nulls(file, 2L) != sum(is.na(case$count))) note(label, "node_count null count")
       if (norm != "none") {
         expected <- case$normalizations[[norm]]
-        note(label, rs_diff_reference(persisted$normalized, expected))
+        note(label, rs_diff_reference(pick(persisted, re_nb_norm), expected))
         expected_null <- if (norm == "standard") rep(FALSE, length(expected)) else is.na(expected) & !is.nan(expected)
-        if (!identical(rs_null_kind(persisted$normalized), expected_null)) note(label, "normalized nulls")
+        if (!identical(rs_null_kind(pick(persisted, re_nb_norm)), expected_null)) note(label, "normalized nulls")
         if (ma_nulls(file, 4L) != sum(expected_null)) note(label, "normalized null count")
-        seen[["valid_nan"]] <- seen[["valid_nan"]] + sum(is.nan(persisted$normalized))
+        seen[["valid_nan"]] <- seen[["valid_nan"]] + sum(is.nan(pick(persisted, re_nb_norm)))
       }
-      seen[["null"]] <- seen[["null"]] + sum(rs_null_kind(persisted$node_count))
+      seen[["null"]] <- seen[["null"]] + sum(rs_null_kind(pick(persisted, "^a?nc_")))
       written <- written + 1
     }
   }
@@ -89,21 +89,21 @@ test_that("the wrong implementations are caught: NaN stays a value, raw and stan
   }
   # skipped middle origin (weight 0): raw score and standard normalisation are defined; diagnostics and Freeman/syntax are not
   p <- run(c(1, 0, 1), "freeman")
-  expect_identical(p$betweenness, c(0.75, 1, 0.75)); expect_identical(ma_nulls(file, 1L), 0L)
-  expect_identical(p$node_count, c(3L, NA, 3L)); expect_identical(p$normalized, c(0.75, NA, 0.75))
+  expect_identical(pick(p, re_nb_raw), c(0.75, 1, 0.75)); expect_identical(ma_nulls(file, 1L), 0L)
+  expect_identical(pick(p, "^a?nc_"), c(3L, NA, 3L)); expect_identical(pick(p, re_nb_norm), c(0.75, NA, 0.75))
   p <- run(c(1, 0, 1), "standard")
-  expect_identical(p$normalized, c(0, 1, 0)); expect_identical(ma_nulls(file, 4L), 0L)      # defined despite the skipped origin
+  expect_identical(pick(p, re_nb_norm), c(0, 1, 0)); expect_identical(ma_nulls(file, 4L), 0L)      # defined despite the skipped origin
   expect_identical(ma_nulls(file, 2L), 1L)                                                    # node_count still has its null
   # written NaN (negative signed weight): rows 1 and 3 are valid NaN, row 2 is a null; not "NaN means null"
   p <- run(c(1, -10, 1), "syntax")
-  expect_identical(is.nan(p$normalized), c(TRUE, FALSE, TRUE))
-  expect_identical(rs_null_kind(p$normalized), c(FALSE, TRUE, FALSE))
+  expect_identical(is.nan(pick(p, re_nb_norm)), c(TRUE, FALSE, TRUE))
+  expect_identical(rs_null_kind(pick(p, re_nb_norm)), c(FALSE, TRUE, FALSE))
   expect_identical(ma_nulls(file, 4L), 1L)
-  expect_identical(p$betweenness, c(-1.75, -4, -1.75))                                       # raw score of the skipped origin
+  expect_identical(pick(p, re_nb_raw), c(-1.75, -4, -1.75))                                       # raw score of the skipped origin
   # everything unwritten: all diagnostics null, raw/standard still all valid, types retained
   p <- run(c(0, 0, 0), "freeman")
-  expect_identical(p$node_count, rep(NA_integer_, 3)); expect_identical(p$total_depth, rep(NA_real_, 3))
-  expect_identical(p$normalized, rep(NA_real_, 3)); expect_identical(typeof(p$normalized), "double")
+  expect_identical(pick(p, "^a?nc_"), rep(NA_integer_, 3)); expect_identical(pick(p, "^a?td_"), rep(NA_real_, 3))
+  expect_identical(pick(p, re_nb_norm), rep(NA_real_, 3)); expect_identical(typeof(pick(p, re_nb_norm)), "double")
   expect_identical(ma_nulls(file, 1L), 0L)
   p <- run(c(0, 0, 0), "standard"); expect_identical(ma_nulls(file, 4L), 0L)
   # unweighted calls write every diagnostic: no null at all, but the declared schema is unchanged
@@ -146,7 +146,7 @@ test_that("persisted Segment Betweenness matches in memory for weighted sweeps, 
           do.call(network_betweenness, c(args, list(output_file = file, overwrite = TRUE)))
           d <- rs_diff_tables(rs_read(file), memory)
           if (nzchar(d)) problems <- c(problems, paste(threads, seed, distance, norm, d))
-          nulls <- nulls + sum(is.na(memory$node_count)); runs <- runs + 1
+          nulls <- nulls + sum(is.na(pick(memory, "^a?nc_"))); runs <- runs + 1
         }
     }
   }
@@ -175,7 +175,7 @@ test_that("Segment Betweenness attraction origins persist identically from matri
     memory <- network_betweenness(g, normalization = norm, attraction_points = pts)
     network_betweenness(g, normalization = norm, attraction_points = pts, output_file = file, overwrite = TRUE)
     rs_expect_same(rs_read(file), memory)
-    expect_gt(sum(is.na(memory$node_count)), 0)
+    expect_gt(sum(is.na(pick(memory, "^a?nc_"))), 0)
     network_betweenness(g, normalization = norm, attraction_points = sf::st_as_sf(as.data.frame(pts), coords = c(1, 2)),
                     output_file = file, overwrite = TRUE)
     rs_expect_same(rs_read(file), memory)
@@ -256,20 +256,22 @@ test_that("persisted Segment Group Integration equals the in-memory result and t
     persisted <- rs_read(file)
     note <- function(what) if (nzchar(what)) problems <<- c(problems, paste(k, what))
     note(rs_diff_tables(persisted, memory))
-    if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note("descriptor")
+    if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note("descriptor")
     if (!identical(ma_nullable(file), c(FALSE, TRUE, TRUE, TRUE))) note("nullable flags")
     if (!identical(ma_types(file), c("int32", "float", "int32", "float"))) note("types")
-    if (!identical(persisted$group_id, seq_along(case$node_count))) note("group_id")
+    if (!identical(pick(persisted, "^group_id$"), seq_along(case$node_count))) note("group_id")
     # nulls from the fixture's own NA positions, identical across the three paired columns
     expected_null <- is.na(case$node_count)
-    for (col in c("integration", "node_count", "total_depth"))
-      if (!identical(is.na(persisted[[col]]) & !is.nan(persisted[[col]]), expected_null)) note(paste(col, "nulls"))
-    if (!identical(persisted$node_count, as.integer(case$node_count))) note("node_count")
-    note(rs_diff_reference(persisted$integration, case$integration, 1e-6))
-    note(rs_diff_reference(persisted$total_depth, case$total_depth, 1e-6))
+    for (col in c("^gi_", "^nc_", "^td_")) {
+      values <- pick(persisted, col)
+      if (!identical(is.na(values) & !is.nan(values), expected_null)) note(paste(col, "nulls"))
+    }
+    if (!identical(pick(persisted, "^nc_"), as.integer(case$node_count))) note("node_count")
+    note(rs_diff_reference(pick(persisted, "^gi_"), case$integration, 1e-6))
+    note(rs_diff_reference(pick(persisted, "^td_"), case$total_depth, 1e-6))
     if (all(expected_null)) all_null <- all_null + 1
-    valid_nan <- valid_nan + sum(is.nan(persisted$integration)); valid_inf <- valid_inf + sum(is.infinite(persisted$integration))
-    minus_one <- minus_one + sum(persisted$integration == -1, na.rm = TRUE)
+    valid_nan <- valid_nan + sum(is.nan(pick(persisted, "^gi_"))); valid_inf <- valid_inf + sum(is.infinite(pick(persisted, "^gi_")))
+    minus_one <- minus_one + sum(pick(persisted, "^gi_") == -1, na.rm = TRUE)
     ma_group_release(g)
   }
   expect_identical(problems, character())
@@ -292,21 +294,21 @@ test_that("group integration: sentinel traps, gaps and isolated groups stay vali
     rs_read(file)
   }
   p <- persist(46)       # steps 0 on gapped ids: every group has a written -1; a "-1 means missing" sentinel would null them
-  expect_identical(p$integration, rep(-1, 5)); expect_identical(ma_nulls(file, 2L), 0L)
+  expect_identical(pick(p, "^gi_"), rep(-1, 5)); expect_identical(ma_nulls(file, 2L), 0L)
   p <- persist(42)       # NaN, written -1 with count 0 (empty groups), Inf, group-id gaps
-  expect_identical(is.nan(p$integration), c(TRUE, FALSE, FALSE, FALSE, TRUE))
-  expect_identical(p$integration[2:4], c(-1, Inf, -1)); expect_identical(p$node_count, c(2L, 0L, 3L, 0L, 2L))
+  expect_identical(is.nan(pick(p, "^gi_")), c(TRUE, FALSE, FALSE, FALSE, TRUE))
+  expect_identical(pick(p, "^gi_")[2:4], c(-1, Inf, -1)); expect_identical(pick(p, "^nc_"), c(2L, 0L, 3L, 0L, 2L))
   expect_identical(ma_nulls(file, 2L), 0L); expect_identical(ma_nulls(file, 3L), 0L)
   p <- persist(12)       # NaN and Inf together, all valid
-  expect_true(any(is.nan(p$integration)) && any(is.infinite(p$integration))); expect_identical(ma_nulls(file, 2L), 0L)
+  expect_true(any(is.nan(pick(p, "^gi_"))) && any(is.infinite(pick(p, "^gi_")))); expect_identical(ma_nulls(file, 2L), 0L)
   p <- persist(191)      # an isolated group last: written -1, 0, 0
-  expect_identical(c(p$integration[4], p$node_count[4], p$total_depth[4]), c(-1, 0L, 0))
+  expect_identical(c(pick(p, "^gi_")[4], pick(p, "^nc_")[4], pick(p, "^td_")[4]), c(-1, 0L, 0))
   p <- persist(206)      # isolated group first (ids 4,3,2,1): order and validity preserved
-  expect_identical(p$node_count[1], 0L); expect_identical(ma_nulls(file, 2L), 0L)
+  expect_identical(pick(p, "^nc_")[1], 0L); expect_identical(ma_nulls(file, 2L), 0L)
   p <- persist(1)        # a graph without native nodes: every row null in all three columns, types retained
-  expect_identical(p$integration, NA_real_); expect_identical(p$node_count, NA_integer_); expect_identical(p$total_depth, NA_real_)
+  expect_identical(pick(p, "^gi_"), NA_real_); expect_identical(pick(p, "^nc_"), NA_integer_); expect_identical(pick(p, "^td_"), NA_real_)
   p <- persist(161)      # two groups, none with nodes
-  expect_identical(p$node_count, rep(NA_integer_, 2)); expect_identical(ma_nulls(file, 1L), 2L)
+  expect_identical(pick(p, "^nc_"), rep(NA_integer_, 2)); expect_identical(ma_nulls(file, 1L), 2L)
   expect_identical(ma_nullable(file), c(FALSE, TRUE, TRUE, TRUE))
 })
 

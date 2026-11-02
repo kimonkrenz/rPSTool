@@ -26,11 +26,11 @@ test_that("omitted decay_constant is 0 for constant decay and 1 for power, curve
     expected <- as.double(unlist(case$scores))
     # explicit constants always reproduce the direct native value
     explicit <- adr_call(g, ref, case, decay = case$decay, decay_constant = case$constant)
-    expect_equal(explicit$attraction_reach, expected, tolerance = 2e-6)
+    expect_equal(pick(explicit, "^ar_"), expected, tolerance = 2e-6)
     implied <- if (case$decay == "constant") 0 else 1
     if (case$constant == implied) {
       omitted <- adr_call(g, ref, case, decay = case$decay)
-      expect_identical(omitted$attraction_reach, explicit$attraction_reach)
+      expect_identical(pick(omitted, "^ar_"), pick(explicit, "^ar_"))
       seen <- seen + 1L
     }
   }
@@ -55,12 +55,12 @@ test_that("an explicit constant of zero keeps its meaning for nonconstant decay"
   on.exit(.Call(get("C_rpst_graph_release", asNamespace("rPSTool")), g$ptr), add = TRUE)
   case <- Filter(function(c) c$decay == "power" && c$constant == 0 && c$distance == "steps", ref$cases)[[1L]]
   out <- adr_call(g, ref, case, decay = "power", decay_constant = 0)
-  expect_equal(out$attraction_reach, as.double(unlist(case$scores)), tolerance = 2e-6)
-  expect_false(isTRUE(all.equal(out$attraction_reach,
-                                adr_call(g, ref, case, decay = "power")$attraction_reach)))
+  expect_equal(pick(out, "^ar_"), as.double(unlist(case$scores)), tolerance = 2e-6)
+  expect_false(isTRUE(all.equal(pick(out, "^ar_"),
+                                pick(adr_call(g, ref, case, decay = "power"), "^ar_"))))
   # unrelated Reach behaviour is unchanged: the default call is constant decay at 0
-  expect_identical(adr_call(g, ref, case)$attraction_reach,
-                   adr_call(g, ref, case, decay = "constant", decay_constant = 0)$attraction_reach)
+  expect_identical(pick(adr_call(g, ref, case), "^ar_"),
+                   pick(adr_call(g, ref, case, decay = "constant", decay_constant = 0), "^ar_"))
 })
 
 test_that("the file-backed path records and uses the effective constant", {
@@ -72,7 +72,7 @@ test_that("the file-backed path records and uses the effective constant", {
   case <- Filter(function(c) c$decay == "curve" && c$constant == 1 && c$distance == "steps", ref$cases)[[1L]]
   adr_call(g, ref, case, decay = "curve", output_file = file)
   got <- rs_read(file)
-  expect_equal(as.double(got$attraction_reach), as.double(unlist(case$scores)), tolerance = 2e-6)
+  expect_equal(as.double(pick(got, "^ar_")), as.double(unlist(case$scores)), tolerance = 2e-6)
   p <- jsonlite::fromJSON(rs_pq(file)$GetSchema()$metadata[["rpst:parameters"]])
   expect_equal(p$decay_constant, 1)
 })

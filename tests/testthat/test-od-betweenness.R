@@ -6,7 +6,6 @@ origin_wt_m10 <- -10
 dest_wt_c_0_m1 <- c(0,-1)
 dest_wt_1 <- 1
 dest_wt_c_0_1 <- c(0,1)
-origin_wt_c_2_3 <- c(2,3)
 dest_wt_numeric <- numeric()
 dest_wt_c_1_2_3 <- c(1,2,3)
 
@@ -53,9 +52,9 @@ test_that("OD modes, costs, limits and weights match the pinned C API", {
     expect_identical(od_native("graph_info",g$ptr)[[3L]],as.integer(case$point_count))
     g$n_lines <- g$n_points <- g$n_point_groups <- g$n_crossings <- 999L
     out <- od_call(g,case$args)
-    expect_identical(names(out),c("line_id","od_betweenness"))
+    expect_columns(out,c("^line_id$","^od_"))
     expect_identical(out$line_id,seq_along(case$scores))
-    od_compare(out$od_betweenness,case$scores)
+    od_compare(pick(out, "^od_"),case$scores)
   }
   # A higher cap must not activate pinned PST's disabled multi-worker branch.
   Sys.setenv(RPST_NUM_THREADS="2")
@@ -63,7 +62,7 @@ test_that("OD modes, costs, limits and weights match the pinned C API", {
                      is.null(c$args$origin_weights) && is.null(c$args$destination_weights),od_supported_cases(ref$cases))
   for (case in rpst_cases(controls, every = 8L, by = list(rpst_case_signature))) {
     out <- od_call(graphs[[case$graph$name]],case$args)
-    expect_identical(out$od_betweenness,as.double(unlist(case$scores)))
+    expect_identical(pick(out, "^od_"),as.double(unlist(case$scores)))
   }
 })
 
@@ -71,15 +70,15 @@ test_that("the five upstream OD regressions and untouched graph analyses remain 
   g <- axial_graph(cbind(0:2,0,1:3,0),points=rbind(c(1.5,.5),c(3.5,0)))
   origin <- rbind(c(-.5,0))
   baseline <- network_integration(g)
-  expect_equal(od_betweenness(g,origin,destination_mode="closest")$od_betweenness,c(1,1,0))
-  expect_equal(od_betweenness(g,origin)$od_betweenness,c(1,1,.5))
-  expect_equal(od_betweenness(g,origin,analysis_radius(walking=3.9))$od_betweenness,c(1,1,0))
-  expect_equal(od_betweenness(g,origin,analysis_radius(walking=4.1))$od_betweenness,c(1,1,.5))
-  expect_equal(od_betweenness(g,origin,origin_weights=origin_wt_10)$od_betweenness,c(10,10,5))
-  expect_equal(od_betweenness(g,origin,origin_weights=origin_wt_10,destination_weights=dest_wt_c_4_1)$od_betweenness,c(10,10,2))
+  expect_equal(pick(od_betweenness(g,origin,destination_mode="closest"), "^od_"),c(1,1,0))
+  expect_equal(pick(od_betweenness(g,origin), "^od_"),c(1,1,.5))
+  expect_equal(pick(od_betweenness(g,origin,analysis_radius(walking=3.9)), "^od_"),c(1,1,0))
+  expect_equal(pick(od_betweenness(g,origin,analysis_radius(walking=4.1)), "^od_"),c(1,1,.5))
+  expect_equal(pick(od_betweenness(g,origin,origin_weights=origin_wt_10), "^od_"),c(10,10,5))
+  expect_equal(pick(od_betweenness(g,origin,origin_weights=origin_wt_10,destination_weights=dest_wt_c_4_1), "^od_"),c(10,10,2))
   expect_identical(network_integration(g),baseline)
-  expect_identical(od_betweenness(g,origin,origin_weights=origin_wt_m10)$od_betweenness,c(0,0,0))
-  expect_identical(od_betweenness(g,origin,destination_weights=dest_wt_c_0_m1)$od_betweenness,c(0,0,0))
+  expect_identical(pick(od_betweenness(g,origin,origin_weights=origin_wt_m10), "^od_"),c(0,0,0))
+  expect_identical(pick(od_betweenness(g,origin,destination_weights=dest_wt_c_0_m1), "^od_"),c(0,0,0))
   od_native("graph_release",g$ptr)
 })
 
@@ -89,13 +88,13 @@ test_that("OD weights target native sampled points and preserve pinned radius qu
   expect_gt(g$n_points,g$n_point_groups)
   expect_error(od_betweenness(g,rbind(c(0,0)),destination_weights=dest_wt_1),"native graph point")
   dest_wt_native <- rep(1,g$n_points)
-  expect_length(od_betweenness(g,rbind(c(0,0)),destination_weights=dest_wt_native)$od_betweenness,2L)
+  expect_length(pick(od_betweenness(g,rbind(c(0,0)),destination_weights=dest_wt_native), "^od_"),2L)
   od_native("graph_release",g$ptr)
   g <- axial_graph(rbind(c(0,0,10,0)),points=rbind(c(1,0),c(9,2)))
   args <- list(graph=g,origins=rbind(c(1,0)),radius=analysis_radius(walking=0),destination_weights=quote(dest_wt_c_0_1))
-  expect_identical(do.call(od_betweenness,args)$od_betweenness,0)
+  expect_identical(pick(do.call(od_betweenness,args), "^od_"),0)
   args$distance <- "angular"
-  expect_identical(do.call(od_betweenness,args)$od_betweenness,1)
+  expect_identical(pick(do.call(od_betweenness,args), "^od_"),1)
   args$radius <- analysis_radius(axmeter=0)   # natively ignored by PST; rejected by rPSTool (see the axmeter regression test)
   expect_error(do.call(od_betweenness,args),"axmeter radius is not supported")
   od_native("graph_release",g$ptr)
@@ -109,8 +108,9 @@ test_that("OD input/output lifetimes, native graph kinds and liveness are enforc
   saved <- out
   origins[,] <- 99;ow[] <- -1;dw[] <- 0
   gc()
-  expect_identical(od_betweenness(g,rbind(c(-.5,0),c(2.5,1)),origin_weights=origin_wt_c_2_3,
-                                     destination_weights=dest_wt_c_4_1),saved)
+  ow <- c(2,3); dw <- c(4,1) # restore the values under the same names so the column names match
+  expect_identical(od_betweenness(g,rbind(c(-.5,0),c(2.5,1)),origin_weights=ow,
+                                     destination_weights=dw),saved)
   clone <- unserialize(serialize(g,NULL))
   expect_error(od_betweenness(clone,origins),"no longer live")
   od_native("graph_release",g$ptr);od_native("graph_release",g$ptr)
@@ -156,8 +156,8 @@ test_that("OD native validation fails safely and zero-sized sets remain genuine"
   expect_identical(call(),c(1,1,.5))
   od_native("graph_release",g$ptr)
   no_dest <- axial_graph(rbind(c(0,0,3,0)))
-  expect_identical(od_betweenness(no_dest,rbind(c(0,1)))$od_betweenness,0)
-  expect_identical(od_betweenness(no_dest,rbind(c(0,1)),destination_weights=dest_wt_numeric)$od_betweenness,0)
+  expect_identical(pick(od_betweenness(no_dest,rbind(c(0,1))), "^od_"),0)
+  expect_identical(pick(od_betweenness(no_dest,rbind(c(0,1)),destination_weights=dest_wt_numeric), "^od_"),0)
   od_native("graph_release",no_dest$ptr)
 })
 
@@ -178,7 +178,7 @@ test_that("supported OD radius limits still work and are not affected by the axm
   g <- axial_graph(rbind(c(0,0,10,0),c(10,0,10,10)),points=rbind(c(1,0),c(9,9)))
   o <- rbind(c(1,0))
   for (r in list(analysis_radius(),analysis_radius(walking=50),analysis_radius(steps=1),analysis_radius(straight=50),analysis_radius(angular=90)))
-    expect_length(od_betweenness(g,o,radius=r)$od_betweenness,2L)
+    expect_length(pick(od_betweenness(g,o,radius=r), "^od_"),2L)
   # analysis_radius() itself still accepts axmeter for analyses that honour it
   expect_no_error(analysis_radius(axmeter=3))
   expect_no_error(network_reach(g,analysis_radius(axmeter=3)))
