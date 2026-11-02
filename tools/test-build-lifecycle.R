@@ -25,7 +25,7 @@ smoke_installed_package <- function(lib) {
   stopifnot(identical(g$n_lines, 2L), identical(g$n_crossings, 1L),
             identical(call("graph_info", g$ptr), c(2L, 1L, 0L, 0L)))
   integration <- rPSTool::network_integration(g, steps = 2L)
-  stopifnot(identical(integration$node_count, c(2L, 2L)), identical(integration$total_depth, c(1, 1)))
+  stopifnot(identical(integration$nc_s_rs2, c(2L, 2L)), identical(integration$td_s_rs2, c(1, 1)))
   stopifnot(identical(rPSTool::network_integration(g, steps = 2L), integration))  # graph is reusable
   call("graph_release", g$ptr)
   call("graph_release", g$ptr)  # repeated release is a no-op
@@ -35,7 +35,7 @@ smoke_installed_package <- function(lib) {
   s <- rPSTool::segment_graph(rbind(c(0, 0, 3, 0), c(3, 0, 3, 3)))
   stopifnot(identical(s$n_segments, 2L), identical(call("segment_graph_info", s$ptr), 2L))
   angular <- rPSTool::angular_integration(s, steps = 2L)
-  stopifnot(identical(angular$node_count, c(2L, 2L)), identical(angular$integration, c(0.5, 0.5)))
+  stopifnot(identical(angular$nc_a_rs2, c(2L, 2L)), identical(angular$ai_a_rs2_t, c(0.5, 0.5)))
   # Handles are not interchangeable between graph families.
   stopifnot(inherits(try(rPSTool::network_integration(s, steps = 2L), silent = TRUE), "try-error"),
             inherits(try(rPSTool::angular_integration(g, steps = 2L), silent = TRUE), "try-error"))
