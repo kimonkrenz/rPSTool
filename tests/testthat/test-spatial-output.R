@@ -57,7 +57,7 @@ test_that("spatial_output_file is appended after overwrite; output_file stays at
   # output_file is unchanged for a file-built graph: attribute-only Parquet, no geometry
   out <- angular_choice(g, output_file = both[1])
   expect_identical(out$format, "parquet"); expect_null(out$spatial)
-  expect_identical(names(rs_read_parquet(both[1], as_data_frame = FALSE)), c("segment_id", "choice", "node_count", "total_depth"))
+  expect_identical(names(rs_read_parquet(both[1], as_data_frame = FALSE)), c("segment_id", "ac_a_rg_n", "nc_a_rg", "td_a_rg"))
 })
 
 test_that("ineligible modes are rejected before anything is computed or created", {
@@ -224,20 +224,20 @@ test_that("GeoParquet: source row-group layout, column types and metadata surviv
   expect_identical(o$num_row_groups, s$num_row_groups); expect_identical(s$num_row_groups, 5L)
   ss <- s$GetSchema(); os <- o$GetSchema()
   for (nm in ss$names) expect_true(ss$GetFieldByName(nm)$type == os$GetFieldByName(nm)$type, info = nm)
-  expect_true(os$GetFieldByName("integration")$type == arrow::float32()); expect_false(os$GetFieldByName("integration")$nullable)
-  expect_identical(os$names, c(ss$names, "integration", "node_count", "total_depth"))
+  expect_true(os$GetFieldByName("ai_a_rs3_t")$type == arrow::float32()); expect_false(os$GetFieldByName("ai_a_rs3_t")$nullable)
+  expect_identical(os$names, c(ss$names, "ai_a_rs3_t", "nc_a_rs3", "td_a_rs3"))
   src <- rs_read_parquet(path, as_data_frame = FALSE); res <- rs_read_parquet(out, as_data_frame = FALSE)
   for (nm in ss$names) expect_true(src$GetColumnByName(nm)$Equals(res$GetColumnByName(nm)), info = nm)
   mem <- angular_integration(g, steps = 3)
-  expect_identical(as.vector(res$GetColumnByName("integration")), mem$integration)
+  expect_identical(as.vector(res$GetColumnByName("ai_a_rs3_t")), mem$integration)
   # a batch size that does not divide the source row groups
   md <- rPSTool:::.pst_result_metadata("x", list(), "segment", 30, g)
   desc <- rPSTool:::.pst_write_result_file(NULL, FALSE, export = function(stream, batch_rows)
       .Call(rPSTool:::C_rpst_angular_integration_stream, g$ptr, analysis_radius(steps = 3), FALSE, "turner", 0, 1, FALSE, stream,
-            c("segment_id", "integration", "node_count", "total_depth"), names(md), unname(md), batch_rows),
-    columns = c("segment_id", "integration", "node_count", "total_depth"), expected_rows = 30, batch_rows = 4,
+            c("segment_id", "ai_a_rs3_t", "nc_a_rs3", "td_a_rs3"), names(md), unname(md), batch_rows),
+    columns = c("segment_id", "ai_a_rs3_t", "nc_a_rs3", "td_a_rs3"), expected_rows = 30, batch_rows = 4,
     spatial_output_file = file.path(dir, "b4.parquet"), graph = g, metadata = md)
-  expect_identical(as.vector(rs_read_parquet(file.path(dir, "b4.parquet"), as_data_frame = FALSE)$GetColumnByName("integration")), mem$integration)
+  expect_identical(as.vector(rs_read_parquet(file.path(dir, "b4.parquet"), as_data_frame = FALSE)$GetColumnByName("ai_a_rs3_t")), mem$integration)
 })
 
 # ---- nulls and non-finite values, driven by the synthetic native producer ---------------------------------------------------
@@ -577,7 +577,7 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
   o1 <- file.path(dir, "o1.fgb"); o2 <- file.path(dir, "o2.fgb"); o3 <- file.path(dir, "o3.fgb")
   angular_choice(segment_graph(src), radius = analysis_radius(steps = 2), spatial_output_file = o1)
   angular_integration(segment_graph(o1), steps = 5, spatial_output_file = o2)
-  angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9), spatial_output_file = o3)   # replaces `choice` again
+  angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9), spatial_output_file = o3)   # another radius: accumulates
   m1 <- so_fgb_meta(o1); m2 <- so_fgb_meta(o2); m3 <- so_fgb_meta(o3)
   expect_identical(so_prov(m1, "rpst:function"), "angular_choice")
   expect_identical(so_prov(m2, "rpst:function"), "angular_integration")
@@ -586,9 +586,12 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
   expect_match(so_prov(m3, "rpst:parameters"), '"steps\\":9', fixed = TRUE)
   expect_false(grepl('"steps\\":2', m3, fixed = TRUE))   # nothing of the first calculation survives
   for (mm in list(m1, m2, m3)) expect_identical(lengths(regmatches(mm, gregexpr('"rpst:function"', mm, fixed = TRUE))), 1L)   # no duplicate keys
-  # the data are also the latest (replacement, not duplication)
-  expect_identical(names(so_read(o3, "flatgeobuf")$attrs), c(names(so_read(src, "flatgeobuf")$attrs), "choice", "node_count", "total_depth", "integration"))
-  expect_identical(so_read(o3, "flatgeobuf")$attrs$choice, angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9))$choice)
+  # each calculation has its own columns (different radii and analyses accumulate; nothing is duplicated)
+  expect_identical(so_read(o3, "flatgeobuf", legacy = FALSE)$names,
+                   c(names(so_read(src, "flatgeobuf", legacy = FALSE)$attrs), "ac_a_rs2_n", "nc_a_rs2", "td_a_rs2",
+                     "ai_a_rs5_t", "nc_a_rs5", "td_a_rs5", "ac_a_rs9_n", "nc_a_rs9", "td_a_rs9"))
+  expect_identical(so_read(o3, "flatgeobuf", legacy = FALSE)$attrs$ac_a_rs9_n,
+                   rPSTool::angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9))$ac_a_rs9_n)
 
   # an rPSTool object that ALSO holds an unrelated pair: the unrelated pair survives byte for byte, rPSTool's pairs are refreshed
   patch <- function(from, to, pattern, replacement) {
@@ -619,7 +622,7 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
     angular_integration(segment_graph(op), steps = 3, spatial_output_file = oo)
     expect_identical(so_fgb_meta(oo), before, info = basename(op))   # preserved byte for byte, never extended or corrupted
     expect_identical(so_read(oo, "flatgeobuf")$wkb, so_read(op, "flatgeobuf")$wkb)
-    expect_true("integration" %in% so_read(oo, "flatgeobuf")$names)
+    expect_true("ai_a_rs3_t" %in% so_read(oo, "flatgeobuf", legacy = FALSE)$names)
   }
   expect_length(so_leftovers(dir), 0L)
 })

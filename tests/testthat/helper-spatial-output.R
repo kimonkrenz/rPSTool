@@ -62,7 +62,12 @@ so_read <- function(path, format, legacy = TRUE) {   # legacy = FALSE keeps the 
          names = leg_names(setdiff(names(d), "geometry")))
   }
 }
-so_wkb_of <- function(path) sf::st_as_binary(sf::st_geometry(sf::st_read(path, quiet = TRUE)))
+# The geometry (WKB) of a source file, read independently of the package: GDAL via sf for FlatGeobuf, arrow for GeoParquet
+# (GDAL builds do not all include the Parquet driver).
+so_wkb_of <- function(path) {
+  if (grepl("\\.parquet$", path)) so_read(path, "geoparquet")$wkb
+  else sf::st_as_binary(sf::st_geometry(sf::st_read(path, quiet = TRUE)))
+}
 so_make_source <- function(format, path, m, ...) if (format == "flatgeobuf") so_write_fgb(path, m, ...) else so_write_gpq(path, m, ...)
 so_graph <- function(format, path, kind) {
   if (kind == "segment") segment_graph(path) else axial_graph(path)

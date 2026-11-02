@@ -150,7 +150,7 @@ test_that("length-weighted syntax Choice is identical in memory, in Parquet and 
       pq <- file.path(dir, "r.parquet")
       angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax",
                          output_file = pq, overwrite = TRUE)
-      expect_identical(as.data.frame(rs_read_parquet(pq))$normalized, mem$normalized)
+      expect_identical(rs_read(pq)$normalized, mem$normalized)
       sp <- file.path(dir, paste0("o.", so_ext[[format]]))
       angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax",
                          spatial_output_file = sp, overwrite = TRUE)
@@ -160,7 +160,7 @@ test_that("length-weighted syntax Choice is identical in memory, in Parquet and 
       mpq <- file.path(dir, "m.parquet")
       angular_choice(g, radius = analysis_radius(walking = c(30, 12)), weigh_by_length = weighted, normalization = "syntax",
                          output_file = mpq, overwrite = TRUE)
-      expect_identical(as.data.frame(rs_read_parquet(mpq))$choice_syntax_w30, mem$normalized)
+      expect_identical(as.data.frame(rs_read_parquet(mpq))[[paste0("ac_a_rw30_", if (weighted) "wl_", "c")]], mem$normalized)
     }
   }
 })
