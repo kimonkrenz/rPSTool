@@ -49,16 +49,17 @@ so_md5 <- function(path) unname(tools::md5sum(path))
 so_leftovers <- function(dir) list.files(dir, pattern = "^\\.rpst-", all.files = TRUE)
 
 # Read a spatial output back with an independent reader. FlatGeobuf: GDAL via sf. GeoParquet: R arrow.
-so_read <- function(path, format) {
+so_read <- function(path, format, legacy = TRUE) {   # legacy = FALSE keeps the real column names
+  leg_frame <- if (legacy) legacy_frame else identity; leg_names <- if (legacy) legacy_names else identity
   if (format == "flatgeobuf") {
     x <- sf::st_read(path, quiet = TRUE)
-    list(attrs = legacy_frame(sf::st_drop_geometry(x)), wkb = sf::st_as_binary(sf::st_geometry(x)), crs = sf::st_crs(x),
-         names = legacy_names(names(sf::st_drop_geometry(x))))
+    list(attrs = leg_frame(sf::st_drop_geometry(x)), wkb = sf::st_as_binary(sf::st_geometry(x)), crs = sf::st_crs(x),
+         names = leg_names(names(sf::st_drop_geometry(x))))
   } else {
     t <- rs_read_parquet(path, as_data_frame = FALSE)
     d <- as.data.frame(t)
-    list(attrs = legacy_frame(d[setdiff(names(d), "geometry")]), wkb = unclass(d$geometry), table = t,
-         names = legacy_names(setdiff(names(d), "geometry")))
+    list(attrs = leg_frame(d[setdiff(names(d), "geometry")]), wkb = unclass(d$geometry), table = t,
+         names = leg_names(setdiff(names(d), "geometry")))
   }
 }
 so_wkb_of <- function(path) sf::st_as_binary(sf::st_geometry(sf::st_read(path, quiet = TRUE)))
