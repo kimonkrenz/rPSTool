@@ -2,8 +2,8 @@
 
 `spatial_output_file` is implemented for the analyses whose result has exactly one row per source feature. It never changes a PST
 algorithm or a numerical result, and `output_file` stays the attribute-only Parquet route ([result files](result-files.md)).
-Spatial output is implemented on POSIX systems and on Windows; the Windows implementation passed the development test suite on
-Windows, and validation of the final release candidate on Windows is still outstanding (§9).
+Spatial output is implemented on POSIX systems and on Windows; the full development test suite and `R CMD check` passed on
+Windows x86-64 at commit `4119f2b`.
 
 ## 1. Public API
 

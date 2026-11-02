@@ -2,7 +2,7 @@
 % Please edit documentation in R/od-betweenness.R
 \name{od_betweenness}
 \alias{od_betweenness}
-\title{Calculate PST Origin-Destination Betweenness}
+\title{Origin-Destination Betweenness}
 \usage{
 od_betweenness(
   graph,
@@ -18,78 +18,57 @@ od_betweenness(
 )
 }
 \arguments{
-\item{graph}{A live axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
+\item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{origins}{Integer/double matrix with zero or more rows and exactly two
-columns x,y. Coordinates must be finite and fit native world/local and
-origin/destination distance bounds. Origin order is preserved. Also accepts
-sf/sfc XY POINT features, including zero-feature collections.}
+\item{origins}{Numeric matrix with zero or more rows and exactly two columns (\code{x}, \code{y}), or an XY POINT \code{sf}/\code{sfc}
+object (zero features allowed). Origin order is preserved.}
 
-\item{radius}{Independent limits from \code{\link[=analysis_radius]{analysis_radius()}}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
 
-\item{distance}{Exact name: walking (default) or angular.}
+\item{distance}{\code{"walking"} (default) or \code{"angular"}.}
 
-\item{destination_mode}{Exact name: all (default) or closest.}
+\item{destination_mode}{\code{"all"} (default) or \code{"closest"}.}
 
-\item{origin_weights}{NULL for unit weights, or finite native-float values,
-one per supplied origin. Zero and negative values are passed unchanged.}
+\item{origin_weights}{\code{NULL} for unit weights, or one finite value per origin. Zero and negative values are
+passed unchanged.}
 
-\item{destination_weights}{NULL for unit weights, or finite native-float
-values, one per retained native graph point, not per polygon or point group.
-Zero and negative values are passed unchanged and excluded by PST.}
+\item{destination_weights}{\code{NULL} for unit weights, or one finite value per point stored in the graph (not per
+polygon or point group). Zero and negative values are excluded by PST.}
 
-\item{output_file}{\code{NULL} (default) returns the data frame. A path writes the same table directly to one
-Parquet file from PST's native result arrays and returns an invisible \code{pst_result_file} descriptor, without
-building R result vectors. Requires the optional package \verb{arrow (>= 25.0.0)} (platform notes, including Windows, are in \link{pst_result_file}; validation of the final release candidate on Windows is still outstanding). Columns, order and
-values are those of the data frame (ids and counts int32, results float32 as PST computed them; no missing
-values are introduced). See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md}.}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
-
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-columns, matched to the source features by position (no spatial join). The output format equals the source format
-(GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-replaces it, other result columns are appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a
-file path; \code{overwrite} applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible \link{pst_result_file} descriptor. See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
+\link{pst_result_file}.}
 }
 \value{
-Data frame in input line order with one-based line_id and
-od_betweenness, native float scores widened to double. Empty origin or
-destination sets yield PST's written zero scores. With \code{output_file} or \code{spatial_output_file}, the result is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+A data frame in line order with one-based \code{line_id} and \code{od_betweenness} (double, widened from single
+precision). Empty origin or destination sets give PST's written zero scores. With \code{output_file} or
+\code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file} descriptor is returned.
 }
 \description{
-Calls PSTAODBetweenness on a live axial graph. Destinations are the graph's
-retained native points, including individually generated polygon samples.
-PST assigns supplied origins to their closest lines, chooses routes and
-distributes each origin's weight across reached positive-weight destinations.
-The closest mode uses the first destination reached by PST's native queue;
-no alternative tie ordering or equal-path splitting is imposed.
+Counts how often each line lies on the routes from supplied origins to the destination points stored in the
+graph, weighted by origin and destination weights. Use it to estimate the load on a network from known origins
+(for example homes) to known destinations (for example shops).
 }
 \details{
-Walking and angular are the supported primary costs. Straight, walking, steps
-and angular limits retain PST's independent checks. An axmeter limit is
-rejected with an error before OD Betweenness calculation, because the pinned algorithm
-ignores it and the axmeter restriction would have no effect. Angular mode does not charge the final destination leg to walking
-depth, so a walking radius can differ from walking-primary mode. Destination
-weights <= 0 are excluded. Nonpositive origin weights produce no positive
-trace contributions. Written native zeros/Inf/NaN are preserved without an NA
-policy, rescaling or replacement computation.
+Destinations are the points stored in the axial graph, including each generated polygon sample. PST assigns every
+origin to its closest line, chooses the routes and divides each origin's weight across the reached destinations with
+a positive weight. \code{destination_mode = "closest"} uses the first destination PST reaches; no other tie ordering and
+no equal-path splitting is imposed.
 
-Pinned PST uses one asynchronous worker, even with higher worker caps. rPSTool
-validates the existing worker-cap environment and preserves that single-worker
-execution. Calls wait for completion, propagate worker failures and never use
-R callbacks. The graph is reusable and results own independent R storage.
+The primary cost is \code{"walking"} or \code{"angular"}. Straight, walking, steps and angular limits are checked
+independently. In angular mode the final leg to the destination is not charged to the walking depth, so a walking
+radius can give different results from walking-primary mode. An axmeter limit is rejected, because PST ignores it.
+Destination weights of zero or below are excluded, and non-positive origin weights make no positive contribution.
+Written zeros, \code{Inf} and \code{NaN} are returned unchanged.
 
-Optional sf/sfc inputs require XY geometry and compatible CRS metadata with
-the graph when retained, including known versus unknown CRS. Known
-geographic CRS is rejected; transform explicitly. Matrix-only graphs have no
-CRS to compare: the numerical frame remains the caller's responsibility. No
-reprojection, unit conversion or attribute interpretation occurs; inputs are
-not retained.
+PST runs this analysis on a single worker thread regardless of any thread cap. \code{sf} inputs need XY geometry and a CRS
+compatible with the graph's (known versus unknown included); a known geographic CRS is rejected and nothing is
+reprojected.
 }
 \examples{
 g <- axial_graph(cbind(0:2, 0, 1:3, 0), points = rbind(c(1.5, 0.5), c(3.5, 0)))
 od_betweenness(g, rbind(c(-0.5, 0)))
 od_betweenness(g, rbind(c(-0.5, 0)), destination_mode = "closest")
+}
+\seealso{
+\code{\link[=network_betweenness]{network_betweenness()}}, \code{\link[=attraction_reach]{attraction_reach()}}, \code{\link[=axial_graph]{axial_graph()}}
 }

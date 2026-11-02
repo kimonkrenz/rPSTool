@@ -67,8 +67,7 @@ First release.
   temporary file in the destination directory, no-clobber publication (or a single replacing rename with `overwrite = TRUE`), and
   refusal to overwrite the source network through any alias, on POSIX systems and on Windows (Win32 API). On Windows a replacement
   fails, leaving the old file intact, while another process holds the destination open without sharing it for deletion. Result files
-  are written through POSIX calls on Unix-alikes and through the Win32 API on Windows. The Windows implementation passed the
-  development test suite on Windows; validation of the final release candidate on Windows is still outstanding.
+  are written through POSIX calls on Unix-alikes and through the Win32 API on Windows. The full development test suite and `R CMD check` passed on Windows x86-64 at commit `4119f2b` (R 4.6.2, Rtools GCC 14.3.0).
 
 ## Known limitations
 

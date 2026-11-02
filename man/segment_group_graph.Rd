@@ -3,54 +3,52 @@
 \name{segment_group_graph}
 \alias{segment_group_graph}
 \alias{print.pst_segment_group_graph}
-\title{Construct a distinct PST segment-group graph}
+\title{Build a graph of segment groups}
 \usage{
 segment_group_graph(graph, group_id)
 
 \method{print}{pst_segment_group_graph}(x, ...)
 }
 \arguments{
-\item{graph}{A live graph from \code{\link[=segment_graph]{segment_graph()}}.}
+\item{graph}{A segment graph created by \code{\link[=segment_graph]{segment_graph()}}.}
 
-\item{group_id}{Integer or double vector with exactly one whole ID per native
-segment, with values in \verb{1..n_segments}. Group count is \code{max(group_id)}; gaps
-define empty native groups. Supply \code{grouping$group_id} or explicit IDs.}
+\item{group_id}{Integer or double vector with exactly one whole identifier per segment, with values in
+\verb{1..n_segments}. The number of groups is \code{max(group_id)}; gaps define empty groups.}
 
 \item{x}{A \code{pst_segment_group_graph}.}
 
 \item{...}{Unused additional arguments.}
 }
 \value{
-An S3 \code{pst_segment_group_graph} list with \code{ptr} (owned external
-pointer), \code{type} (\code{"segment_group"}), \code{n_groups} (integer) and \code{pst_version}
-(\code{"3.3.2"}). Treat fields as read-only. Printing uses the authoritative
-native owner size, not editable metadata.
+An object of class \code{pst_segment_group_graph}: a list with \code{type} (\code{"segment_group"}), \code{n_groups} and
+\code{pst_version}, plus the native handle \code{ptr}. Treat these fields as read-only.
 }
 \description{
-Calls \code{PSTACreateSegmentGroupGraph} on the endpoint-connected source graph.
-This distinct native family is incompatible with axial and segment analysis
-handles. Supply one-based group IDs from \code{segment_grouping()} or an explicit
-numeric vector; caller-supplied IDs are used in their given order and are not
-relabeled. PST stores group nodes and distances by value; the result retains
-neither the source segment graph nor the ID vector. No geometry, grouping or
-topology is computed in R.
+Creates a segment-group graph from a segment graph and an assignment of its segments to groups, for example the
+output of \code{\link[=segment_grouping]{segment_grouping()}}. The result is analysed with \code{\link[=segment_group_integration]{segment_group_integration()}}.
 }
 \details{
-The external pointer owns the native handle; last-owner collection calls
-\code{PSTAFreeSegmentGroupGraph} exactly once. Copies share ownership. Native
-pointers cannot be persisted: reconstruct after serialization or process
-transfer. PST may create groups without native nodes, e.g. a single grouped
-chain; these are valid graphs. See \code{\link[=segment_group_integration]{segment_group_integration()}} for outputs.
-
-A source graph that contains a zero-length segment (both endpoints
-identical) is rejected before PST is called: PST's group-graph construction
-does not terminate on such segments (\code{SegmentGroupGraph.cpp}, guarded only by
-assertions that are compiled out of release builds). \code{\link[=segment_graph]{segment_graph()}},
-\code{\link[=segment_grouping]{segment_grouping()}} and the angular analyses accept the same graph.
+Supply \code{group_id} from \code{\link[=segment_grouping]{segment_grouping()}} or as your own vector of group identifiers. Identifiers are used
+in the order given and are not relabelled. Groups with no connecting nodes (for example a single grouped chain)
+are valid. The resulting graph does not keep the source segment graph or the identifier vector. A segment-group
+graph is a different object from segment and axial graphs and only \code{\link[=segment_group_integration]{segment_group_integration()}} accepts it.
+Like other graphs it is held in native memory, cannot be saved with \code{saveRDS()} or sent to another R process,
+and must be rebuilt from the segment graph and the identifiers.
 }
+\section{Limitations}{
+
+A source graph containing a zero-length segment (both endpoints identical) is rejected before PST is called,
+because PST's group-graph construction does not terminate on such segments. \code{\link[=segment_graph]{segment_graph()}},
+\code{\link[=segment_grouping]{segment_grouping()}} and the angular analyses accept the same graph. Remove or repair zero-length segments
+first.
+}
+
 \examples{
 s <- segment_graph(cbind(0:4, 0, 1:5, 0))
 ids <- segment_grouping(s)$group_id
 g <- segment_group_graph(s, ids)
 print(g)
+}
+\seealso{
+\code{\link[=segment_grouping]{segment_grouping()}}, \code{\link[=segment_group_integration]{segment_group_integration()}}, \code{\link[=segment_graph]{segment_graph()}}
 }

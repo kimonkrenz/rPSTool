@@ -2,33 +2,29 @@
 % Please edit documentation in R/raster.R
 \name{raster_data}
 \alias{raster_data}
-\title{Copy native raster data into R}
+\title{Read the values of a comparison raster}
 \usage{
 raster_data(raster)
 }
 \arguments{
-\item{raster}{A live \code{pst_raster} from \code{\link[=compare_line_results]{compare_line_results()}}.}
+\item{raster}{A raster created by \code{\link[=compare_line_results]{compare_line_results()}}.}
 }
 \value{
-A list with \code{bbox} (named numeric \verb{xmin, ymin, xmax, ymax}),
-\code{dimensions} (named integer \verb{width, height}), \code{pitch} (a number: the native
-row stride of the PST raster storage in bytes, at least \code{width} times the
-bytes per pixel), \code{format} (a string naming the native pixel type: \code{"float"}
-for 32-bit floating point, copied into a double matrix, or \code{"byte"} for
-8-bit unsigned pixels, copied into an integer matrix; comparison rasters
-currently have format \code{"float"}), native comparison \code{min} and \code{max} (numbers;
-in normalized mode they precede normalization), and a \code{values} matrix with
-\code{height} rows and \code{width} columns. Rows run from maximum y toward minimum y;
-columns run from minimum x toward maximum x. Pixel centers are half a pixel
-inside the extent. Data are copied by native pitch and format, so \code{pitch}
-is informational: it is not needed to index \code{values}.
+A list with
+\itemize{
+\item \code{bbox}: named numeric \verb{xmin, ymin, xmax, ymax},
+\item \code{dimensions}: named integer \verb{width, height},
+\item \code{pitch}: the row stride of PST's raster storage in bytes (informational; it is not needed to index \code{values}),
+\item \code{format}: the pixel type, \code{"float"} (copied into a double matrix) or \code{"byte"} (copied into an integer matrix);
+comparison rasters currently have format \code{"float"},
+\item \code{min} and \code{max}: PST's comparison minimum and maximum (before normalisation in normalised mode), and
+\item \code{values}: a matrix with \code{height} rows and \code{width} columns. Rows run from maximum y towards minimum y and columns from
+minimum x towards maximum x. Pixel centres are half a pixel inside the extent.
+}
 }
 \description{
-Copies native raster storage into R using its native pitch and format.
-}
-\details{
-The returned data remain usable after the raster is released.
-NaN and Inf remain native values, without a missing-value policy.
+Copies the pixel values and extent of a raster created by \code{\link[=compare_line_results]{compare_line_results()}} into ordinary R objects. The copy
+remains usable after the raster is released. \code{NaN} and \code{Inf} are kept as PST wrote them.
 }
 \examples{
 x <- matrix(c(0, 0, 2, 2, 0, 2, 2, 0), 2, 4, byrow = TRUE)

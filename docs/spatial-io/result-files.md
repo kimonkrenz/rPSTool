@@ -137,8 +137,7 @@ with `codec_is_available("zstd")` checked first.
    construction, spatial-output preflight and writer) through an explicit `ReadableFile` without memory mapping and closes it as
    soon as it is done, before anything is published; it never holds the destination open. Code that inspects a result file with
    Arrow should do the same (the tests use `rs_pq()` / `rs_read_parquet()`).
-   The Windows implementation passed the development test suite on Windows; validation of the final release candidate on Windows is
-   still outstanding; see the [release checklist](../release-checklist.md).
+   The full development test suite and `R CMD check` passed on Windows x86-64 at commit `4119f2b` (R 4.6.2, Rtools GCC 14.3.0).
 
 ## 6. Tests
 
@@ -210,9 +209,8 @@ compile rules (`-ffp-contract=off`) and are registered in `Makevars`, `Makevars.
 
 * The machinery passed the complete local validation on Linux x86-64 and macOS Apple Silicon. The Windows implementation (§5 item 6)
   is complete. Before the Windows runs it was exercised on the Win32 API only under Wine (`tools/validation/windows/`), which does not
-  reproduce NTFS or symbolic-link semantics. The development test suite has since passed on Windows (see the
-  [release checklist](../release-checklist.md) item 10); validation of the final release candidate on Windows is still outstanding,
-  and the procedure in `tools/validation/windows/README.md` has not been repeated on it.
+  reproduce NTFS or symbolic-link semantics. The full development test suite and `R CMD check` have since passed on Windows x86-64 at `4119f2b`; the
+  procedure in `tools/validation/windows/README.md` has not been repeated on it.
 * Result persistence needs the optional `arrow`; the undocumented `import_from_c` is a version-sensitive dependency.
 * The native result arrays must be fully resident until the write finishes: this is **not** a streaming or
   bounded-memory computation (PST fills complete caller-supplied arrays).

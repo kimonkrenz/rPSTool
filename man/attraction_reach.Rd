@@ -3,7 +3,7 @@
 \name{attraction_reach}
 \alias{attraction_reach}
 \alias{attraction_distance}
-\title{Calculate PST Attraction Reach and Attraction Distance}
+\title{Attraction Reach and Attraction Distance}
 \usage{
 attraction_reach(
   graph,
@@ -40,123 +40,107 @@ attraction_distance(
 )
 }
 \arguments{
-\item{graph}{A live axial graph from \code{\link[=axial_graph]{axial_graph()}}.}
+\item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{attraction_points}{Integer/double matrix with zero or more rows and two
-columns x,y. Native world/local coordinates and distances must fit. For
-polygons, NaN/NaN separates rings; NA and unmatched NaN are rejected. Also
-accepts sf/sfc XY POINT or POLYGON features. POLYGON rings lose only their
-explicit final closure and use NaN/NaN separators; order, winding and holes
-are preserved. PST samples all ring boundaries in one group per feature.
-Empty POLYGON features represent zero-count groups; empty polygon
-collections, multipart, mixed, Z/M and empty POINT features are rejected.}
+\item{attraction_points}{Numeric matrix with zero or more rows and two columns (\code{x}, \code{y}), or an XY POINT or
+POLYGON \code{sf}/\code{sfc} object. For polygons in a matrix, \code{NaN}/\code{NaN} rows separate rings, and \code{NA} and unmatched \code{NaN}
+are rejected. Polygon rings lose only their explicit closing vertex; order, winding and holes are preserved,
+and each feature becomes one group (an empty polygon is a zero-count group). Empty collections, multipart, mixed,
+Z/M and empty POINT features are rejected.}
 
-\item{radius}{Independent limits from \code{\link[=analysis_radius]{analysis_radius()}}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
 
-\item{origin}{Exact name: lines, junctions, points, or point_groups. Points and
-point groups are those retained by graph construction, not supplied origins.}
+\item{origin}{\code{"lines"}, \code{"junctions"}, \code{"points"} or \code{"point_groups"}. Points and point groups are those retained
+when the graph was built, not newly supplied origins.}
 
-\item{distance}{Exact name of the native distance (default \code{"steps"}). The accepted values differ between the two
-functions. \code{attraction_reach()}: \code{"straight"}, \code{"walking"}, \code{"steps"}, \code{"angular"}, \code{"axmeter"} or \code{"none"}
-(\code{"none"} uses native zero cost). \code{attraction_distance()}: \code{"straight"}, \code{"walking"}, \code{"steps"}, \code{"angular"} or
-\code{"weights"} (custom weights, see \code{line_weights} and \code{point_edge_weight}); it has no \code{"axmeter"} or \code{"none"}
-distance and rejects an axmeter radius. The \code{"straight"} radius of
-\code{attraction_distance()} is not applied by PST to the network distances it
-computes (it is ignored, not rejected). In \code{attraction_reach()}, a distance
-that does not match the radius metrics (the default \code{"steps"} with a
-walking radius) can be extremely slow and memory hungry, since PST then
-searches steps and walking together; use \code{"none"} or the matching distance.}
+\item{distance}{The distance used, default \code{"steps"}. For \code{attraction_reach()}: \code{"straight"}, \code{"walking"}, \code{"steps"},
+\code{"angular"}, \code{"axmeter"} or \code{"none"}. For \code{attraction_distance()}: \code{"straight"}, \code{"walking"}, \code{"steps"},
+\code{"angular"} or \code{"weights"}.}
 
-\item{points_per_polygon}{NULL for point attractions, or non-negative whole
-counts summing to the attraction row count, one per polygon. Native polygons
-close automatically; avoid repeating the first vertex. Must be NULL for
-sf input: POLYGON counts are derived from geometry.}
+\item{points_per_polygon}{\code{NULL} for point attractions, or non-negative whole numbers summing to the number of
+attraction rows, one per polygon. Must be \code{NULL} for \code{sf} input, where polygons are derived from the geometry.}
 
-\item{polygon_point_interval}{Positive finite native float spacing, required
-with polygons. Sampling count and loop-progress bounds are checked.}
+\item{polygon_point_interval}{Positive, finite sampling interval in coordinate units. Required with polygons.}
 
-\item{attraction_values}{Reach only. NULL for native unit values, or finite native float
-values per attraction point/polygon. Zero and negative values are preserved
-as inputs and skipped by PST.}
+\item{attraction_values}{\code{attraction_reach()} only. \code{NULL} for unit values, or one finite value per attraction
+point or polygon. Zero and negative values are skipped by PST.}
 
-\item{decay}{Reach only. Decay: \code{"constant"} (default), \code{"power"}, \code{"curve"} or \code{"divide"}.}
+\item{decay}{\code{attraction_reach()} only. \code{"constant"} (default), \code{"power"}, \code{"curve"} or \code{"divide"}.}
 
-\item{decay_constant}{Finite native float parameter passed unchanged to PST.
-\code{NULL} (default) selects an effective value from \code{decay}: 0 for \code{"constant"}
-(the long-standing default) and 1 for \code{"power"}, \code{"curve"} and \code{"divide"},
-the default of the original PST for QGIS wizard (\code{C = 1}). Any explicitly
-supplied value, including 0, is passed unchanged and keeps its native
-meaning. Power/curve use the selected distance's radius for scaling.}
+\item{decay_constant}{A finite number passed to PST, or \code{NULL} for the default described in Details.}
 
-\item{distribution}{Reach only. Polygon distribution: \code{"divide"} (default) or \code{"copy"}.}
+\item{distribution}{\code{attraction_reach()} only. How polygon values are distributed: \code{"divide"} (default) or \code{"copy"}.}
 
-\item{collection}{Reach only. Point-group collection: \code{"mean"} (default), \code{"sum"}, \code{"min"} or \code{"max"}.}
+\item{collection}{\code{attraction_reach()} only. How point-group values are collected: \code{"mean"} (default), \code{"sum"},
+\code{"min"} or \code{"max"}.}
 
-\item{output_file}{\code{NULL} (default) returns the data frame. A path writes the same table directly to one
-Parquet file from PST's native result arrays and returns an invisible \code{pst_result_file} descriptor, without
-building R result vectors. Requires the optional package \verb{arrow (>= 25.0.0)} (platform notes, including Windows, are in \link{pst_result_file}; validation of the final release candidate on Windows is still outstanding). Columns, order and
-values are those of the data frame (ids and counts int32, results float32 as PST computed them; no missing
-values are introduced). See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
+\link{pst_result_file}. \code{spatial_output_file} is available only with \code{origin = "lines"}.}
 
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
+\item{line_weights}{\code{attraction_distance()} only. \code{NULL}, or for \code{distance = "weights"} one non-negative finite
+weight per graph line.}
 
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-columns, matched to the source features by position (no spatial join). The output format equals the source format
-(GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-replaces it, other result columns are appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a
-file path; \code{overwrite} applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible \link{pst_result_file} descriptor. Only with \code{origin = "lines"} (one result per network line). See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{point_edge_weight}{\code{attraction_distance()} only. Non-negative finite cost per coordinate unit on point
+edges for custom weighted distance (default 0).}
 
-\item{line_weights}{Distance only. NULL for other distances; otherwise one non-negative finite
-native float per graph line; used with distance = weights.}
-
-\item{point_edge_weight}{Distance only. Non-negative finite native float cost per coordinate
-unit on point edges, used by custom weighted Distance (default zero).}
-
-\item{destination_indices}{Distance only. TRUE to append raw native destination_index,
-FALSE to omit indices and use PST's distance-only path.}
+\item{destination_indices}{\code{attraction_distance()} only. \code{TRUE} to also return the destination index, \code{FALSE} to
+omit it.}
 }
 \value{
-Data frame with \code{origin_id} (one-based) and \code{attraction_reach} or
-\code{attraction_distance} (native floats widened to doubles). \code{attraction_distance()} also includes
-integer \code{destination_index} unless \code{destination_indices = FALSE}, in the native index convention above
-(zero-based, \code{-1} for unreachable). With \code{output_file} or \code{spatial_output_file}, the result is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+A data frame with one-based \code{origin_id} and \code{attraction_reach} or \code{attraction_distance} (doubles widened
+from PST's single precision). \code{attraction_distance()} also returns the integer \code{destination_index} unless
+\code{destination_indices = FALSE}. With \code{output_file} or \code{spatial_output_file} the results are written to a file and an
+invisible \link{pst_result_file} descriptor is returned.
 }
 \description{
-These analyses reuse an axial graph and its retained points or polygon point
-groups. PST performs all sampling, assignment, traversal, collection and
-decay. Outputs follow native origin order and own independent R storage.
-Reach supports straight, walking, steps, angular, axmeter and none distances;
-none uses native zero cost. Distance supports straight, walking, steps,
-angular and custom weights. Distance's straight mode requires no radius or
-a straight-only radius, and rejects point-group origins before computation:
-pinned PST leaves those group outputs unwritten. Network Distance rejects
-axmeter radii. No missing-output policy or replacement aggregation is applied.
+\code{attraction_reach()} measures how much attraction (for example shops or stations) can be reached from each
+origin within a radius, with optional decay. \code{attraction_distance()} measures the distance from each origin to
+the nearest attraction. Both use the attraction points or polygons stored in an axial graph.
 }
 \details{
-Native quirks are retained: Reach skips nonpositive attraction values and
-collects each group's native point prefix; finite straight line Reach applies
-decay at the radius. Distance's network path ignores a straight radius.
-Finite straight destination indices can identify the last eligible attraction.
-Polygon indices identify generated samples in straight mode and group network
-mode, and polygons in non-group network mode. Indices are returned exactly as
-PST writes them (zero-based, with -1 for unreachable). Native unreachable
-distances are -1. Written NaN/Inf and other scores are preserved.
+\strong{Origins and attractions.} Origins are lines, junctions, or the graph's retained points or point groups
+(\code{origin}). Attractions are the points or polygon point groups supplied to \code{\link[=axial_graph]{axial_graph()}}; polygons are
+sampled by PST. Results follow PST's origin order.
 
-Calls wait for internal workers and use no R callbacks. Worker caps follow
-\code{\link[=network_betweenness]{network_betweenness()}}. Graphs remain reusable; finite straight line Reach's shared
-native scratch query is protected in generated build copies.
+\strong{Attraction Reach} accepts \code{"straight"}, \code{"walking"}, \code{"steps"}, \code{"angular"}, \code{"axmeter"} and \code{"none"}
+distances (\code{"none"} uses zero cost). Non-positive attraction values are skipped. Each point group collects its
+native point prefix, and a finite straight-radius line reach applies decay at the radius.
 
-Optional sf/sfc inputs require XY geometry and compatible CRS metadata with
-the graph when retained, including known versus unknown CRS. Known
-geographic CRS is rejected; transform explicitly. Matrix-only graphs have no
-CRS to compare: the numerical frame remains the caller's responsibility. No
-reprojection, unit conversion or attribute interpretation occurs; inputs are
-not retained.
+\strong{Attraction Distance} accepts \code{"straight"}, \code{"walking"}, \code{"steps"}, \code{"angular"} and \code{"weights"} (custom
+weights; see \code{line_weights} and \code{point_edge_weight}). Axmeter radii are rejected. The \code{"straight"} distance
+requires no radius or a straight-only radius and rejects point-group origins, because PST leaves those outputs
+unwritten. A straight radius is ignored (not rejected) for network distances, which PST does not limit by
+straight distance.
+
+\strong{Destination indices.} \code{attraction_distance()} can return the index of the nearest attraction, exactly as PST
+writes it: zero-based, with \code{-1} for unreachable origins. Unreachable distances are also \code{-1}. For finite
+straight distances the index identifies the last eligible attraction. Polygon indices identify generated samples
+in straight mode and group network mode, and polygons in non-group network mode. Written \code{NaN}, \code{Inf} and other
+scores are returned unchanged; no missing-value policy is applied.
+
+\strong{Decay.} \code{decay_constant = NULL} selects 0 for \code{"constant"} decay and 1 for \code{"power"}, \code{"curve"} and
+\code{"divide"} (the default of the PST for QGIS wizard). Any value you supply, including 0, is passed to PST
+unchanged. Power and curve decay scale by the selected distance's radius. A decay that does not match the radius
+metric yields no decay.
+
+\strong{Coordinate reference systems.} \code{sf} inputs need XY geometry and a CRS compatible with the graph's (known versus
+unknown included). A known geographic CRS is rejected. Nothing is reprojected or converted.
+
+\strong{Threads.} PST uses several worker threads; see \code{\link[=network_betweenness]{network_betweenness()}} for how to cap them.
 }
+\section{Limitations}{
+
+In \code{attraction_reach()} a distance that does not match the radius metrics, such as the default \code{"steps"} with a
+walking radius, makes PST search steps and walking together, which can be extremely slow and memory-hungry on dense
+networks. Results are not affected. Use \code{distance = "none"} or the matching distance, or add a \code{steps} radius.
+}
+
 \examples{
 g <- axial_graph(rbind(c(0, 0, 3, 0), c(3, 0, 6, 0)))
 a <- rbind(c(1, 1), c(5, 1))
 attraction_reach(g, a, radius = analysis_radius(steps = 1))
 attraction_distance(g, a, distance = "walking")
+}
+\seealso{
+\code{\link[=axial_graph]{axial_graph()}}, \code{\link[=network_reach]{network_reach()}}, \code{\link[=analysis_radius]{analysis_radius()}}
 }

@@ -1,14 +1,15 @@
 ---
-title: "Getting started with rPSTool"
+title: "Getting started with rPSTool: the Barnsbury example"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting started with rPSTool}
+  %\VignetteIndexEntry{Getting started with rPSTool: the Barnsbury example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}
 has_sf <- requireNamespace("sf", quietly = TRUE)
+has_classint <- requireNamespace("classInt", quietly = TRUE)
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = has_sf,
                       fig.width = 6, fig.height = 4.6, dpi = 80)
 library(rPSTool)
@@ -21,9 +22,12 @@ rPSTool is an R interface to the C++ analysis engine of the *Place Syntax Tool*
 it directly, so installing it needs neither QGIS nor a separate PST
 installation. rPSTool does not reimplement the algorithms: you build a graph from
 your lines, the engine analyses it, and R receives the engine's results.
-This vignette walks through one small workflow on the example data that ships
-with the package: inspect the data, build an axial graph, run Network
+This vignette first runs a complete analysis on the Barnsbury example network (Angular Choice,
+mapped), then walks through a second workflow step by step: inspect the data, build an axial graph, run Network
 Integration, attach the results to the map and draw it.
+
+The vignette is a tutorial. It does not reproduce the movement analyses of Hillier and Iida (2005), and the
+historical values supplied with the example data are compared with rPSTool's results only descriptively.
 
 The example data are `sf` objects, so the package **sf** is needed to run the
 code below. It is an optional dependency of rPSTool; if it is not installed the
@@ -34,7 +38,75 @@ cat("**The sf package is not installed, so the code chunks in this vignette",
     "were not run.**\n")
 ```
 
-## 2. Load the example data
+## 2. Installation and a first complete analysis
+
+rPSTool is not on CRAN yet, so install it from GitHub. Installation compiles the bundled
+engine and needs a C++17 toolchain (Rtools on Windows, the Xcode command-line tools on macOS, `g++` or
+`clang++` on Linux). The first installation takes a few minutes. This chunk is shown, not run:
+
+```{r install, eval = FALSE}
+install.packages(c("pak", "sf", "classInt"))
+pak::pak("kimonkrenz/rPSTool")
+```
+
+The following example runs a complete analysis on the Barnsbury example network: it builds a segment map from
+the axial map, calculates Angular Choice within a 3 km walking radius and draws the result.
+
+```{r first-analysis, eval = has_sf && has_classint, warning = FALSE}
+library(rPSTool)
+
+barnsbury <- load_example_data()
+
+segments <- create_segment_map(
+  barnsbury$axial,
+  unlinks = barnsbury$unlinks,
+  output = "sf"
+)
+
+choice <- angular_choice(
+  segment_graph(segments$segments),
+  radius = analysis_radius(walking = 3000)
+)
+
+# classInt samples large data sets for Fisher breaks, so fix the seed to make the classes repeatable
+set.seed(1)
+breaks <- classInt::classIntervals(
+  choice$choice,
+  n = 9,
+  style = "fisher"
+)$brks
+
+ord <- order(choice$choice, na.last = FALSE)
+
+plot(
+  sf::st_geometry(segments$segments)[ord],
+  col = colour_map(
+    choice$choice,
+    "coral_day",
+    breaks = breaks
+  )[ord],
+  lwd = 2
+)
+```
+
+What the code does:
+
+* The Barnsbury geometry uses British National Grid coordinates (EPSG:27700), so all lengths are in metres.
+  The walking radius of 3000 is therefore 3 km.
+* `create_segment_map()` splits the axial lines into the segments that angular analyses need, applying the supplied
+  unlinks. `angular_choice()` then calculates Angular Choice for every segment with the PST engine. The result has
+  one row per segment, in the order of `segments$segments`.
+* `classInt::classIntervals(style = "fisher")` divides the results into nine classes at Fisher natural breaks.
+  rPSTool does not classify values itself; the breaks are passed to `colour_map()`. Because classInt samples large
+  data sets, the seed is set so that the classes, and so the map, are the same each time.
+* Coral Day is the rPSTool palette intended for a light background.
+* The segments are drawn in ascending order of choice, so the highest-choice segments are drawn last and stay
+  visible on top of the others.
+* The classification and colours affect only the picture. They do not change the Angular Choice values.
+
+The rest of this vignette goes through the workflow step by step with Network Integration on the axial map.
+
+## 3. Load the example data
 
 `load_example_data()` takes no arguments and returns a list of three `sf`
 objects for the Barnsbury area of London.
@@ -46,7 +118,7 @@ vapply(ex, nrow, integer(1))
 sf::st_crs(ex$axial)$epsg
 ```
 
-## 3. Inspect the data
+## 4. Inspect the data
 
 The three components are the **axial map** (one line per axial line), the
 **unlinks** (points where two axial lines cross without being connected) and
@@ -74,7 +146,7 @@ keep in mind.
 * `axial_id` is the original axial-line identifier. In general identifiers are
   unique but are not row numbers; `?hillier_iida` describes all columns.
 
-## 4. Build an axial graph
+## 5. Build an axial graph
 
 `axial_graph()` hands the lines to the engine, which finds where they cross
 and keeps the resulting network in memory. Two inputs matter here. The
@@ -101,7 +173,7 @@ Things worth knowing about the graph:
 * rPSTool does no snapping, splitting or reprojection. Each `sf` feature must be a
   straight line of exactly two vertices, as in this dataset.
 
-## 5. Run Network Integration
+## 6. Run Network Integration
 
 `network_integration()` is the axial-map analysis. For every line it relates
 the topological distances (number of line changes, "steps") to all reached
@@ -132,7 +204,7 @@ range(local3$node_count)
 The step-limited run reaches fewer lines from each line, which is why its
 `node_count` is smaller.
 
-## 6. Join the results to the geometry
+## 7. Join the results to the geometry
 
 The results are an ordinary data frame without geometry. Rows are in the same
 order as the lines you gave to `axial_graph()`, and `line_id` is the one-based
@@ -150,7 +222,7 @@ Join by position (or by `line_id`), not by `axial_id`: the two coincide in this
 dataset only because its identifiers happen to run from 1 to the number of
 lines. Do not rely on that for other data.
 
-## 7. Draw the map
+## 8. Draw the map
 
 `colour_map()` turns numbers into colours from an rPSTool palette. It does not
 classify; with the default continuous mapping the range of the values is
@@ -182,7 +254,7 @@ ggplot(map) +
   labs(colour = "Integration\n(3 steps)")
 ```
 
-## 8. Interpreting the output
+## 9. Interpreting the output
 
 In PST's axial analysis a line with a high integration value is, by the
 topological measure used, close to the other lines of the network (few changes
@@ -221,12 +293,13 @@ c(with_unlinks = g$n_crossings,
   without_unlinks = axial_graph(ex$axial)$n_crossings)
 ```
 
-## 9. Where next
+## 10. Where next
 
 * `?rPSTool` gives an overview of the package and links to its function groups.
 * `vignette("pst-capabilities", package = "rPSTool")` compares rPSTool with the
   engine and the PST plugin for QGIS and shows the other analyses (reach,
   betweenness, angular analyses, attraction analyses, segment maps).
+* `KNOWN_LIMITATIONS.md` in the repository lists the restrictions that affect interpretation and practical use.
 * The function reference lists every function; start with `?axial_graph`,
   `?network_integration`, `?analysis_radius`, `?colour_map` and
   `?hillier_iida`.

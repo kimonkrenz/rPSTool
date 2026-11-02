@@ -51,7 +51,7 @@
 #' rPSTool neither verifies nor repeats that claim.
 #'
 #' Provenance, source files and the decisions behind these definitions are in the repository's palette documentation
-#' (<https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md>; the repository is not public yet). The Blue-Red and
+#' (<https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md>). The Blue-Red and
 #' Purple-Orange colour values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.); ColorBrewer's
 #' licence terms were not verified.
 #'

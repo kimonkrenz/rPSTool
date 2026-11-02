@@ -2,7 +2,7 @@
 % Please edit documentation in R/core-analyses.R
 \name{angular_choice}
 \alias{angular_choice}
-\title{Calculate PST Angular Choice on a segment graph}
+\title{Angular Choice of a segment graph}
 \usage{
 angular_choice(
   graph,
@@ -17,90 +17,106 @@ angular_choice(
 )
 }
 \arguments{
-\item{graph}{A live graph created by \code{\link[=segment_graph]{segment_graph()}}.}
+\item{graph}{A segment graph created by \code{\link[=segment_graph]{segment_graph()}}.}
 
-\item{radius}{Independent limits created by \code{\link[=analysis_radius]{analysis_radius()}}. One field of \code{analysis_radius()} may hold several values (a
-multi-radius): PST then runs once per radius, in the supplied order, and one combined result is returned or written.
-See Details and \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}. One field may hold several values (see Details).}
 
-\item{weigh_by_length}{TRUE or FALSE (default).}
+\item{weigh_by_length}{\code{TRUE} or \code{FALSE} (default). Whether reached segments are weighted by length.}
 
-\item{normalization}{Exact name: "none", "standard", "turner", "syntax"; or a character vector of distinct names.
-With several names (or a multi-radius) the call returns the multi-result schema described in Details.}
+\item{normalization}{One or more of \code{"none"} (default), \code{"standard"}, \code{"turner"} and \code{"syntax"}.}
 
-\item{angle_threshold}{One finite native-float number without nonzero underflow;
-degrees, default zero.}
+\item{angle_threshold}{One finite number of degrees (default 0) that fits single precision without
+underflow. Turns below it count as zero.}
 
-\item{angle_precision}{One whole number from 1 through 4294967295; degrees,
-default one. Zero is unsafe for the native queue and is rejected.}
+\item{angle_precision}{One whole number from 1 through 4294967295: the angular resolution in degrees
+used to rank paths (default 1). Zero is rejected.}
 
-\item{output_file}{NULL (default) or one file path. When given, the analysis runs once and its result is written
-directly to a Parquet file (zstd) without building an R data frame; see \link{pst_result_file}. Needs the optional
-package arrow (>= 25.0.0). The file has the same columns, order and row identity as the data frame, with PST's
-native float values stored as float32 (reading them back in R gives the identical doubles).}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
-
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-columns, matched to the source features by position (no spatial join). The output format equals the source format
-(GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-replaces it, other result columns are appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a
-file path; \code{overwrite} applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible \link{pst_result_file} descriptor. See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
+see \link{pst_result_file}.}
 }
 \value{
-With output_file = NULL, a data frame in input segment order: segment_id, raw choice, integer
-node_count, total_depth; total_depth_weight in weighted mode, and normalized
-when requested. Numeric outputs widen PST float values to double. With several normalisations or a multi-radius
-the columns follow the multi-result schema described in Details. With \code{output_file} or \code{spatial_output_file}, the result is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+With a single radius and normalisation, a data frame in segment order with:
+\itemize{
+\item \code{segment_id}: one-based identifier,
+\item \code{choice}: the raw choice score,
+\item \code{node_count} and \code{total_depth}: reached segments (including the origin) and their summed angular depth,
+\item \code{total_depth_weight} (weighted calls only), and
+\item \code{normalized} when requested.
+}
+
+Numeric columns are doubles widened from PST's single precision. For several radii or normalisations the
+columns follow the naming scheme described in Details. With \code{output_file} or \code{spatial_output_file} the
+results are written to a file and an invisible \link{pst_result_file} descriptor is returned.
 }
 \description{
-Calls PSTAAngularChoice with upstream defaults: no length weighting,
-threshold zero and precision one degree. Length weighting uses PST's own
-origin/destination contributions. Turns strictly below angle_threshold become
-zero; rounded angle_precision units determine queue costs, while depths and
-angular limits use unrounded thresholded angles. Negative thresholds have no
-effect; thresholds above 180 zero all turns. Counts include the
-origin and depths use syntax angle units (90 degrees is one unit).
-Axmeter radii are rejected. The shared angular engine rejects graphs with
-more than 32 endpoint incidences at a coordinate, as does Angular Integration.
+Calculates Angular Choice (angular betweenness) for every segment of a segment graph: how often each
+segment lies on the angularly shortest routes between other segments. Use it to identify the segments that
+carry through-movement in a street network, optionally within a radius and with different normalisations.
 }
 \details{
-Optional normalization calls PST's exported Standard, AngularChoice (Turner),
-or AngularChoiceSyntax (NACH) routines. Syntax normalization reads the run's
-total depth: with \code{weigh_by_length = TRUE} the length-weighted total depth
-(\code{total_depth_weight}, as the original PST for QGIS plugin passes to the
-exported routine), otherwise \code{total_depth}. Raw choice is always retained.
-The call waits for internal workers; no workers call R. Worker caps follow
-\code{\link[=network_betweenness]{network_betweenness()}}. Results own independent R storage and graphs are reusable.
+\strong{Definition.} Routes are the shortest paths in angular cost. Turns smaller than \code{angle_threshold}
+degrees count as zero, and turn costs are rounded to \code{angle_precision} degree units when PST chooses
+between paths. Reported depths and angular radii use the unrounded, thresholded angles, in syntax angle
+units (90 degrees is one unit). A negative threshold has no effect and a threshold above 180 zeroes every
+turn. \code{node_count} includes the origin. Length weighting (\code{weigh_by_length = TRUE}) uses PST's own
+origin and destination contributions. Axmeter radii are rejected, and so are graphs with more than 32
+endpoint incidences at one coordinate (as for \code{\link[=angular_integration]{angular_integration()}}).
 
-\strong{Known limitation (inherited from PST): very deep chains of shortest-path steps.} PST collects choice scores with a
-recursive traversal (\code{CollectScores}) of the shortest-path steps recorded from each origin, on a worker thread with the
-operating system's default thread stack, and has no depth bound. The recursion depth is bounded by the longest chain of
-consecutive shortest-path steps (in PST's discretised angular cost, equal-cost ties included) that is reachable within the
-radius, not by the number of segments in the network. A very long, nearly straight sequence of short segments analysed with
-an unrestricted or large radius can exhaust the worker-thread stack and terminate the R process (confirmed for an
-unrestricted 8,000-segment chain on macOS ARM64; Linux with an 8 MB stack survives tens of thousands of segments; it has only been
-reproduced on synthetic chains and no realistic network is known to reach such depths). The
-usable depth depends on the platform, compiler and flags. A \code{steps} radius bounds the depth by its value; \code{walking} and
-\code{straight} radii bound it by the segments that fit inside them; an \code{angular} radius does not bound straight runs. Angular
-Integration shares part of this recursion (\code{ClearProcessedFlags}) with a larger tolerance. rPSTool does not change PST's
-traversal; see \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md}.
+\strong{Normalisation.} The raw choice score is always returned. \code{normalization} adds PST's \code{"standard"},
+\code{"turner"} (Angular Choice) or \code{"syntax"} (normalised angular choice, NACH) normalisation. Syntax normalisation uses the run's total depth:
+the length-weighted total depth when \code{weigh_by_length = TRUE} (as the PST for QGIS plugin does), otherwise
+\code{total_depth}.
 
-\strong{Multi-radius and multi-normalisation.} A call with one radius and one normalisation behaves, and is named,
-exactly as before. If \code{radius} varies one field (for example \code{analysis_radius(walking = c(500, 1000))}) or \code{normalization}
-has several entries, PST's analysis runs exactly once per radius and every requested PST normaliser is applied to that run's
-arrays. The result has \code{segment_id} once, then, radius by radius: \verb{choice<tag>}, \verb{node_count<tag>}, \verb{total_depth<tag>},
-\verb{total_depth_weight<tag>} (weighted only) and \verb{choice_<norm><tag>} for each normalisation other than \code{"none"}
-(the raw \code{choice} is always kept, so \code{"none"} adds no column). \verb{<tag>} is \verb{_} plus a dimension code (\code{s} straight, \code{w}
-walking, \code{n} steps, \code{a} angular) and the radius, written exactly (\code{.} as \code{p}): \code{choice_w500}, \code{choice_turner_w0p5};
-it is empty when no field varies. Fixed restrictions apply to every radius and are recorded in the metadata
-(\verb{rpst:*}, \code{rpst_manifest} attribute), which is authoritative. The same result goes to \code{output_file} or
-\code{spatial_output_file} as one table, published once after everything succeeded.
+\strong{Several radii and normalisations.} One radius field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values,
+and \code{normalization} may hold several names. PST then runs once per radius and each requested
+normaliser is applied to that run. A call with one radius and one normalisation returns the plain columns
+described under Value. Otherwise the result has \code{segment_id} once, then radius by radius: \verb{choice<tag>},
+\verb{node_count<tag>}, \verb{total_depth<tag>}, \verb{total_depth_weight<tag>} (weighted only) and
+\verb{choice_<norm><tag>} for each normalisation other than \code{"none"}. \verb{<tag>} is an underscore plus a dimension
+code (\code{s} straight, \code{w} walking, \code{n} steps, \code{a} angular) and the radius written exactly with \code{.} as \code{p},
+for example \code{choice_w500} or \code{choice_turner_w0p5}. It is empty when no field varies. Fixed restrictions
+apply to every radius and are recorded in the result's metadata (\verb{rpst:*} keys and the \code{rpst_manifest}
+attribute). The same table goes to \code{output_file} or \code{spatial_output_file}. See
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
+
+\strong{Threads.} PST uses several worker threads; see \code{\link[=network_betweenness]{network_betweenness()}} for how to cap them.
 }
+\section{Limitations}{
+
+\strong{Very long chains of shortest-path steps can crash R.} PST gathers choice scores with a recursive
+procedure that has no depth limit and runs on a worker thread with the operating system's default stack. The
+recursion depth is set by the longest chain of consecutive shortest-path steps reachable within the radius
+(equal-cost ties included), not by the number of segments in the network. A very long, nearly straight
+sequence of short segments analysed with an unrestricted or large radius can exhaust the stack and terminate
+the R process without an R error.
+
+What has been observed: an unrestricted 8,000-segment collinear chain terminated the process on macOS ARM64,
+whereas a radius-limited run of the same chain succeeded. With an 8 MB thread stack on Linux, chains of tens of thousands
+of segments completed. The failure has only been reproduced on synthetic chains, and no realistic street
+network is known to reach such depths. The usable depth depends on the platform, compiler and flags, and has not
+been measured on Windows.
+
+Workaround: restrict the radius. A \code{steps} radius bounds the depth by its value, and a \code{walking} or \code{straight}
+radius by the number of segments that fit inside it. An \code{angular} radius does not bound runs of
+near-collinear segments. \code{\link[=angular_integration]{angular_integration()}} shares part of this recursion with a larger tolerance. rPSTool does not change
+PST's traversal. See \code{KNOWN_LIMITATIONS.md} in the repository and
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md}.
+}
+
 \examples{
 g <- segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))
 angular_choice(g)
 angular_choice(g, radius = analysis_radius(steps = c(1, 2)),
                normalization = c("standard", "turner"))
+}
+\references{
+Turner, A. (2007). From axial to road-centre lines: a new representation for space syntax and a new
+model of route choice for transport network analysis. \emph{Environment and Planning B: Planning and Design},
+34(3), 539-555. \doi{10.1068/b32067}
+
+Hillier, B., Yang, T. and Turner, A. (2012). Normalising least angle choice in Depthmap and how it opens up
+new perspectives on the global and local analysis of city space. \emph{Journal of Space Syntax}, 3(2), 155-193.
+}
+\seealso{
+\code{\link[=angular_integration]{angular_integration()}}, \code{\link[=segment_graph]{segment_graph()}}, \code{\link[=analysis_radius]{analysis_radius()}}, \code{\link[=network_betweenness]{network_betweenness()}}
 }

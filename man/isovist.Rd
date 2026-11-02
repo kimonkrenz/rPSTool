@@ -2,7 +2,7 @@
 % Please edit documentation in R/isovist.R
 \name{isovist}
 \alias{isovist}
-\title{Calculate a PST isovist and grouped visibility}
+\title{Calculate an isovist}
 \usage{
 isovist(
   context,
@@ -15,53 +15,44 @@ isovist(
 )
 }
 \arguments{
-\item{context}{A live \code{pst_isovist_context}.}
+\item{context}{An isovist context created by \code{\link[=isovist_context]{isovist_context()}}.}
 
-\item{origin}{Numeric vector of length two containing \verb{x,y}.}
+\item{origin}{Numeric vector of length two: \verb{x, y}.}
 
-\item{max_distance}{Finite nonnegative native float view distance.}
+\item{max_distance}{Finite, non-negative view distance.}
 
-\item{field_of_view}{Finite angle from 0 to 360 degrees, default 360.}
+\item{field_of_view}{Finite angle from 0 to 360 degrees (default 360).}
 
-\item{direction}{Finite native float direction in degrees, default 0.}
+\item{direction}{Finite direction in degrees (default 0).}
 
-\item{perimeter_segments}{Whole perimeter resolution of at least 3, default 64.}
+\item{perimeter_segments}{Whole number of perimeter segments, at least 3 (default 64).}
 
-\item{output}{\code{"native"} (default) or \code{"sf"}. With \code{"sf"} (requires sf),
-\code{polygon} is a length-one POLYGON \code{sfc} built from the copied native
-vertices, appending the first vertex only when the result is not already
-closed. CRS comes from the context (unknown if none). Results with fewer
-than three vertices or nonfinite coordinates error; no validity check,
-repair or normalisation is applied.}
+\item{output}{\code{"native"} (default) or \code{"sf"}. With \code{"sf"} (requires 'sf'), \code{polygon} is a one-feature POLYGON \code{sfc}
+with the context's CRS (unknown if none). The first vertex is appended only when the result is not already closed.
+Results with fewer than three vertices or non-finite coordinates are an error; no repair is applied.}
 }
 \value{
-A list with \code{polygon} (double \verb{x,y} matrix, not automatically closed),
-\code{area} (native float widened to double), \code{visible_obstacles},
-\code{visible_attraction_points}, and \code{visible_attraction_polygons}. Each visibility
-component is a list of integer index vectors, one per original input group,
-including empty groups. Indices are one-based within each group; native
-ordering is preserved. Group counts are the lengths of these vectors.
+A list with
+\itemize{
+\item \code{polygon}: a two-column matrix of vertices (\code{x}, \code{y}), not automatically closed,
+\item \code{area}: the isovist area,
+\item \code{visible_obstacles}, \code{visible_attraction_points} and \code{visible_attraction_polygons}: for each, a list with one
+integer vector per input group (including empty groups) of the one-based indices visible within that group, in PST's order.
+}
 }
 \description{
-A synchronous call to pinned PST v3.3.2 using a reusable native context,
-returning independent R storage. The native result depends on its context and
-returns storage to it on destruction: rPSTool copies all outputs while that result
-is alive, then frees it before returning. Returned R storage remains valid
-after context release.
+Calculates the isovist from a viewpoint: the area visible from that point within a maximum distance, given the
+obstacles in an isovist context, and records which obstacles, attraction points and attraction polygons are visible.
 }
 \details{
-PST uses local float geometry and an area-corrected segmented perimeter.
-Direction is measured counterclockwise from positive x and ignored for a
-full circle. An origin inside an obstacle causes that obstacle to be skipped.
-Native geometry, area, ordering and visibility rules are preserved.
+The perimeter is a polygon with \code{perimeter_segments} segments, corrected so that it preserves area. Direction is measured
+counterclockwise from the positive x axis and is ignored for a full circle. An origin inside an obstacle causes that
+obstacle to be skipped. Geometry is single-precision, as in PST.
 
-Verified build-copy guards prevent three upstream invalid-access states: an
-empty calculated vertex array and insufficient vertices for partial-view
-attraction-point or attraction-polygon processing. These signal a controlled
-R error when PST publishes no result handle, without exposing partial
-outputs. Small radii, narrow views, zero area and safely written degenerate
-geometry are not broadly rejected. No synthetic polygon, area, visibility or
-NA result is returned; successful calculations retain pinned PST behaviour.
+Safeguards prevent three invalid-access states in PST: an empty calculated vertex array, and too few vertices for
+partial-view processing of attraction points or attraction polygons. They give an R error rather than a result. Small
+radii, narrow views, zero area and safely written degenerate geometry are not rejected, and successful calculations
+follow PST exactly. The returned values do not depend on the context after it has been freed.
 }
 \examples{
 ctx <- isovist_context()
@@ -76,5 +67,5 @@ isovist(ctx, c(0, 0), 10, field_of_view = 90, direction = 90)$area
 isovist_context_free(ctx)
 }
 \seealso{
-\code{\link[=isovist_context]{isovist_context()}}
+\code{\link[=isovist_context]{isovist_context()}}, \code{\link[=isovist_context_free]{isovist_context_free()}}
 }

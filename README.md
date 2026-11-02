@@ -1,58 +1,33 @@
-# rPSTool: Space Syntax and Spatial Network Analysis
+# rPSTool: Space Syntax and Spatial Network Analysis in R
 
-rPSTool brings the spatial network analysis engine of the **Place Syntax Tool (PST)** to R. It lets you build street-network graphs
-from line geometry and run PST analyses such as network integration, reach, betweenness and angular choice from R scripts, with
-results returned as ordinary R data frames.
+rPSTool brings the spatial network analysis engine of the **Place Syntax Tool (PST)** to R. It builds street-network graphs from
+line geometry and runs PST analyses such as network integration, reach, betweenness and angular choice from R scripts, returning
+the results as ordinary data frames. No separate PST, QGIS or Python installation is needed.
 
 ## What rPSTool does
 
-* Builds a PST graph once, in native memory, from a numeric matrix, an `sf` object or a GeoParquet/FlatGeobuf file, and reuses it
-  across analyses.
-* Runs the PST analyses listed [below](#supported-analyses) on axial (crossing-aware line) graphs, endpoint-connected segment graphs and
-  segment-group graphs, plus network construction, isovist and raster-comparison routines.
-* Keeps PST's distinct distance limits (straight, walking, steps, angular, axmeter) separate through `analysis_radius()`.
-* Ships a Barnsbury (London) example network and eleven colour palettes for mapping results.
+* Builds a graph once from a numeric matrix, an `sf` object or a GeoParquet/FlatGeobuf file and reuses it across analyses.
+* Runs PST's axial, segment and segment-group analyses (see [Analyses](#analyses)), plus network preparation, isovist and
+  raster-comparison routines.
+* Keeps PST's distance limits (straight, walking, steps, angular, axmeter) separate through `analysis_radius()`.
+* Includes a Barnsbury (London) example network and eleven colour palettes for mapping results.
 
-## rPSTool, PST and PST for QGIS
-
-* **PST** is developed by KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB. Its analysis engine
-  is the C++ library `pstalgo`.
-* **PST for QGIS** is the official QGIS plugin built on that engine.
-* **rPSTool** binds the engine directly: the pinned upstream release, **PST v3.3.2** (commit
-  `63df80a2cf3dd289be95ea3d91667c3490719b75`), is compiled into the package. No separate PST, QGIS, Python or `reticulate`
-  installation is needed. rPSTool does not use the plugin and does not reimplement PST's algorithms; numerical results come from the
-  engine.
-* Where PST for QGIS exposes the same analysis, rPSTool's input selection and defaults were checked against the plugin's code
-  (evidence levels S, N and E; see [PST coverage](https://github.com/kimonkrenz/rPSTool/blob/main/docs/pst-coverage.md)). **No comparison
-  with a real QGIS run (level Q) has been recorded.** Intentional differences are listed in
-  [QGIS differences](https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/qgis-differences.md).
-
-## Acknowledgements and upstream software
-
-rPSTool is an R interface to the **Place Syntax Tool (PST)** and its `pstalgo` C++ analysis engine. PST provides the spatial network analysis algorithms; rPSTool makes these available through R and adds R interfaces, data handling and visualisation.
-
-PST was developed by **KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB**. The PST for QGIS plugin metadata for version 3.3.2 credits Alexander Ståhle, Lars Marcus, Daniel Koch, Martin Fitger, Anders Karlström, Tobias Nordström, Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont and Pablo Miranda. The upstream README names Pablo Miranda Carranza. The original Place Syntax approach was introduced by Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with Axial Lines in GIS*.
-
-rPSTool bundles the pinned PST v3.3.2 engine under LGPL-3-or-later. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. rPSTool is not affiliated with or endorsed by the PST authors.
+rPSTool compiles the pinned PST release v3.3.2 into the package and calls its engine directly. It does not reimplement PST's
+algorithms: the numerical results come from the engine. It is not the PST plugin for QGIS and is not affiliated with or endorsed by
+the PST authors.
 
 ## Installation
 
-rPSTool contains compiled C++ code and needs a **C++17 toolchain** (Rtools on Windows, Xcode command-line tools on macOS, `g++` or
-`clang++` on Linux). The first installation compiles the bundled engine from source, which takes a few minutes.
-
-rPSTool is not yet on CRAN. Install the current source from the public GitHub repository:
+rPSTool contains compiled C++ code and needs a **C++17 toolchain** (Rtools on Windows, the Xcode command-line tools on macOS,
+`g++` or `clang++` on Linux). The first installation compiles the bundled engine and takes a few minutes. rPSTool is not on CRAN
+yet; install it from GitHub:
 
 ```r
-# install.packages("pak")
+install.packages("pak")
 pak::pak("kimonkrenz/rPSTool")
-library(rPSTool)
 ```
 
-`remotes::install_github("kimonkrenz/rPSTool")` works equally well.
-
-From a source checkout or tarball: `install.packages("path/to/rPSTool", repos = NULL, type = "source")`.
-
-Everything needed for matrix workflows is installed with the package. Optional packages enable further features:
+`remotes::install_github("kimonkrenz/rPSTool")` works equally well. Optional packages enable further features:
 
 | Package | Enables |
 | --- | --- |
@@ -60,129 +35,106 @@ Everything needed for matrix workflows is installed with the package. Optional p
 | `arrow` (>= 25.0.0) | GeoParquet input, Parquet result files, GeoParquet output |
 | `jsonlite` | GeoParquet metadata (with `arrow`) |
 | `ggplot2` | the `scale_*_rpst_*()` colour scales |
-| `classInt` | class breaks for mapping (rPSTool itself does not classify) |
-| `knitr`, `rmarkdown` | building the vignettes |
+| `classInt` | class breaks for mapping (rPSTool itself does not classify values) |
 
 ## Quick start
-
-A graph is built once in native memory and reused across analyses.
 
 ```r
 library(rPSTool)
 
-# Endpoint-connected segment graph: five collinear segments (x1, y1, x2, y2 per row)
+# Segment graph: five collinear segments (x1, y1, x2, y2 per row)
 s <- segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))
 angular_choice(s, radius = analysis_radius(walking = 8))
-angular_integration(s)
 
-# Axial (crossing-aware line) graph: two crossing lines
+# Axial graph: two crossing lines
 a <- axial_graph(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1)))
 network_integration(a, junctions = TRUE)
-network_reach(a)
 ```
 
-## Example: Barnsbury, London
-
-`load_example_data()` takes no arguments and returns a list of `sf` objects (British National Grid, EPSG:27700): the Barnsbury
-axial map (`axial`, 1915 lines), `unlinks` and gate observations (`gates`).
+With the Barnsbury example network (needs `sf`):
 
 ```r
 ex <- load_example_data()
 g <- axial_graph(ex$axial, unlinks = ex$unlinks)
-g
 
-# Network integration within three direction changes (steps)
+# Network integration within three direction changes; row i of the result belongs to row i of ex$axial
 res <- network_integration(g, radius = analysis_radius(steps = 3))
 head(res, 3)
+#>   line_id integration node_count total_depth
+#> 1       1    3.249486        180         452
+#> 2       2    2.896899        152         397
+#> 3       3    3.173414        161         402
 
-# Results are in input row order: row i of `res` belongs to row i of ex$axial
-cols <- colour_map(res$integration, "coral_day", limits = range(res$integration))
-plot(sf::st_geometry(ex$axial), col = cols, lwd = 2)
+plot(sf::st_geometry(ex$axial),
+     col = colour_map(res$integration, "coral_day", limits = range(res$integration)), lwd = 2)
 ```
 
-`head(res, 3)` prints:
+The vignette [Getting started with rPSTool: the Barnsbury example](vignettes/getting-started.Rmd) walks through a complete
+analysis, including Angular Choice with a 3 km walking radius. Open it from R with
+`vignette("getting-started", package = "rPSTool")` once the package is installed with vignettes.
 
-```text
-  line_id integration node_count total_depth
-1       1    3.249486        180         452
-2       2    2.896899        152         397
-3       3    3.173414        161         402
-```
-
-The Barnsbury axial map is from Hillier and Iida (2005); the movement observations were originally used by Penn, Hillier, Banister and
-Xu (1998). The coordinates are **not the original coordinates**: the geometry was georeferenced and spatially transformed by Kimon
-Krenz. See [example data](https://github.com/kimonkrenz/rPSTool/blob/main/docs/example-data.md).
-
-## Supported analyses
+## Analyses
 
 An analysis accepts only the graph family of its PST routine; families are never converted into one another.
 
-| Graph family | Constructor | Analyses and helpers |
+| Graph | Constructor | Analyses and helpers |
 | --- | --- | --- |
 | Axial (crossing-aware lines) | `axial_graph()` | `network_integration()`, `network_reach()`, `network_betweenness()`, `attraction_reach()`, `attraction_distance()`, `od_betweenness()`, `axial_line_lengths()`, `axial_crossing_coords()` |
 | Endpoint-connected segments | `segment_graph()` | `angular_integration()`, `angular_choice()`, `segment_grouping()` |
-| Segment groups | `segment_group_graph()` (from a segment graph and group ids) | `segment_group_integration()` |
-| No graph | | `create_junctions()`, `create_segment_map()` (network construction) |
-| Isovist context | `isovist_context()` | `isovist()`, `isovist_context_free()` |
+| Segment groups | `segment_group_graph()` | `segment_group_integration()` |
+| No graph | | `create_junctions()`, `create_segment_map()` |
+| Isovists | `isovist_context()` | `isovist()`, `isovist_context_free()` |
 | Raster comparison | | `compare_line_results()`, `raster_data()`, `raster_to_polygons()`, `raster_free()` |
 
-`analysis_radius()` builds the radius argument. Normalised scores are computed by PST's exported normalisers. The full function
-list is in the [API overview](https://github.com/kimonkrenz/rPSTool/blob/main/docs/api.md).
+Every function is documented in its help page (`help(package = "rPSTool")`). The [documentation index](docs/README.md) lists
+the developer-facing records.
 
 ## Spatial inputs and outputs
 
-* **Matrix**: a numeric matrix with `x1 y1 x2 y2` per line or segment is the canonical input and needs no extra package.
-* **`sf`**: `sf` objects are accepted by the graph constructors, and some analyses can return `sf` output. A known geographic CRS is
-  rejected; rPSTool never reprojects, snaps, splits or reorders geometry.
-* **Files**: `segment_graph()` and `axial_graph()` also accept one GeoParquet path (needs `arrow`, `jsonlite`, `sf`) or one
-  FlatGeobuf path (needs `sf`).
-* **Result files**: `output_file` writes results to Parquet and `spatial_output_file` writes a new GeoParquet or FlatGeobuf file with
-  geometry, attributes and results (`arrow` required). The call returns a `pst_result_file` handle.
-
-Details: [spatial I/O](https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/README.md).
+* **Matrices** with columns `x1 y1 x2 y2` need no extra package.
+* **`sf` objects** are accepted by the graph constructors. A known geographic CRS is rejected, and rPSTool never reprojects, snaps,
+  splits or reorders geometry.
+* **Files:** `segment_graph()` and `axial_graph()` also read one GeoParquet or FlatGeobuf path.
+* **Result files:** `output_file` and `spatial_output_file` write results to Parquet, GeoParquet or FlatGeobuf (needs `arrow`).
 
 ## Colour palettes
 
-`colour_palettes()` lists eleven palettes in three categories:
-
-* **seven reproduced depthmapX v0.9.1 colour modes**: `axmanesque`, `axmanesque_hue`, `blue_red`, `purple_orange`, `greyscale`,
-  `monochrome`, `depthmapx_classic`;
-* **two white-background adaptations**: `axmanesque_white`, `depthmapx_classic_white`;
-* **two palettes designed for rPSTool**: `coral_night` (dark background) and `coral_day` (light background).
-
-`colour_palette()` returns colours, `colour_map()` maps numeric values to colours (base graphics), and the optional ggplot2 scales are
-`scale_colour_rpst_c()`, `scale_fill_rpst_c()`, `scale_colour_rpst_b()` and `scale_fill_rpst_b()`. Class boundaries are supplied by
-you. See [palettes](https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md).
+`colour_palettes()` lists eleven palettes: seven reproduced depthmapX v0.9.1 colour modes, two white-background adaptations and
+two designed for rPSTool (`coral_night` for dark and `coral_day` for light backgrounds). `colour_map()` maps values to colours in
+base graphics, and optional ggplot2 scales are provided. Class boundaries are supplied by you. See `?colour_palettes`.
 
 ## Limitations
 
-* Fast Segment Betweenness (experimental upstream) and Visual Connectivity (an upstream stub) are not exposed, nor are progress and
-  log callbacks ([PST coverage](https://github.com/kimonkrenz/rPSTool/blob/main/docs/pst-coverage.md)).
-* **Angular Choice** inherits a recursion-depth limitation from PST: very long chains of shortest-path steps can exhaust the process
-  stack and terminate the R process (see `?angular_choice` and
-  [angular controls](https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md)).
-* Windows result-file support passed the development suite on Windows; final release-candidate validation is outstanding. No
-  comparison with real QGIS runs (level Q) has been recorded.
-* File input reads two-vertex line geometry in physical file order; polylines are never split, snapped or repaired, and external
-  identifiers are not retained.
-* Combining a walking, angular or axmeter radius with another independently compared limit, without a steps limit, can make PST's
-  native search very slow or exhaust memory on dense networks. Results are not affected; see `?attraction_reach` and the
-  [parity audit](https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/parity-audit.md).
-* PST creates worker threads internally; rPSTool caps them (`RPST_NUM_THREADS`, and a ceiling of two under R's check limit).
+The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
+
+* **Angular Choice** can terminate R on very long chains of shortest-path steps analysed with an unrestricted radius; restrict
+  the radius to avoid it.
+* Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
+* `network_integration()` accepts only step radii.
+* Coordinates must be projected. PST works in single precision around a centre point.
+* The Barnsbury example data are not covered by the package licence, and their coordinates are not the original coordinates.
+* The test suite and `R CMD check` passed on Linux, macOS (ARM64) and Windows at the validated commit; results have not been
+  compared with real runs of the PST plugin for QGIS.
 
 Report bugs and request features at <https://github.com/kimonkrenz/rPSTool/issues>.
 
-## Documentation and citation
+## Acknowledgements and upstream software
 
-* Vignettes: `vignette("getting-started", package = "rPSTool")` and `vignette("pst-capabilities", package = "rPSTool")`.
-* Function reference: `help(package = "rPSTool")`, or the [API overview](https://github.com/kimonkrenz/rPSTool/blob/main/docs/api.md).
-* [Documentation index](https://github.com/kimonkrenz/rPSTool/blob/main/docs/README.md) and
-  [contributing](https://github.com/kimonkrenz/rPSTool/blob/main/CONTRIBUTING.md).
-* Please credit PST when you use rPSTool. Run `citation("rPSTool")` for the package and PST references.
+rPSTool is an R interface to the **Place Syntax Tool (PST)** and its `pstalgo` C++ analysis engine. PST provides the spatial network
+analysis algorithms; rPSTool makes them available through R and adds R interfaces, data handling and visualisation. PST was
+developed by **KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB**; the PST for QGIS plugin
+metadata for version 3.3.2 credits Alexander Ståhle, Lars Marcus, Daniel Koch, Martin Fitger, Anders Karlström, Tobias Nordström,
+Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont and Pablo Miranda, and the upstream README names Pablo Miranda Carranza. The
+original Place Syntax approach was introduced by Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with
+Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. The Barnsbury example
+data come from Hillier and Iida (2005); the movement observations were originally used by Penn, Hillier, Banister and Xu (1998).
+Development of rPSTool was supported by OpenAI's ChatGPT and Anthropic's Claude for code optimisation, review, debugging and
+documentation. All contributions were reviewed and validated by the package author, who retains responsibility for the software.
 
-## Licence
+## Citation and licence
+
+Please credit PST when you use rPSTool. Run `citation("rPSTool")` for the package and PST references.
 
 rPSTool is licensed under the **GNU Lesser General Public License, version 3 or later** (`LGPL (>= 3)`). It compiles the PST/pstalgo
-engine (Copyright 2019 Meta Berghauser Pont, LGPL-3-or-later) and some other third-party components; attribution is recorded in
-`inst/COPYRIGHTS`, and the Barnsbury example data is not covered by the package licence. See
-[licensing](https://github.com/kimonkrenz/rPSTool/blob/main/docs/licensing.md).
+engine (Copyright 2019 Meta Berghauser Pont, LGPL-3-or-later) and some other third-party components, whose attribution is recorded in
+`inst/COPYRIGHTS`. The Barnsbury example data are not covered by the package licence. See [licensing](docs/licensing.md).

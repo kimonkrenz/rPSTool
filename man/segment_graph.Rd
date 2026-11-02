@@ -3,87 +3,84 @@
 \name{segment_graph}
 \alias{segment_graph}
 \alias{print.pst_segment_graph}
-\title{Construct an in-memory PST segment graph}
+\title{Build a segment graph from segments}
 \usage{
 segment_graph(x)
 
 \method{print}{pst_segment_graph}(x, ...)
 }
 \arguments{
-\item{x}{An integer or double matrix with at least one row and exactly
-four columns, ordered \verb{x1, y1, x2, y2}; an \code{sf}/\code{sfc} object of two-vertex
-LINESTRINGs; or one character path to a local GeoParquet or FlatGeobuf file (see Details).}
+\item{x}{An integer or double matrix with at least one row and exactly four columns (\verb{x1, y1, x2, y2}); an
+\code{sf}/\code{sfc} object of two-vertex LINESTRINGs; or one path to a local GeoParquet or FlatGeobuf file.}
 
 \item{...}{Unused additional arguments.}
 }
 \value{
-An S3 \code{pst_segment_graph} list containing \code{ptr} (an owned native
-external pointer), \code{type} (\code{"segment"}), \code{n_segments} (the constructor
-count), and \code{pst_version} (\code{"3.3.2"}). Treat fields as read-only.
+An object of class \code{pst_segment_graph}: a list with \code{type} (\code{"segment"}), \code{n_segments} and
+\code{pst_version}, plus the native handle \code{ptr}. Treat these fields as read-only. \code{print()} shows a summary.
 }
 \description{
-Calls PST v3.3.2 \code{PSTACreateSegmentGraph}. Each row is one two-point
-segment with columns ordered \verb{x1, y1, x2, y2}, regardless of column names.
-PST joins endpoints with exactly equal double coordinate pairs, before
-conversion to local floats. Interior crossings and endpoint-on-interior
-contacts do not connect segments. No crossing detection, snapping, splitting,
-filtering, reprojection or other preprocessing is performed.
+Creates a segment graph, the representation PST uses for segment-based analyses (\code{\link[=angular_integration]{angular_integration()}},
+\code{\link[=angular_choice]{angular_choice()}}, \code{\link[=segment_grouping]{segment_grouping()}} and \code{\link[=segment_group_graph]{segment_group_graph()}}). The graph is built once and can be
+reused by any number of analyses.
 }
 \details{
-Coordinates must be finite and fit PST's native local coordinate, center,
-length and squared distance representations. Supply suitable planar
-coordinates; this interface has no CRS metadata or unit conversion.
+\strong{Segments.} Each row is one two-point segment, ordered \verb{x1, y1, x2, y2}, regardless of column names.
+PST joins two segments where they share an endpoint with exactly equal double coordinates. Crossings in the
+interior of segments and endpoints that touch the interior of another segment do not connect segments. No
+crossing detection, snapping, splitting, filtering or reprojection is performed; use \code{\link[=create_segment_map]{create_segment_map()}}
+to prepare a street network first.
 
-Optional \code{sf}/\code{sfc} input accepts only XY LINESTRING features with exactly
-two finite vertices. Feature order and direction are preserved. Multipart,
-empty, longer polylines, mixed geometry and Z/M are rejected. No attributes
-are interpreted. Known geographic CRS is rejected; transform explicitly.
-Missing CRS is allowed on user responsibility. Projected coordinates retain
-native units. Only CRS metadata is retained as a \code{crs} attribute, with no
-retained input object or duplicate geometry. See \code{\link[=axial_graph]{axial_graph()}} for CRS policy.
+\strong{Coordinates.} Coordinates must be finite and within PST's single-precision coordinate range. Supply planar
+coordinates in the units you intend to use for radii. A matrix carries no CRS.
 
-A single character path reads one local file whose format is identified from its CONTENT (never its extension):
-GeoParquet (first four bytes \code{PAR1}, trailing \code{PAR1} required) or FlatGeobuf major version 3 (first seven bytes
-\verb{66 67 62 03 66 67 62}, any patch byte). Anything else is an error. Both routes require every feature to be a
-non-null, 2D \code{LineString} with exactly two finite vertices; null, empty, Z/M/ZM, multipart and longer geometries are
-errors that name the first offending one-based record. Polylines are never split, nothing is reordered, snapped or
-reprojected, and no identifier or attribute is read or retained. Both end in the same native segment-graph builder
-as matrix and \code{sf} input, so the same coordinates give identical results.
+\strong{\code{sf} input.} With the suggested package 'sf', \code{x} may hold XY LINESTRING features with exactly two finite
+vertices. Feature order and direction are kept and attributes are ignored. A known geographic CRS is rejected;
+transform explicitly. A missing CRS is allowed on your responsibility. Only the CRS is retained, as the graph's
+\code{crs} attribute. See \code{\link[=axial_graph]{axial_graph()}} for the CRS policy.
 
-\strong{GeoParquet} (GeoParquet 1.0/1.1, WKB): needs the optional packages \code{arrow} (>= 25.0.0), \code{jsonlite} and \code{sf}.
-The geometry column is the file's \code{primary_column}. Source row order is the graph segment order. The file is
-streamed through the Arrow C interface straight into the single native coordinate array PST consumes, without
-building an \code{sf} object or a coordinate matrix. CRS: a projected \code{crs} is retained as the graph's \code{crs} attribute;
-\code{"crs": null} is an unknown CRS and is allowed; a file with no \code{crs} key means GeoParquet's default (OGC:CRS84,
-geographic) and is rejected, as is any geographic CRS and any \code{edges} other than planar. GeoParquet 2.0, native
-GeoArrow encodings, directories, multiple files and cloud paths are unsupported. Peak Arrow memory depends strongly
-on the file's Parquet row-group size; it is not bounded by a scanner batch size, and files with large row groups
-are not rejected.
+\strong{File input.} A single path reads one local file. The format is recognised from the file content, never its
+extension: GeoParquet or FlatGeobuf (major version 3). Both require every feature to be a non-null, two-dimensional
+LineString with exactly two finite vertices. Null, empty, Z/M, multipart and longer geometries are errors that
+name the first offending record. Polylines are never split, and nothing is reordered, snapped, reprojected or
+repaired. No identifier or attribute is read. The same coordinates give the same graph by any input route.
 
-\strong{FlatGeobuf} (major version 3): needs only \code{sf} (to interpret the CRS). The header and every feature record are
-FlatBuffers structurally verified with a pinned FlatBuffers verifier before use; header and record buffers are
-limited to 64 MiB and every size prefix and the declared feature count are checked against the file size. The file is
-read sequentially, one record at a time, in its PHYSICAL ORDER: segment \code{i} is the \code{i}-th record. Files written with
-a spatial index (GDAL's default) are stored in Hilbert order, so segment numbers then differ from the order of the
-data before it was written, which cannot be recovered; write with \code{SPATIAL_INDEX=NO} to keep order. The spatial
-index is never read. The header may not declare Z/M/T dimensions or a geometry type other than LineString
-(or per-feature types). A declared feature count must match the number of records exactly (0 means unknown).
-CRS: no CRS table, or exactly GDAL's "Undefined Cartesian SRS with unknown unit" representation, is an unknown CRS
-(\code{sf::st_crs(NA)}); any other CRS is interpreted through \code{sf} (projected retained, geographic or uninterpretable
-rejected). Big-endian hosts are rejected. Verification covers the structure of every record, not full FlatGeobuf
-validity; concurrent modification of the file while it is read is unsupported (memory-safe, results undefined).
-Further details (a repository link, not shipped in the installed package):
-\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/flatgeobuf-input.md} and
+\emph{GeoParquet} (1.0 or 1.1, WKB) needs the suggested packages 'arrow' (>= 25.0.0), 'jsonlite' and 'sf'. The
+geometry column is the file's \code{primary_column}, and source row order is the segment order. A projected \code{crs} is
+retained as the graph's CRS, and \code{"crs": null} means an unknown CRS. A file with no \code{crs} key means
+GeoParquet's default (OGC:CRS84, geographic) and is rejected, as is any geographic CRS and any \code{edges} value
+other than planar.
+
+\emph{FlatGeobuf} (major version 3) needs only 'sf' (to interpret the CRS). The file is read sequentially in its
+physical order: segment \code{i} is record \code{i}. Files written with a spatial index (GDAL's default) are stored in
+Hilbert order, so segment numbers then differ from the order of the data before it was written; write with
+\code{SPATIAL_INDEX=NO} to keep the order. A file with no CRS, or with GDAL's "Undefined Cartesian SRS with
+unknown unit", has an unknown CRS. Any other CRS is interpreted through 'sf' and must be projected. The
+header may not declare Z/M/T dimensions or a geometry type other than LineString, and a declared feature
+count must match the number of records.
+
+Further details: \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/flatgeobuf-input.md} and
 \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/geoparquet-input.md}.
 
-This graph owns a native \code{HPSTASegmentGraph}, incompatible with the axial
-\code{HPSTAGraph} returned by \code{\link[=axial_graph]{axial_graph()}}. Only segment APIs may use it.
-Copying the R object shares ownership. Last-owner collection calls
-\code{PSTAFreeSegmentGraph} exactly once. The input matrix is not retained.
-Reconstruct graphs from coordinates after serialization or transfer to
-another R process; native pointers cannot be persisted.
+\strong{Using the graph.} A segment graph is a different object from the axial graph made by \code{\link[=axial_graph]{axial_graph()}} and
+only segment analyses accept it. It is held in native memory and is released automatically once no R object
+refers to it. It cannot be saved with \code{saveRDS()} or sent to another R process; rebuild it from the
+coordinates instead.
 }
+\section{Limitations}{
+
+GeoParquet 2.0, native GeoArrow encodings, directories, several files and cloud paths are not supported.
+Peak memory when reading GeoParquet depends strongly on the file's Parquet row-group size, and files with
+very large row groups are not rejected. FlatGeobuf verification covers the structure of every record, not full
+FlatGeobuf validity; modifying a file while it is being read is unsupported. Big-endian hosts are rejected for
+FlatGeobuf.
+}
+
 \examples{
 g <- segment_graph(rbind(c(0, 0, 3, 0), c(3, 0, 3, 3)))
 print(g)
+}
+\seealso{
+\code{\link[=axial_graph]{axial_graph()}}, \code{\link[=create_segment_map]{create_segment_map()}} to prepare segments from a street network,
+\code{\link[=angular_integration]{angular_integration()}}, \code{\link[=angular_choice]{angular_choice()}}
 }

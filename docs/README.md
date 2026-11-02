@@ -3,6 +3,8 @@
 | Topic | Document |
 | --- | --- |
 | Overview, installation, quick start | [README](../README.md) |
+| Worked example with the Barnsbury data | [Getting started vignette](../vignettes/getting-started.Rmd) |
+| Restrictions that affect use and interpretation | [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md) |
 | Public API and usage | [api.md](api.md) |
 | Architecture, native ownership, threading, pinned upstream source | [architecture.md](architecture.md) |
 | PST surface bound by rPSTool, relation to PST for QGIS, exclusions | [pst-coverage.md](pst-coverage.md) |
@@ -32,9 +34,3 @@
 | Raster comparison | [raster.md](compatibility/raster.md) |
 | Floating-point evaluation policy | [floating-point-policy.md](compatibility/floating-point-policy.md) |
 | Intentional differences from PST for QGIS | [qgis-differences.md](compatibility/qgis-differences.md) |
-
-### Pre-submission dependencies
-
-The GitHub installation route and the absolute `https://github.com/kimonkrenz/rPSTool/...` links in the README, help pages and
-`DESCRIPTION` work anonymously only once the repository is public; making it public is a maintainer decision and a pre-submission
-dependency. See [release-checklist.md](release-checklist.md) (item 3).

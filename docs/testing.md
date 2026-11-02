@@ -91,7 +91,7 @@ symbolic link on Windows (it sends a junction-only `FSCTL_DELETE_REPARSE_POINT`)
 their handles explicitly (`rs_pq()`, `rs_read_parquet()`), because Arrow's handles block replacing or deleting the file on Windows.
 
 The package builds and every numerical analysis works on Windows, and result-file writing (`output_file`, `spatial_output_file`) is
-implemented there (the development suite has passed on Windows; validation of the final release candidate on Windows is still outstanding, see below). The tests that depend on POSIX-only facilities (device
+implemented there (the full development suite and `R CMD check` passed on Windows x86-64 at `4119f2b`). The tests that depend on POSIX-only facilities (device
 files and FIFOs, `ulimit -f`) call `skip_on_os("windows")`; the exact inventory (4 tests) is
 `tools/ci/windows-test-skips.tsv`, re-derived from the test sources and enforced by `tools/ci/test-warning-policy.R`, so a new
 Windows-only skip requires a reviewed inventory change.
@@ -99,7 +99,6 @@ Windows-only skip requires a reviewed inventory change.
 ## Platforms and validation status
 
 Supported targets are macOS (Apple clang), Windows (Rtools) and Linux (GCC or clang). The complete local validation
-(`tools/ci/check-local.R`) has passed on macOS Apple Silicon and Windows 11 x64 for earlier states of the package; **the final
-release state still needs a clean run on all three platforms** ([release checklist](release-checklist.md)). On Debian-style Linux
+(`tools/ci/check-local.R`) passed on macOS Apple Silicon and Windows 11 x64 for earlier states of the package. At commit `4119f2b` the full gate (full development suite and `R CMD check`) passed on Linux x86-64, macOS ARM64 and Windows x86-64 ([release checklist](release-checklist.md)). On Debian-style Linux
 toolchains `R CMD check` may report an installed-size NOTE caused by the platform's default `-g` flags ([build and
 platforms](build-and-platforms.md)).

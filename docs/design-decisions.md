@@ -82,7 +82,7 @@ recorded manual comparison, at the evidence level actually reached. Intentional 
   Hilbert order, so no other ordering contract is honest). External IDs are not retained
   ([spatial I/O](spatial-io/README.md)).
 * **File output.** Result persistence to Parquet and spatial output to a new GeoParquet/FlatGeobuf file use temp-file publication (POSIX `link(2)` no-clobber or `rename(2)` replace; Windows `MoveFileExW` without or with
-  replacement; no durability claim). The Windows layer passed the development test suite on Windows; validation of the final release candidate on Windows is still outstanding. `network_integration(junctions = TRUE)`
+  replacement; no durability claim). The full development test suite and `R CMD check` passed on Windows x86-64 at commit `4119f2b` (R 4.6.2, Rtools GCC 14.3.0). `network_integration(junctions = TRUE)`
   persistence is not offered: two result tables published as independent files could be left inconsistent by an interrupted
   overwrite ([result files](spatial-io/result-files.md)).
 * **Test suite modes.** A CRAN mode (thinned fixture loops, no skips) and a full development mode guarded by an expectation-count

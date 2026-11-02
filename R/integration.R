@@ -1,71 +1,60 @@
-#' Calculate PST Network Integration on an axial graph
+#' Network Integration of an axial graph
 #'
-#' Calls PST v3.3.2 `PSTANetworkIntegration` on the axial graph owned by
-#' [axial_graph()]. PST computes each line's integration score, reached-line
-#' count (including the origin line), and total topological depth. No scores
-#' or normalisation are computed in R. The graph remains alive and reusable.
+#' Calculates Network Integration for every line of an axial graph: how accessible each line is from every
+#' other line, measured by topological depth (the number of direction changes). Use it for classic
+#' axial-map integration analysis, optionally within a limited number of steps.
 #'
-#' `steps = NULL` leaves the radius unrestricted. A step limit sets only PST's
-#' topological step radius; it does not set a walking, straight, angular or
-#' axmeter radius. Changing between two lines counts as one step, including
-#' at collinear endpoint joins. A limit of zero reaches only the origin line.
-#' The radius argument accepts a [analysis_radius()] object that sets only `steps`.
-#' With `junctions = TRUE`, PST also returns native junction coordinates and
-#' scores. PST accumulates incident line scores divided by native
-#' pairwise crossing multiplicity into a fresh zeroed buffer on each call, so
-#' repeated calls produce independent results. This is not a conventional
-#' distinct-line mean: two lines both scoring -1 yield a junction score of -2.
-#' Coincident crossings and unlink ordering retain pinned PST behaviour. rPSTool
-#' does not calculate junction scores; `NaN`/`Inf` are preserved.
+#' @details
+#' **Definition.** For each line PST counts the lines it reaches (including the line itself) and sums their
+#' topological depths, then computes an integration score from these two quantities. Changing between two lines counts as one step,
+#' including at collinear endpoint joins. The scores are computed by PST; rPSTool does not alter or
+#' normalise them.
 #'
-#' PST returns `-1` when fewer than two lines are reached. Its integration
-#' formula can return `NaN` or `Inf` for small or zero-relative-asymmetry
-#' neighbourhoods. These values are returned unchanged, not replaced with
-#' missing values or recalculated. PST's float outputs are widened to R doubles.
+#' **Radius.** `steps = NULL` leaves the radius unrestricted. A step limit restricts only the topological
+#' radius: a limit of zero reaches only the line itself. Supply the limit with `steps` or with
+#' `radius = analysis_radius(steps = ...)`, but not both. Only a steps radius (or none) is accepted, which
+#' matches the Network Integration offered by the official PST for QGIS plugin; walking, straight, angular
+#' and axmeter limits, alone or combined with steps, are rejected before any calculation. For those metrics
+#' use [angular_integration()] on a segment graph or [network_reach()].
 #'
-#' Only a topological step radius (or no radius) is accepted. The official PST
-#' v3.3.2 Python/QGIS Network Integration offers only steps (the wizard shows only
-#' a step radius and the Python execution code builds a steps-only radius), so
-#' straight, walking, angular and axmeter limits, alone or mixed with steps, are
-#' rejected before any native calculation. The native engine would accept them,
-#' but they are outside the supported interface; for those metrics use
-#' [angular_integration()] on a segment graph or [network_reach()].
+#' **Special values.** PST returns `-1` when fewer than two lines are reached. For very small or
+#' symmetric neighbourhoods the formula can give `NaN` or `Inf`. These values are returned unchanged and
+#' are not replaced by `NA`.
 #'
-#' @param graph A live axial `pst_graph` created by [axial_graph()].
-#' @param steps `NULL` for unrestricted radius, or one non-negative whole number
-#'   no greater than `2147483647`, the pinned native signed step-limit maximum.
-#' @param radius Optional [analysis_radius()] object that sets only `steps`; any
-#'   other limit is an error. Supply either radius or a non-NULL steps argument.
-#' @param junctions Logical scalar. If TRUE, return a list containing `lines`
-#'   (the usual result) and `junctions` (a data frame with one-based `junction_id`,
-#'   world `x, y` coordinates and native `integration` scores).
-#' @param junction_output `"native"` (default) or `"sf"`; appended argument that
-#'   applies only to the junction component and requires `junctions = TRUE` and
-#'   the optional sf package. With `"sf"`, `junctions` is POINT sf with columns
-#'   `junction_id` and `integration` plus geometry made solely from the returned
-#'   native `x, y` (the `x`/`y` columns are then carried by the geometry). Native
-#'   order is kept, CRS is the graph's retained sf CRS (unknown if none), and a
-#'   zero-junction result has zero features. `lines` stays an ordinary data
-#'   frame; no line geometry is reconstructed and no extra native call is made.
-#' @param output_file `NULL` (default) returns the data frame. A path writes the line results directly to one
-#'   Parquet file from PST's native result arrays and returns an invisible `pst_result_file` descriptor, without
-#'   building R result vectors; it requires `junctions = FALSE` and the optional package `arrow (>= 25.0.0)`.
-#'   Columns, order and values are those of the data frame (`line_id` and `node_count` int32, `integration` and
-#'   `total_depth` float32; reading them back in R gives the identical doubles). Windows: see [pst_result_file].
-#' @param overwrite `TRUE` or `FALSE` (default). With `output_file` or `spatial_output_file`, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see [pst_result_file] for the platform differences, notably on Windows.
-#' @param spatial_output_file `NULL` (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-#'   is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-#'   columns, matched to the source features by position (no spatial join). The output format equals the source format
-#'   (GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-#'   replaces it, other result columns are appended. The destination must end in `.fgb` (FlatGeobuf source) or `.parquet` (GeoParquet source), in any letter case. Mutually exclusive with `output_file`; needs a graph built from a
-#'   file path; `overwrite` applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible [pst_result_file] descriptor. Only with `junctions = FALSE`. See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
-#' @return With `junctions = FALSE`, a data frame with one row per input line,
-#'   in the original line-row order: `line_id` (one-based integer row index), `integration` (PST's score),
-#'   `node_count` (integer reached-line count, including the origin), and
-#'   `total_depth` (PST's sum of topological steps to reached lines). With `junctions = TRUE`, a list containing
-#'   `lines` (that data frame) and `junctions` (a data frame with one-based integer `junction_id`, world double
-#'   `x, y` and native double `integration`; a POINT sf object if `junction_output = "sf"`). Zero crossings
-#'   produce a zero-row junction data frame. With `output_file` or `spatial_output_file`, the line results is written to a file instead and an invisible `pst_result_file` descriptor (`path`, `rows`, `columns`, `format`) is returned; see [pst_result_file].
+#' **Junctions.** With `junctions = TRUE`, PST also returns a score for every crossing. Each line's score is divided by the
+#' number of crossings between the same pair of lines and accumulated at the crossing, so this is not the
+#' mean of the distinct lines meeting there: two lines that both score -1 give a junction score of -2.
+#' Coincident crossings and unlink ordering follow PST.
+#'
+#' @section Limitations:
+#' Only steps radii are accepted (see Details).
+#'
+#' @param graph An axial graph created by [axial_graph()].
+#' @param steps `NULL` (default, unrestricted) or one non-negative whole number no greater than
+#'   2147483647.
+#' @param radius Optional [analysis_radius()] object that sets only `steps`. Supply either `radius` or a
+#'   non-`NULL` `steps`.
+#' @param junctions `TRUE` or `FALSE` (default). If `TRUE`, also return junction scores (see Value).
+#' @param junction_output `"native"` (default) or `"sf"`. Applies only to the junction table and requires
+#'   `junctions = TRUE` and the suggested package 'sf'. With `"sf"` the junctions are POINT features with
+#'   `junction_id` and `integration` columns, in PST's order and with the graph's CRS.
+#' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning
+#'   them; see [pst_result_file]. `output_file` and `spatial_output_file` require `junctions = FALSE`.
+#' @return With `junctions = FALSE`, a data frame with one row per input line, in the order of the lines
+#'   supplied to [axial_graph()]:
+#'   * `line_id`: one-based row index of the line,
+#'   * `integration`: PST's integration score,
+#'   * `node_count`: integer number of lines reached, including the line itself,
+#'   * `total_depth`: the sum of the topological steps to the reached lines.
+#'
+#'   With `junctions = TRUE`, a list with `lines` (that data frame) and `junctions`, a data frame with
+#'   one-based `junction_id`, world coordinates `x` and `y` and `integration` (a POINT `sf` object if
+#'   `junction_output = "sf"`). A graph without crossings gives a zero-row junction table. With `output_file`
+#'   or `spatial_output_file` the results are written to a file and an invisible [pst_result_file]
+#'   descriptor is returned.
+#' @seealso [angular_integration()] for segment graphs, [network_reach()], [analysis_radius()]
+#' @references
+#' Hillier, B. and Hanson, J. (1984). *The Social Logic of Space*. Cambridge University Press.
 #' @export
 #' @examples
 #' lines <- cbind(x1 = c(0, 3, 6, 9, 12), y1 = 0,

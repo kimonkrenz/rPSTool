@@ -2,7 +2,7 @@
 % Please edit documentation in R/segment-groups.R
 \name{segment_grouping}
 \alias{segment_grouping}
-\title{Group segments using PST's angular continuity}
+\title{Group segments by angular continuity}
 \usage{
 segment_grouping(
   graph,
@@ -13,42 +13,40 @@ segment_grouping(
 )
 }
 \arguments{
-\item{graph}{A live graph from \code{\link[=segment_graph]{segment_graph()}}.}
+\item{graph}{A segment graph created by \code{\link[=segment_graph]{segment_graph()}}.}
 
-\item{angle_threshold}{One finite non-negative native float value in degrees.
-Nonzero float underflow is rejected. Thresholds above 90 are supported.}
+\item{angle_threshold}{One finite, non-negative number of degrees. A non-zero value that underflows single
+precision is rejected.}
 
-\item{split_at_junctions}{\code{TRUE} or \code{FALSE}; when \code{TRUE}, restrict
-continuations to degree-two intersections.}
+\item{split_at_junctions}{\code{TRUE} or \code{FALSE}. If \code{TRUE}, continuations are restricted to degree-two
+intersections.}
 
-\item{output_file}{NULL (default) or one file path. When given, the grouping runs once and its result is written
-directly to a Parquet file (zstd) without building an R data frame; see \code{\link[=print.pst_result_file]{print.pst_result_file()}}. Needs the
-optional package arrow (>= 25.0.0). The file has the same columns, order, one-based \code{group_id}/\code{color} values and
-int32 types as the data frame; the two scalar attributes are stored as the Parquet schema metadata keys
-\code{rpst:n_groups} and \code{rpst:n_colors} (decimal strings), next to the usual \verb{rpst:*} provenance keys. Result files are written through POSIX calls on Unix-alikes and through the Win32 API on Windows. The Windows implementation passed the development test suite on Windows; validation of the final release candidate on Windows is still outstanding.}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). Whether an existing \code{output_file} may be replaced (by a single rename; the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences).}
+\item{output_file, overwrite}{Write the result to a Parquet file instead of returning a data frame; see
+\link{pst_result_file}. The two scalar attributes are stored as the schema metadata keys \code{rpst:n_groups} and
+\code{rpst:n_colors}.}
 }
 \value{
-With \code{output_file = NULL}, a data frame in original segment order with
-integer \code{segment_id}, \code{group_id} and \code{color}, and integer \code{n_groups} and
-\code{n_colors} attributes recording native counts. IDs and colors are native
-indices plus one; colors are graph-coloring labels, not RGB values. The data
-frame retains no graph ownership and no inputs. With \code{output_file}, an
-invisible \code{pst_result_file} descriptor is returned instead.
+A data frame in segment order with integer columns \code{segment_id}, \code{group_id} and \code{color}, and integer
+attributes \code{n_groups} and \code{n_colors}. Groups and colours are numbered from one; a colour is a
+graph-colouring label (adjacent groups differ), not an RGB value. With \code{output_file}, an invisible
+\link{pst_result_file} descriptor is returned instead.
 }
 \description{
-Calls \code{PSTASegmentGrouping} on an endpoint-connected segment graph. PST
-selects pairs by angular deviation at shared endpoints; no R grouping
-algorithm, snapping or interior crossing detection is performed.
-\code{split_at_junctions} restricts continuations to degree-two intersections.
-Thresholds narrow to native float. Values above 90 degrees are supported by
-the pinned implementation and upstream tests, and values above 180 are allowed
-and compared directly against PST deviations (which are at most 180 degrees).
-IDs and colors are converted from native zero-based indices to one-based R IDs
-without reordering.
+Groups the segments of a segment graph into continuous routes by joining pairs of segments that meet at a
+shared endpoint with a small angular deviation. The grouping can be passed to \code{\link[=segment_group_graph]{segment_group_graph()}} to
+analyse the network at the level of whole streets or routes.
+}
+\details{
+At each shared endpoint PST selects pairs of segments by angular deviation, using \code{angle_threshold}.
+\code{split_at_junctions = TRUE} restricts continuations to intersections where exactly two segments meet
+(degree two). The threshold is in degrees; values above 90 are supported, and values above 180 are
+allowed and compared directly with PST's deviations (which never exceed 180 degrees). Groups and colours are
+numbered from one in PST's order.
 }
 \examples{
 s <- segment_graph(rbind(c(0, 0, 3, 0), c(3, 0, 6, 0)))
 segment_grouping(s)
+}
+\seealso{
+\code{\link[=segment_group_graph]{segment_group_graph()}}, \code{\link[=segment_group_integration]{segment_group_integration()}}, \code{\link[=segment_graph]{segment_graph()}}
 }

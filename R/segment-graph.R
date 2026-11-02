@@ -1,71 +1,65 @@
-#' Construct an in-memory PST segment graph
+#' Build a segment graph from segments
 #'
-#' Calls PST v3.3.2 `PSTACreateSegmentGraph`. Each row is one two-point
-#' segment with columns ordered `x1, y1, x2, y2`, regardless of column names.
-#' PST joins endpoints with exactly equal double coordinate pairs, before
-#' conversion to local floats. Interior crossings and endpoint-on-interior
-#' contacts do not connect segments. No crossing detection, snapping, splitting,
-#' filtering, reprojection or other preprocessing is performed.
+#' Creates a segment graph, the representation PST uses for segment-based analyses ([angular_integration()],
+#' [angular_choice()], [segment_grouping()] and [segment_group_graph()]). The graph is built once and can be
+#' reused by any number of analyses.
 #'
-#' Coordinates must be finite and fit PST's native local coordinate, center,
-#' length and squared distance representations. Supply suitable planar
-#' coordinates; this interface has no CRS metadata or unit conversion.
+#' @details
+#' **Segments.** Each row is one two-point segment, ordered `x1, y1, x2, y2`, regardless of column names.
+#' PST joins two segments where they share an endpoint with exactly equal double coordinates. Crossings in the
+#' interior of segments and endpoints that touch the interior of another segment do not connect segments. No
+#' crossing detection, snapping, splitting, filtering or reprojection is performed; use [create_segment_map()]
+#' to prepare a street network first.
 #'
-#' Optional `sf`/`sfc` input accepts only XY LINESTRING features with exactly
-#' two finite vertices. Feature order and direction are preserved. Multipart,
-#' empty, longer polylines, mixed geometry and Z/M are rejected. No attributes
-#' are interpreted. Known geographic CRS is rejected; transform explicitly.
-#' Missing CRS is allowed on user responsibility. Projected coordinates retain
-#' native units. Only CRS metadata is retained as a `crs` attribute, with no
-#' retained input object or duplicate geometry. See [axial_graph()] for CRS policy.
+#' **Coordinates.** Coordinates must be finite and within PST's single-precision coordinate range. Supply planar
+#' coordinates in the units you intend to use for radii. A matrix carries no CRS.
 #'
-#' A single character path reads one local file whose format is identified from its CONTENT (never its extension):
-#' GeoParquet (first four bytes `PAR1`, trailing `PAR1` required) or FlatGeobuf major version 3 (first seven bytes
-#' `66 67 62 03 66 67 62`, any patch byte). Anything else is an error. Both routes require every feature to be a
-#' non-null, 2D `LineString` with exactly two finite vertices; null, empty, Z/M/ZM, multipart and longer geometries are
-#' errors that name the first offending one-based record. Polylines are never split, nothing is reordered, snapped or
-#' reprojected, and no identifier or attribute is read or retained. Both end in the same native segment-graph builder
-#' as matrix and `sf` input, so the same coordinates give identical results.
+#' **`sf` input.** With the suggested package 'sf', `x` may hold XY LINESTRING features with exactly two finite
+#' vertices. Feature order and direction are kept and attributes are ignored. A known geographic CRS is rejected;
+#' transform explicitly. A missing CRS is allowed on your responsibility. Only the CRS is retained, as the graph's
+#' `crs` attribute. See [axial_graph()] for the CRS policy.
 #'
-#' **GeoParquet** (GeoParquet 1.0/1.1, WKB): needs the optional packages `arrow` (>= 25.0.0), `jsonlite` and `sf`.
-#' The geometry column is the file's `primary_column`. Source row order is the graph segment order. The file is
-#' streamed through the Arrow C interface straight into the single native coordinate array PST consumes, without
-#' building an `sf` object or a coordinate matrix. CRS: a projected `crs` is retained as the graph's `crs` attribute;
-#' `"crs": null` is an unknown CRS and is allowed; a file with no `crs` key means GeoParquet's default (OGC:CRS84,
-#' geographic) and is rejected, as is any geographic CRS and any `edges` other than planar. GeoParquet 2.0, native
-#' GeoArrow encodings, directories, multiple files and cloud paths are unsupported. Peak Arrow memory depends strongly
-#' on the file's Parquet row-group size; it is not bounded by a scanner batch size, and files with large row groups
-#' are not rejected.
+#' **File input.** A single path reads one local file. The format is recognised from the file content, never its
+#' extension: GeoParquet or FlatGeobuf (major version 3). Both require every feature to be a non-null, two-dimensional
+#' LineString with exactly two finite vertices. Null, empty, Z/M, multipart and longer geometries are errors that
+#' name the first offending record. Polylines are never split, and nothing is reordered, snapped, reprojected or
+#' repaired. No identifier or attribute is read. The same coordinates give the same graph by any input route.
 #'
-#' **FlatGeobuf** (major version 3): needs only `sf` (to interpret the CRS). The header and every feature record are
-#' FlatBuffers structurally verified with a pinned FlatBuffers verifier before use; header and record buffers are
-#' limited to 64 MiB and every size prefix and the declared feature count are checked against the file size. The file is
-#' read sequentially, one record at a time, in its PHYSICAL ORDER: segment `i` is the `i`-th record. Files written with
-#' a spatial index (GDAL's default) are stored in Hilbert order, so segment numbers then differ from the order of the
-#' data before it was written, which cannot be recovered; write with `SPATIAL_INDEX=NO` to keep order. The spatial
-#' index is never read. The header may not declare Z/M/T dimensions or a geometry type other than LineString
-#' (or per-feature types). A declared feature count must match the number of records exactly (0 means unknown).
-#' CRS: no CRS table, or exactly GDAL's "Undefined Cartesian SRS with unknown unit" representation, is an unknown CRS
-#' (`sf::st_crs(NA)`); any other CRS is interpreted through `sf` (projected retained, geographic or uninterpretable
-#' rejected). Big-endian hosts are rejected. Verification covers the structure of every record, not full FlatGeobuf
-#' validity; concurrent modification of the file while it is read is unsupported (memory-safe, results undefined).
-#' Further details (a repository link, not shipped in the installed package):
-#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/flatgeobuf-input.md> and
+#' *GeoParquet* (1.0 or 1.1, WKB) needs the suggested packages 'arrow' (>= 25.0.0), 'jsonlite' and 'sf'. The
+#' geometry column is the file's `primary_column`, and source row order is the segment order. A projected `crs` is
+#' retained as the graph's CRS, and `"crs": null` means an unknown CRS. A file with no `crs` key means
+#' GeoParquet's default (OGC:CRS84, geographic) and is rejected, as is any geographic CRS and any `edges` value
+#' other than planar.
+#'
+#' *FlatGeobuf* (major version 3) needs only 'sf' (to interpret the CRS). The file is read sequentially in its
+#' physical order: segment `i` is record `i`. Files written with a spatial index (GDAL's default) are stored in
+#' Hilbert order, so segment numbers then differ from the order of the data before it was written; write with
+#' `SPATIAL_INDEX=NO` to keep the order. A file with no CRS, or with GDAL's "Undefined Cartesian SRS with
+#' unknown unit", has an unknown CRS. Any other CRS is interpreted through 'sf' and must be projected. The
+#' header may not declare Z/M/T dimensions or a geometry type other than LineString, and a declared feature
+#' count must match the number of records.
+#'
+#' Further details: <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/flatgeobuf-input.md> and
 #' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/geoparquet-input.md>.
 #'
-#' This graph owns a native `HPSTASegmentGraph`, incompatible with the axial
-#' `HPSTAGraph` returned by [axial_graph()]. Only segment APIs may use it.
-#' Copying the R object shares ownership. Last-owner collection calls
-#' `PSTAFreeSegmentGraph` exactly once. The input matrix is not retained.
-#' Reconstruct graphs from coordinates after serialization or transfer to
-#' another R process; native pointers cannot be persisted.
+#' **Using the graph.** A segment graph is a different object from the axial graph made by [axial_graph()] and
+#' only segment analyses accept it. It is held in native memory and is released automatically once no R object
+#' refers to it. It cannot be saved with `saveRDS()` or sent to another R process; rebuild it from the
+#' coordinates instead.
 #'
-#' @param x An integer or double matrix with at least one row and exactly
-#'   four columns, ordered `x1, y1, x2, y2`; an `sf`/`sfc` object of two-vertex
-#'   LINESTRINGs; or one character path to a local GeoParquet or FlatGeobuf file (see Details).
-#' @return An S3 `pst_segment_graph` list containing `ptr` (an owned native
-#'   external pointer), `type` (`"segment"`), `n_segments` (the constructor
-#'   count), and `pst_version` (`"3.3.2"`). Treat fields as read-only.
+#' @section Limitations:
+#' GeoParquet 2.0, native GeoArrow encodings, directories, several files and cloud paths are not supported.
+#' Peak memory when reading GeoParquet depends strongly on the file's Parquet row-group size, and files with
+#' very large row groups are not rejected. FlatGeobuf verification covers the structure of every record, not full
+#' FlatGeobuf validity; modifying a file while it is being read is unsupported. Big-endian hosts are rejected for
+#' FlatGeobuf.
+#'
+#' @param x An integer or double matrix with at least one row and exactly four columns (`x1, y1, x2, y2`); an
+#'   `sf`/`sfc` object of two-vertex LINESTRINGs; or one path to a local GeoParquet or FlatGeobuf file.
+#' @return An object of class `pst_segment_graph`: a list with `type` (`"segment"`), `n_segments` and
+#'   `pst_version`, plus the native handle `ptr`. Treat these fields as read-only. `print()` shows a summary.
+#' @seealso [axial_graph()], [create_segment_map()] to prepare segments from a street network,
+#'   [angular_integration()], [angular_choice()]
 #' @export
 #' @examples
 #' g <- segment_graph(rbind(c(0, 0, 3, 0), c(3, 0, 3, 3)))
