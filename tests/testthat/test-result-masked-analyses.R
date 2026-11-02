@@ -182,8 +182,8 @@ test_that("Segment Betweenness file route rejects bad calls before any file exis
   g <- axial_graph(cbind(0:2, 0, 1:3, 0)); s <- segment_graph(cbind(0:2 * 3, 0, 1:3 * 3, 0))
   on.exit({ ma_graph_release(g); rs_native("segment_graph_release", s$ptr) }, add = TRUE)
   before <- rs_baseline()
-  expect_identical(names(formals(network_betweenness)), c("graph", "radius", "distance", "normalization", "weights",
-                                                      "attraction_points", "output_file", "overwrite", "spatial_output_file"))
+  expect_identical(names(formals(rPSTool::network_betweenness)), c("graph", "radius", "distance", "normalization", "weights",
+                                                      "attraction_points", "output_file", "overwrite", "spatial_output_file", "weight_name"))
   bad <- list(function() network_betweenness(g, output_file = file, overwrite = NA),
               function() network_betweenness(g, distance = "bogus", output_file = file),
               function() network_betweenness(g, normalization = "bogus", output_file = file),
@@ -311,7 +311,7 @@ test_that("group integration: unsupported radii, wrong graph family and dead poi
   g <- segment_group_graph(s, 1:5)
   on.exit({ ma_group_release(g); rs_native("segment_graph_release", s$ptr); ma_graph_release(a) }, add = TRUE)
   before <- rs_baseline()
-  expect_identical(names(formals(segment_group_integration)), c("graph", "radius", "output_file", "overwrite"))
+  expect_identical(names(formals(rPSTool::segment_group_integration)), c("graph", "radius", "output_file", "overwrite"))
   for (field in c("straight", "angular", "axmeter"))
     expect_error(segment_group_integration(g, do.call(analysis_radius, setNames(list(1), field)), output_file = file),
                  "only walking and steps")

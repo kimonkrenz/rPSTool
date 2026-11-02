@@ -201,3 +201,15 @@ test_that("the file route and the data frame use the same names, and the metadat
   expect_identical(manifest[[4L]]$normalization, "syntax")
   expect_identical(manifest[[4L]]$parameters, "at5")
 })
+
+test_that("every result column's manifest entry serialises, including OD Betweenness with both weights", {
+  a <- naming_axial(); o <- rbind(c(0.2, 0)); r <- analysis_radius(walking = 800)
+  cols <- rPSTool:::.pst_nm_od_betweenness(r, "walking", "all", list(code = "wopop_1", name = "Pop 1"), list(code = "wdjobs", name = "jobs"))
+  json <- rPSTool:::.pst_json(rPSTool:::.pst_nm_manifest(cols))
+  expect_match(json, "origin: Pop 1; destination: jobs", fixed = TRUE)
+  parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  expect_identical(parsed[[1L]]$name, "od_w_rw800_wopop_1_wdjobs")
+  for (w in list(list(NULL, NULL), list("a", NULL), list(NULL, "b")))
+    expect_no_error(rPSTool:::.pst_json(rPSTool:::.pst_nm_manifest(rPSTool:::.pst_nm_od_betweenness(r, "walking", "closest",
+      list(code = if (!is.null(w[[1]])) "woa" else "", name = w[[1]]), list(code = if (!is.null(w[[2]])) "wdb" else "", name = w[[2]])))))
+})

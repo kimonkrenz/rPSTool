@@ -218,7 +218,10 @@
   r <- .pst_nm_radius(radius); d <- .pst_nm_distance_codes[[distance]]
   p <- .pst_nm_params(list(list(code = "dm", value = if (identical(destination_mode, "closest")) "c" else "a", default = "a")))
   list(.pst_nm_col("od", "od_betweenness", d, r, .pst_nm_join(origin_weight$code, destination_weight$code), params = p,
-                   weight_name = c(origin = origin_weight$name, destination = destination_weight$name)))
+                   weight_name = if (is.null(origin_weight$name) && is.null(destination_weight$name)) NULL else
+                     paste(c(if (!is.null(origin_weight$name)) paste0("origin: ", origin_weight$name),
+                             if (!is.null(destination_weight$name)) paste0("destination: ", destination_weight$name)),
+                           collapse = "; ")))
 }
 
 .pst_nm_segment_group_integration <- function(radius) {

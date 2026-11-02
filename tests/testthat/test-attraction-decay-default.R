@@ -70,7 +70,7 @@ test_that("the file-backed path records and uses the effective constant", {
   file <- tempfile(fileext = ".parquet"); on.exit(unlink(file), add = TRUE)
   case <- Filter(function(c) c$decay == "curve" && c$constant == 1 && c$distance == "steps", ref$cases)[[1L]]
   adr_call(g, ref, case, decay = "curve", output_file = file)
-  got <- as.data.frame(rs_read_parquet(file))
+  got <- rs_read(file)
   expect_equal(as.double(got$attraction_reach), as.double(unlist(case$scores)), tolerance = 2e-6)
   p <- jsonlite::fromJSON(rs_pq(file)$GetSchema()$metadata[["rpst:parameters"]])
   expect_equal(p$decay_constant, 1)
