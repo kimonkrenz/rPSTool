@@ -63,9 +63,8 @@
 #' @keywords datasets
 #' @seealso [load_example_data()]
 #' @section Source:
-#' See the section "Source of the data" in [load_example_data()]. The axial map is attributed to Hillier and Iida (2005); the
-#' movement observations were originally used in Penn et al. (1998), as documented in the README of the original dataset, and
-#' that attribution concerns the `gates` observations only.
+#' The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz. The data are included and redistributed with permission from the authors. The original research and data remain attributable to their respective authors.
+#' The movement gate counts were originally reported by Penn et al. (1998). See also the section "Source of the data" in [load_example_data()].
 #'
 #' @references Hillier, B. and Iida, S. (2005). Network and Psychological Effects in Urban Movement. In *Spatial Information Theory*,
 #'   LNCS 3693, pp. 475-490. \doi{10.1007/11556114_30}.

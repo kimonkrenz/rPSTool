@@ -24,7 +24,8 @@ depths. The usable depth depends on the platform, compiler and flags; it has not
 **Workaround.** Restrict the radius. A `steps` radius bounds the depth by its value, and a `walking` or `straight` radius
 bounds it by the number of segments that fit inside. An `angular` radius does not bound runs of near-collinear segments.
 Save your work before running an unrestricted analysis on a network with long straight chains of short segments.
-rPSTool does not change PST's traversal. Details:
+rPSTool contains no safeguard against this: it does not change PST's traversal and does not check the depth beforehand, so the failure
+is a process crash, not an R error. If a run must be avoided or has failed, use a `steps`, `walking` or `straight` radius. Details:
 [angular controls](docs/compatibility/angular-controls.md).
 
 ### Combined radius limits can be very slow
@@ -107,9 +108,11 @@ with real runs of the plugin. Intentional differences are listed in
 
 ## Example data
 
-The Barnsbury example data are not covered by the package licence and no explicit redistribution licence for them was located.
-Their coordinates have been georeferenced and transformed and are not the original coordinates. See
-[example data](docs/example-data.md) and [licensing](docs/licensing.md).
+The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement
+gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz, so the coordinates are not the original
+coordinates and the data were not originally supplied in British National Grid. The data are included and redistributed with
+permission from the authors, and the original research and data remain attributable to them. See
+[example data](docs/example-data.md).
 
 ## Reporting problems
 

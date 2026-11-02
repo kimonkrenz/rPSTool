@@ -64,7 +64,7 @@ LGPL sense, and rPSTool's own code is itself LGPL-3-or-later.
 3. **Headerless PST files:** Upstream `CMakeLists.txt` and `include/pstalgo/utils/Concurrency.h` remain pristine and are covered as part of the upstream PST distribution for rPSTool attribution purposes. No individual headers are inserted.
 4. **depthmapX and ColorBrewer:** By explicit maintainer decision, retain LGPL (>= 3), reproduce the historical depthmapX colour values and R mapping behaviour, and prominently attribute depthmapX v0.9.1 and Tasos Varoudis. Matching ColorBrewer values are documented as provenance observations; no separate speculative clearance investigation is required for this release. This is a maintainer decision, not a legal opinion.
 
-## 3. Open items (maintainer decision or qualified review)
+## 3A. Further recorded items
 
 
    combined library. Providing the Corresponding Source next to the source package on the same channel is the usual route and the
@@ -90,18 +90,13 @@ LGPL sense, and rPSTool's own code is itself LGPL-3-or-later.
    source is retained** (`inst/COPYRIGHTS`, `docs/palettes.md`). This records a decision, not a legal opinion or a formally verified
    clearance; the matching colour values, equations or behaviour alone are not asserted to establish a licensing conflict, and whether
    a qualified review would reach the same view has not been tested.
-3. **Hillier-Iida example data.** `inst/extdata/hillier_iida/` holds the Barnsbury data (axial map, unlinks, gates) distributed with Hillier and Iida (2005)
-   through UCL Discovery, whose pedestrian and vehicular movement observations were originally used in Penn, Hillier, Banister and Xu
-   (1998, Environment and Planning B 25(1), 59-84, DOI 10.1068/b250059); the geometry was georeferenced and spatially transformed by
-   Kimon Krenz and is not the original, unmodified coordinates. The Clerkenwell and Kensington data are not distributed. The attribution concerns the
-   movement observations only (not every axial map, metric or attribute) and was verified by the maintainer against the supplied README
-   (`SATC_readme1`, p. 1) and Hillier and Iida (2005), Section 5 (p. 483); the development session did not access those sources. **Permission to redistribute the Barnsbury pedestrian and vehicle gate count data was granted by the authors.**
-   This statement concerns the Barnsbury pedestrian and vehicle gate count data only; it does not extend to other datasets, maps,
-   figures or copyrighted materials. The permission correspondence is not reproduced in the repository. Provenance
-   note: no explicit redistribution licence was located in the supplied published material; the observations were originally used in the 1998 study
-   (the attribution does not establish a collection date). The data are
-   not labelled public domain, Creative Commons or LGPL, and attribution or open availability alone is not taken to establish
-   unrestricted redistribution. This is a record of a maintainer decision and of the permission above, not a legal assessment.
+3. **Hillier-Iida example data (resolved).** `inst/extdata/hillier_iida/` holds the Barnsbury example data, which are derived from Hillier and Iida
+   (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially
+   transformed by Kimon Krenz, so the coordinates are not the original, unmodified coordinates. The data are included and redistributed
+   with permission from the authors; the original research and data remain attributable to their respective authors. The movement gate
+   counts were originally reported by Penn, Hillier, Banister and Xu (1998, Environment and Planning B 25(1), 59-84,
+   DOI 10.1068/b250059). The Clerkenwell and Kensington data are not distributed. The LGPL (>= 3) licence applies to rPSTool's
+   software, not to these data. See [example data](example-data.md).
 4. **CRAN's own review** of bundled third-party code and of the `Copyright:` field is not predictable.
 
    hex values, in reversed order, as the published 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.; compared with the
