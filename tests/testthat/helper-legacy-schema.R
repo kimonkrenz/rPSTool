@@ -11,7 +11,7 @@ legacy_role <- function(name) {
     ai = , ni = , nj = , gi = "integration",
     ac = if (raw) "choice" else "normalized",
     nb = , at = if (raw) "betweenness" else "normalized",
-    nc = "node_count", td = "total_depth", tw = "total_weight", tdw = "total_depth_weight",
+    nc = , anc = "node_count", td = , atd = "total_depth", tw = "total_weight", tdw = "total_depth_weight",
     rc = "reached_count", rln = "reached_length", rca = "reached_area",
     ar = "attraction_reach", ad = "attraction_distance", di = "destination_index", od = "od_betweenness",
     NULL)
@@ -50,9 +50,26 @@ legacy_frame <- function(x) {
   names(x)[known] <- roles[known]
   x
 }
+# Custom weights must be named (weight_name etc.). The pinned-PST numerical
+# tests exercise values, not names, so the adapter supplies a descriptive
+# identifier for any weight vector a test passes without one. Name behaviour
+# itself is tested through explicit rPSTool:: calls in test-output-naming.R.
+legacy_weight_names <- c(weights = "weight_name", attraction_values = "weight_name", line_weights = "weight_name",
+                         origin_weights = "origin_weight_name",
+                         destination_weights = "destination_weight_name")
+legacy_default_names <- c(weights = "population", attraction_values = "capacity", line_weights = "travel_cost",
+                          origin_weights = "population", destination_weights = "jobs")
 legacy_wrap <- function(name) {
   real <- getExportedValue("rPSTool", name)
-  function(...) legacy_frame(real(...))
+  function(...) {
+    args <- as.list(match.call(real, as.call(c(list(as.name("real")), list(...))))[-1L])
+    for (w in intersect(names(legacy_weight_names), names(args))) {
+      nm <- legacy_weight_names[[w]]
+      if (!is.null(args[[w]]) && !(nm %in% names(args)))
+        args[[nm]] <- legacy_default_names[[w]]
+    }
+    legacy_frame(do.call(real, args))
+  }
 }
 angular_integration <- legacy_wrap("angular_integration")
 angular_choice <- legacy_wrap("angular_choice")
