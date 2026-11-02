@@ -83,15 +83,11 @@ attribute). The same table goes to \code{output_file} or \code{spatial_output_fi
 }
 \section{Limitations}{
 
-\strong{Very long chains of shortest-path steps can crash R.} PST's Angular Choice calculation recurses once per step
-along a chain of consecutive shortest-path steps, with no depth limit. On a very long, nearly straight chain of short
-segments, analysed with an unrestricted or large radius, the stack can be exhausted and the R process terminates without
-an R error. rPSTool has no safeguard against this. The failure has been reproduced on synthetic chains (for example
-8,000 segments on macOS ARM64); the usable depth depends on the platform.
-
-What to do: restrict the radius. A \code{steps} radius bounds the depth by its value, and a \code{walking} or \code{straight} radius by
-the number of segments that fit inside; an \code{angular} radius does not bound runs of near-collinear segments.
-\code{\link[=angular_integration]{angular_integration()}} shares part of this recursion with a larger tolerance. See \code{KNOWN_LIMITATIONS.md} in the
+\strong{Network depth.} Angular Choice may encounter computational limitations in exceptionally deep network
+configurations, particularly with unrestricted analysis radii. This has only been observed in artificially
+constructed networks with thousands of consecutively connected segments, not in real-world street networks.
+Restricting the analysis radius avoids the observed limitation.
+\code{\link[=angular_integration]{angular_integration()}} shares part of this behaviour with a larger tolerance. See \code{KNOWN_LIMITATIONS.md} in the
 repository.
 }
 

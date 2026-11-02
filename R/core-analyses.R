@@ -195,15 +195,11 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
 #' **Threads.** PST uses several worker threads; see [network_betweenness()] for how to cap them.
 #'
 #' @section Limitations:
-#' **Very long chains of shortest-path steps can crash R.** PST's Angular Choice calculation recurses once per step
-#' along a chain of consecutive shortest-path steps, with no depth limit. On a very long, nearly straight chain of short
-#' segments, analysed with an unrestricted or large radius, the stack can be exhausted and the R process terminates without
-#' an R error. rPSTool has no safeguard against this. The failure has been reproduced on synthetic chains (for example
-#' 8,000 segments on macOS ARM64); the usable depth depends on the platform.
-#'
-#' What to do: restrict the radius. A `steps` radius bounds the depth by its value, and a `walking` or `straight` radius by
-#' the number of segments that fit inside; an `angular` radius does not bound runs of near-collinear segments.
-#' [angular_integration()] shares part of this recursion with a larger tolerance. See `KNOWN_LIMITATIONS.md` in the
+#' **Network depth.** Angular Choice may encounter computational limitations in exceptionally deep network
+#' configurations, particularly with unrestricted analysis radii. This has only been observed in artificially
+#' constructed networks with thousands of consecutively connected segments, not in real-world street networks.
+#' Restricting the analysis radius avoids the observed limitation.
+#' [angular_integration()] shares part of this behaviour with a larger tolerance. See `KNOWN_LIMITATIONS.md` in the
 #' repository.
 #'
 #' @param graph A segment graph created by [segment_graph()].

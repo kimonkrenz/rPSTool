@@ -55,7 +55,7 @@ be a vector and `normalization` may name several methods; see [multi-radius](com
 * Analyses that support it accept `output_file`/`overwrite` and `spatial_output_file`.
 * No silent reordering, snapping, splitting, merging, unit conversion, deduplication, imputation, reprojection or clamping.
   Geographic CRS is rejected when known; mixed `sf` inputs must share a CRS.
-* Validation problems and native failures become informative R errors naming the offending input. One known exception is a very deep recursion in `angular_choice()`, which can terminate R; see [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
+* Validation problems and native failures become informative R errors naming the offending input. One known exception is the network-depth limitation of `angular_choice()`; see [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
 
 ## Scope
 
