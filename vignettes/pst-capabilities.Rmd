@@ -10,6 +10,13 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(rPSTool)
+# Result columns are named by what they hold, e.g. "ac_a_rw25_wl_c" (Angular Choice, angular distance, walking radius 25,
+# length-weighted, syntax-normalised). `pick()` selects a column by a pattern on that name instead of by position.
+pick <- function(x, pattern) {
+  hit <- grep(pattern, names(x))
+  stopifnot(length(hit) == 1L)
+  x[[hit]]
+}
 ```
 
 This vignette describes what the PST engine can do, which part of that rPSTool
@@ -229,9 +236,9 @@ rad_steps    <- analysis_radius(steps = 2)
 rad_walking  <- analysis_radius(walking = 55)
 rad_combined <- analysis_radius(steps = 2, walking = 55)
 reach <- cbind(
-  steps_only   = network_reach(g, radius = rad_steps)[[2]],
-  walking_only = network_reach(g, radius = rad_walking)[[2]],
-  combined     = network_reach(g, radius = rad_combined)[[2]])
+  steps_only   = pick(network_reach(g, radius = rad_steps), "^rc_"),
+  walking_only = pick(network_reach(g, radius = rad_walking), "^rc_"),
+  combined     = pick(network_reach(g, radius = rad_combined), "^rc_"))
 reach
 # lines whose combined count differs from the steps-only / the walking-only count
 c(vs_steps = sum(reach[, "combined"] != reach[, "steps_only"]),
@@ -263,15 +270,13 @@ w  <- angular_choice(sg, radius = analysis_radius(walking = 25),
                          weigh_by_length = TRUE, normalization = "syntax")
 u  <- angular_choice(sg, radius = analysis_radius(walking = 25),
                          weigh_by_length = FALSE, normalization = "syntax")
-all.equal(w[[6]], log10(w[[2]] + 1) / log10(2 + w[[5]]),
+all.equal(pick(w, "^ac_.*_c$"), log10(pick(w, "^ac_.*_n$") + 1) / log10(2 + pick(w, "^tdw_")),
           tolerance = 1e-6)
-all.equal(u[[5]], log10(u[[2]] + 1) / log10(2 + u[[4]]),
+all.equal(pick(u, "^ac_.*_c$"), log10(pick(u, "^ac_.*_n$") + 1) / log10(2 + pick(u, "^td_")),
           tolerance = 1e-6)
 ```
 
 ### Angle threshold and precision
-
-(Result columns are selected by position here because their names carry the radius and parameters; see `?result_column_names`.)
 
 Turns smaller than `angle_threshold` degrees count as zero, and
 `angle_precision` sets the rounding unit used when ranking paths. These change
@@ -286,7 +291,7 @@ a0  <- angular_choice(bent, normalization = "syntax",
                           angle_threshold = 0,  angle_precision = 1)
 a15 <- angular_choice(bent, normalization = "syntax",
                           angle_threshold = 15, angle_precision = 1)
-round(rbind(threshold_0 = a0[[4]], threshold_15 = a15[[4]]), 2)
+round(rbind(threshold_0 = pick(a0, "^ac_.*_c$"), threshold_15 = pick(a15, "^ac_.*_c_at15$")), 2)
 ```
 
 rPSTool applies explicitly supplied angle settings in both the weighted and the
@@ -356,8 +361,8 @@ decay_check <- do.call(rbind, lapply(c("power", "curve", "divide"), function(d) 
                          decay_constant = 2)
   data.frame(decay = d, default_equals_C1 = identical(default, c1),
              C2_differs_from_C1 = !identical(c1, c2),
-             mean_default = round(mean(default[[2]]), 4),
-             mean_C2 = round(mean(c2[[2]]), 4))
+             mean_default = round(mean(pick(default, "^ar_")), 4),
+             mean_C2 = round(mean(pick(c2, "^ar_")), 4))
 }))
 decay_check
 ```
@@ -380,7 +385,7 @@ Because the graph persists, repeated analyses cost only the analysis itself:
 ```{r reuse}
 radii <- list(steps_2 = analysis_radius(steps = 2), steps_3 = analysis_radius(steps = 3),
               unrestricted = analysis_radius())
-vapply(radii, function(r) mean(network_integration(g, radius = r)[[2]]),
+vapply(radii, function(r) mean(pick(network_integration(g, radius = r), "^ni_")),
        numeric(1))
 ```
 
