@@ -57,11 +57,12 @@ descriptive identifier, for example weight_name = "population".`). `attraction_r
 `attraction_distance()` (`line_weights`) use `weight_name`; `od_betweenness()` uses `origin_weight_name` and
 `destination_weight_name`, each required only for its own vector. There is no fallback label, hash or inferred name.
 
-The identifier is lower-cased and spaces become `_`; only the ASCII letters a-z, digits and `_` are allowed, and anything else is
-an error (never silently replaced), as is an identifier without a letter or digit and the name `l` (it would read as length
-weighting). Names are never truncated, and the original identifier is kept in the metadata. `Population`, `Jobs 2021` and
-`jobs_2021` give `wpopulation`, `wjobs_2021` and `wjobs_2021`; `Jobs-2021`, `Jobs/2021` and `Population (%)` are errors. The `w`
-prefix is automatic, so `wjobs` gives `wwjobs`. Different identifiers that normalise alike name the same field. A name is a label
+The name is normalised automatically: lower-cased, every run of characters outside `a-z`, `0-9` and `_` becomes a single `_`, and
+leading and trailing underscores are removed. Only a name that is empty or has no letter or digit left is an error, as is a name
+that normalises to `l` (it would read as length weighting). Names are never truncated, and the original name is kept in the
+metadata. `Jobs 2021`, `Jobs-2021`, `Jobs/2021` and `jobs_2021` all give `jobs_2021` (`wjobs_2021` in the column name);
+`Population (%)` gives `population`. The `w` prefix is automatic, so `wjobs` gives `wwjobs`. Different names that normalise alike
+produce the same column name, so the collision checks treat them as the same field (a clash needs `overwrite = TRUE`). A name is a label
 only: reusing it for different values is not detected, and the collision rules apply when extending a spatial dataset.
 
 ## Examples

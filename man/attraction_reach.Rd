@@ -81,8 +81,9 @@ point or polygon. Zero and negative values are skipped by PST.}
 
 \item{weight_name}{Required whenever \code{attraction_values} (\code{attraction_reach()}) or \code{line_weights}
 (\code{attraction_distance()}) is supplied, and an error otherwise: a descriptive name for the weights (for example
-\code{"population"}) used in the result column names (\code{..._wpopulation}). It is lower-cased, spaces become \verb{_}, and only
-the letters a-z, digits and \verb{_} are allowed; anything else is an error. The original is kept in the result metadata.
+\code{"population"}) used in the result column names (\code{..._wpopulation}). It is lower-cased, every run of other characters
+becomes one \verb{_} and leading/trailing underscores are dropped (\code{"Jobs-2021"} gives \code{jobs_2021}); only a name with no
+letter or digit left is an error. The original is kept in the result metadata.
 It is a label only: it does not check that the same name always means the same values.}
 
 \item{line_weights}{\code{attraction_distance()} only. \code{NULL}, or for \code{distance = "weights"} one non-negative finite

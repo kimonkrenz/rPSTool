@@ -49,8 +49,9 @@
 #' @param radius Distance limits created by [analysis_radius()].
 #' @param weight_name Required whenever `attraction_values` (`attraction_reach()`) or `line_weights`
 #'   (`attraction_distance()`) is supplied, and an error otherwise: a descriptive name for the weights (for example
-#'   `"population"`) used in the result column names (`..._wpopulation`). It is lower-cased, spaces become `_`, and only
-#'   the letters a-z, digits and `_` are allowed; anything else is an error. The original is kept in the result metadata.
+#'   `"population"`) used in the result column names (`..._wpopulation`). It is lower-cased, every run of other characters
+#'   becomes one `_` and leading/trailing underscores are dropped (`"Jobs-2021"` gives `jobs_2021`); only a name with no
+#'   letter or digit left is an error. The original is kept in the result metadata.
 #'   It is a label only: it does not check that the same name always means the same values.
 #' @param origin `"lines"`, `"junctions"`, `"points"` or `"point_groups"`. Points and point groups are those retained
 #'   when the graph was built, not newly supplied origins.
