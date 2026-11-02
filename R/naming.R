@@ -41,27 +41,45 @@
 # `jobs_2021`) give the same column name, which the collision checks then treat as the same field.
 .pst_nm_weight_id <- function(name, arg) {
   if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name))
-    stop(arg, " must be one non-empty string, for example ", arg, " = \"population\".", call. = FALSE)
-  id <- gsub("[^a-z0-9_]+", "_", tolower(enc2utf8(name)), perl = TRUE)
+    stop("The weight name inferred for ", arg, " is empty.", call. = FALSE)
+  # In a non-UTF-8 session R shows a non-ASCII letter as "<U+00E9>"; it is a non-ASCII character in every locale.
+  id <- gsub("<u\\+[0-9a-f]+>", " ", tolower(enc2utf8(name)), perl = TRUE)
+  id <- gsub("[^a-z0-9_]+", "_", id, perl = TRUE)
   id <- gsub("^_+|_+$", "", id, perl = TRUE)
   if (!grepl("[a-z0-9]", id, perl = TRUE))
-    stop(arg, " = \"", name, "\" contains no letter or digit, so it cannot name the weights. Supply a descriptive ",
-         "identifier, for example ", arg, " = \"population\".", call. = FALSE)
+    stop("The weight name \"", name, "\" inferred for ", arg, " contains no letter or digit. Assign the weights to a ",
+         "descriptively named R object.", call. = FALSE)
   if (id %in% .pst_nm_reserved_weights)
-    stop(arg, " = \"", name, "\" would give the weight code 'w", id, "', which is reserved for length weighting. ",
-         "Choose a longer name.", call. = FALSE)
+    stop("The weight name \"", name, "\" inferred for ", arg, " would give the weight code 'w", id, "', which is reserved for ",
+         "length weighting. Choose a longer name.", call. = FALSE)
   id
 }
 
-# The weight component and its provenance for user-supplied numeric weights. A name is mandatory for supplied weights and an
-# error for absent ones; there is no fallback label.
-.pst_nm_user_weight <- function(present, name, arg, prefix = "w", weights_arg = "weights") {
-  if (!present) {
-    if (!is.null(name)) stop(arg, " was supplied without ", weights_arg, "; a weight name needs the matching weights.", call. = FALSE)
-    return(list(code = "", name = NULL))
+# The weight name of a supplied weight argument, inferred from the expression the caller wrote (captured with substitute()
+# at the public function, before anything is evaluated): a plain object name (`population`) or a literal data-frame column
+# (`data$population`, `data[["population"]]`). Anything else - an anonymous vector, a calculation, a do.call() value, a
+# `...` element - cannot name the weights and is an error. Element names and values are never used. The name found is the
+# user's own identifier; when the weights were forwarded through a wrapper function, it is the wrapper's variable name.
+.pst_nm_infer_name <- function(expr) {
+  if (is.symbol(expr)) {
+    s <- as.character(expr)
+    if (nzchar(s) && !grepl("^\\.\\.[0-9]+$", s) && s != "...") return(s)
+  } else if (is.call(expr) && length(expr) == 3L) {
+    key <- expr[[3L]]
+    if (identical(expr[[1L]], quote(`$`)) && (is.symbol(key) || (is.character(key) && length(key) == 1L)))
+      return(as.character(key))
+    if (identical(expr[[1L]], quote(`[[`)) && is.character(key) && length(key) == 1L && !is.na(key) && nzchar(key))
+      return(key)
   }
-  if (is.null(name))
-    stop("Custom weights require ", arg, ". Supply a descriptive identifier, for example ", arg, " = \"population\".", call. = FALSE)
+  stop("Cannot infer a weight name from this expression. Assign the weights to a named R object or use a data-frame column.",
+       call. = FALSE)
+}
+
+# The weight component and its provenance for user-supplied numeric weights: absent weights have none; supplied weights are
+# named by the expression the caller wrote. There is no fallback label.
+.pst_nm_user_weight <- function(present, expr, arg, prefix = "w") {
+  if (!present) return(list(code = "", name = NULL))
+  name <- .pst_nm_infer_name(expr)
   list(code = paste0(prefix, .pst_nm_weight_id(name, arg)), name = name)
 }
 
@@ -252,8 +270,9 @@
 #'   point and thousands are never abbreviated), every active restriction in the order straight, walking, steps,
 #'   angular, axmeter; `rg` when unrestricted.
 #' * **Weight:** none when unweighted (including the unit-weight totals of an unweighted Angular Integration), `wl`
-#'   length weighting, `w<name>` custom weights, whose name must be supplied with `weight_name`, and `wo<name>` and
-#'   `wd<name>` origin and destination weights of [od_betweenness()].
+#'   length weighting, `w<name>` custom weights, named after the R object or data-frame column you pass (`weights = population`
+#'   gives `wpopulation`; anonymous vectors and calculations are errors), and `wo<name>` and `wd<name>` origin and destination
+#'   weights of [od_betweenness()], each named independently.
 #' * **Normalisation:** `t` Turner, `a` NAIN, `c` NACH, `h` Hillier, `s` standard, `f` Freeman, `y` Network Betweenness
 #'   `syntax`, `n` raw.
 #' * **Diagnostics:** `nc` node count, `td` total depth, `tw` total weight, `tdw` total depth weight, `rc` reached

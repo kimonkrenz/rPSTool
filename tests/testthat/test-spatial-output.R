@@ -41,12 +41,10 @@ test_that("spatial_output_file is appended after overwrite; output_file stays at
               network_reach = c("graph", "radius", "origins", "output_file", "overwrite"),
               network_betweenness = c("graph", "radius", "distance", "normalization", "weights", "attraction_points", "output_file", "overwrite"),
               od_betweenness = c("graph", "origins", "radius", "distance", "destination_mode", "origin_weights", "destination_weights", "output_file", "overwrite"))
-  # the weight_name arguments of the output-naming scheme follow spatial_output_file
-  trailing <- list(network_betweenness = "weight_name", od_betweenness = c("origin_weight_name", "destination_weight_name"))
   for (name in names(fns)) expect_identical(names(formals(getExportedValue("rPSTool", name))),
-                                            c(fns[[name]], "spatial_output_file", trailing[[name]]), info = name)
-  expect_identical(tail(names(formals(rPSTool::attraction_reach)), 4L), c("output_file", "overwrite", "spatial_output_file", "weight_name"))
-  expect_identical(tail(names(formals(rPSTool::attraction_distance)), 4L), c("output_file", "overwrite", "spatial_output_file", "weight_name"))
+                                            c(fns[[name]], "spatial_output_file"), info = name)
+  expect_identical(tail(names(formals(rPSTool::attraction_reach)), 3L), c("output_file", "overwrite", "spatial_output_file"))
+  expect_identical(tail(names(formals(rPSTool::attraction_distance)), 3L), c("output_file", "overwrite", "spatial_output_file"))
   expect_null(formals(rPSTool::angular_choice)$spatial_output_file)
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE), add = TRUE)
   path <- so_write_fgb(file.path(dir, "s.fgb"), so_segments())

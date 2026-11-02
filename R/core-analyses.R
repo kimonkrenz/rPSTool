@@ -118,10 +118,16 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #'   (`x`, `y`), or an XY POINT `sf`/`sfc` object.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
 #'   see [pst_result_file]. In a result file, the `NA` values described below are stored as nulls.
-#' @param weight_name Required whenever `weights` is supplied, and an error otherwise: a descriptive name for the
-#'   weights (for example `"population"`) used in the result column names (`..._wpopulation_...`). It is lower-cased,
-#'   every run of other characters becomes one `_` and leading/trailing underscores are dropped (`"Jobs-2021"` gives
-#'   `jobs_2021`); only a name with no letter or digit left is an error. The original is kept in the result metadata. It is a label only: it does not check that the same name always means the same values.
+#' @section Naming custom weights:
+#' Custom weights are named in the result columns (`..._wpopulation_...`) after the R expression you supply, so no extra
+#' argument is needed: an object name (`weights = population`) or a literal data-frame column (`weights = data$population`
+#' or `weights = data[["population"]]`). An anonymous vector (`c(1, 2, 3)`) or a calculation (`data$population / 1000`) has
+#' no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+#' run of characters outside `a-z`, `0-9` and `_` becomes one `_`, and leading and trailing underscores are dropped
+#' (`Jobs-2021` gives `jobs_2021`); a name with no letter or digit left is an error. The original name is kept in the result
+#' metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+#' are named by the wrapper's variable, and `do.call()` with values cannot be named (pass named objects instead). The name
+#' is a label only: it does not check that the same name always means the same values.
 #' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`, or `at_...` with
 #'   `attraction_points`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
 #'   (`..._s`, `..._f` or `..._y`) when requested; see [result_column_names]. The raw score and `"standard"`
@@ -135,12 +141,14 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' @examples
 #' g <- axial_graph(cbind(0:4, 0, 1:5, 0))
 #' network_betweenness(g, normalization = "freeman")
-#' network_betweenness(g, weights = c(1, 0, 2, 3, 1), weight_name = "population")
+#' population <- c(1, 0, 2, 3, 1)
+#' network_betweenness(g, weights = population)
 #' network_betweenness(g, attraction_points = rbind(c(0.5, 0), c(4.5, 1)))
 network_betweenness <- function(graph, radius = analysis_radius(), distance = "steps",
                             normalization = "none", weights = NULL,
                             attraction_points = NULL, output_file = NULL, overwrite = FALSE,
-                            spatial_output_file = NULL, weight_name = NULL) {
+                            spatial_output_file = NULL) {
+  weights_expr <- substitute(weights)
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file)
   .pst_validate_radius(radius)
@@ -149,14 +157,14 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
   .pst_sf_analysis_crs(graph, attraction_points)
   attraction_points <- .pst_sf_points(attraction_points, "attraction_points")
   overwrite <- .pst_flag(overwrite, "overwrite")
-  weight <- .pst_nm_user_weight(!is.null(weights), weight_name, "weight_name", "w", "weights")
+  weight <- .pst_nm_user_weight(!is.null(weights), weights_expr, "weights", "w")
   cols <- .pst_nm_network_betweenness(radius, distance, normalization, weight, !is.null(attraction_points))
   .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "network_betweenness",
       list(radius = .pst_radius_parameters(radius), distance = distance, normalization = normalization,
-           weights = .pst_count_or_null(weights), weight_name = weight_name,
+           weights = .pst_count_or_null(weights), weight_name = weight$name,
            attraction_points = if (is.null(attraction_points)) NULL else NROW(attraction_points)),
       graph, ptr, c("line_id", .pst_nm_names(cols)),
       "native line order (source feature order); no external feature identifiers",

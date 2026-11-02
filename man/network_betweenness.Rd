@@ -13,8 +13,7 @@ network_betweenness(
   attraction_points = NULL,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL,
-  weight_name = NULL
+  spatial_output_file = NULL
 )
 }
 \arguments{
@@ -34,11 +33,6 @@ underflow to zero). Supply one per line, or one per attraction point when \code{
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
 see \link{pst_result_file}. In a result file, the \code{NA} values described below are stored as nulls.}
-
-\item{weight_name}{Required whenever \code{weights} is supplied, and an error otherwise: a descriptive name for the
-weights (for example \code{"population"}) used in the result column names (\code{..._wpopulation_...}). It is lower-cased,
-every run of other characters becomes one \verb{_} and leading/trailing underscores are dropped (\code{"Jobs-2021"} gives
-\code{jobs_2021}); only a name with no letter or digit left is an error. The original is kept in the result metadata. It is a label only: it does not check that the same name always means the same values.}
 }
 \value{
 A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with
@@ -82,10 +76,24 @@ unknown included). Nothing is reprojected.
 positive integer to cap their number. When R's \verb{_R_CHECK_LIMIT_CORES_} is set (to any non-empty value other
 than \code{false}), at most two are used. Invalid explicit caps are rejected before any work starts.
 }
+\section{Naming custom weights}{
+
+Custom weights are named in the result columns (\code{..._wpopulation_...}) after the R expression you supply, so no extra
+argument is needed: an object name (\code{weights = population}) or a literal data-frame column (\code{weights = data$population}
+or \code{weights = data[["population"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
+no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
+(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
+metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
+is a label only: it does not check that the same name always means the same values.
+}
+
 \examples{
 g <- axial_graph(cbind(0:4, 0, 1:5, 0))
 network_betweenness(g, normalization = "freeman")
-network_betweenness(g, weights = c(1, 0, 2, 3, 1), weight_name = "population")
+population <- c(1, 0, 2, 3, 1)
+network_betweenness(g, weights = population)
 network_betweenness(g, attraction_points = rbind(c(0.5, 0), c(4.5, 1)))
 }
 \seealso{

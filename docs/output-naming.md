@@ -20,7 +20,7 @@ multi-radius call name the same calculation identically (`ai_a_rw3000_t` either 
 | Analysis | `nr` Network Reach (no measure column; see diagnostics), `ni` Network Integration, `nj` junction score, `nb` Network Betweenness, `at` Attraction Betweenness (`network_betweenness()` with `attraction_points`), `ai` Angular Integration, `ac` Angular Choice (PST's Angular Betweenness), `ar` Attraction Reach, `ad` Attraction Distance, `od` Origin-Destination Betweenness, `gi` segment-group integration |
 | Distance | `a` angular, `w` walking, `s` steps, `l` straight line, `am` axmeter, `d` custom per-line cost (`attraction_distance(distance = "weights")`). Omitted for Network Reach, segment groups and `attraction_reach(distance = "none")` (zero cost) |
 | Radius | `rl`, `rw`, `rs`, `ra`, `ram` followed by the full value (`rw3000`, `rs3`, `rw0p5`); every active restriction in the order straight, walking, steps, angular, axmeter (`rl500_rw400_ra90`); `rg` when unrestricted. A decimal point is `p`; thousands are never abbreviated. Values use the shortest decimal that reads back as the same single-precision number PST uses |
-| Weight | none when unweighted; `wl` length weighting; `w<name>` custom weights, whose name is mandatory (`weight_name`); `wo<name>`/`wd<name>` origin and destination weights of `od_betweenness()` |
+| Weight | none when unweighted; `wl` length weighting; `w<name>` custom weights, named after the R object or data-frame column passed; `wo<name>`/`wd<name>` origin and destination weights of `od_betweenness()` |
 | Normalisation | `t` Turner, `a` NAIN (Angular Integration `syntax`), `c` NACH (Angular Choice `syntax`), `h` Hillier, `s` standard, `f` Freeman, `y` Network Betweenness `syntax`, `n` raw. Only where normalisation is a dimension of the analysis (`ac`, `ai`, `nb`/`at`) |
 | Diagnostic | `nc` node count, `td` total depth, `tw` total weight, `tdw` total depth weight, `rc` reached count, `rln` reached length, `rca` reached area, `di` destination index; `anc`, `atd` node count and total depth of Attraction Betweenness |
 
@@ -51,15 +51,29 @@ attraction points, `points_per_polygon` and weight values themselves are inputs,
 
 ## Weight names
 
-Custom weights must be named. `weights = pop, weight_name = "population"` gives `..._wpopulation_...`; supplying weights without a
-name, or a name without weights, is an error raised before any calculation (`Custom weights require weight_name. Supply a
-descriptive identifier, for example weight_name = "population".`). `attraction_reach()` (`attraction_values`) and
-`attraction_distance()` (`line_weights`) use `weight_name`; `od_betweenness()` uses `origin_weight_name` and
-`destination_weight_name`, each required only for its own vector. There is no fallback label, hash or inferred name.
+Custom weights are named after the R expression you pass to the existing weight argument; there is no naming argument. The expression
+is captured with `substitute()` at the public function, before anything is evaluated.
+
+| Call | Result |
+|---|---|
+| `weights = population` | weight `wpopulation` |
+| `weights = data$population` or `weights = data[["population"]]` | weight `wpopulation` (a literal column name) |
+| `weights = c(1, 2, 3)` or `weights = data$population / 1000` | error: `Cannot infer a weight name from this expression. Assign the weights to a named R object or use a data-frame column.` |
+| `population_thousands <- data$population / 1000; weights = population_thousands` | weight `wpopulation_thousands` |
+
+The error is raised before any calculation. The same rule applies to `weights` of `network_betweenness()`, `attraction_values` of
+`attraction_reach()`, `line_weights` of `attraction_distance()`, and `origin_weights` (`wo<name>`) and `destination_weights`
+(`wd<name>`) of `od_betweenness()`, which are inferred independently. Unweighted calls have no weight component. Names are never taken from
+values, element names or arbitrary calculations, and there is no hash or anonymous fallback.
+
+Limitations: the name is the user's variable at the call. Weights forwarded through a wrapper function are named by the wrapper's
+variable (`function(w) network_betweenness(g, weights = w)` gives `ww`), and `do.call()` with evaluated values, `...` elements and
+computed column keys (`data[[col]]`) cannot be named and are errors; call with named objects instead. A name is a label only: reusing it
+for different values is not detected, and the collision rules apply when extending a spatial dataset.
 
 The name is normalised automatically: lower-cased, every run of characters outside `a-z`, `0-9` and `_` becomes a single `_`, and
 leading and trailing underscores are removed. Only a name that is empty or has no letter or digit left is an error, as is a name
-that normalises to `l` (it would read as length weighting). Names are never truncated, and the original name is kept in the
+that normalises to `l` (it would read as length weighting). Names are never truncated, and the original inferred name is kept in the
 metadata. `Jobs 2021`, `Jobs-2021`, `Jobs/2021` and `jobs_2021` all give `jobs_2021` (`wjobs_2021` in the column name);
 `Population (%)` gives `population`. The `w` prefix is automatic, so `wjobs` gives `wwjobs`. Different names that normalise alike
 produce the same column name, so the collision checks treat them as the same field (a clash needs `overwrite = TRUE`). A name is a label
@@ -76,10 +90,10 @@ only: reusing it for different values is not detected, and the collision rules a
 | `angular_choice(g, analysis_radius(walking = 3000, steps = 3))` | `ac_a_rw3000_rs3_n`, … |
 | `network_integration(a, steps = 3)` | `ni_s_rs3`, `nc_s_rs3`, `td_s_rs3` |
 | `network_reach(a, analysis_radius(walking = 400))` | `rc_rw400`, `rln_rw400`, `rca_rw400` |
-| `network_betweenness(a, distance = "walking", radius = analysis_radius(walking = 800), weights = pop, weight_name = "population", normalization = "freeman")` | `nb_w_rw800_wpopulation_n`, `nc_w_rw800_wpopulation`, `td_w_rw800_wpopulation`, `nb_w_rw800_wpopulation_f` |
+| `network_betweenness(a, distance = "walking", radius = analysis_radius(walking = 800), weights = population, normalization = "freeman")` | `nb_w_rw800_wpopulation_n`, `nc_w_rw800_wpopulation`, `td_w_rw800_wpopulation`, `nb_w_rw800_wpopulation_f` |
 | the same with `attraction_points = pts` | `at_w_rw800_wpopulation_n`, `anc_w_rw800_wpopulation`, `atd_w_rw800_wpopulation`, … |
 | `attraction_reach(a, pts, distance = "walking", radius = analysis_radius(walking = 800))` | `ar_w_rw800` |
-| `attraction_distance(a, pts, distance = "weights", line_weights = cost, weight_name = "cost")` | `ad_d_rg_wcost`, `di_d_rg_wcost` |
+| `attraction_distance(a, pts, distance = "weights", line_weights = cost)` | `ad_d_rg_wcost`, `di_d_rg_wcost` |
 | `od_betweenness(a, origins, radius = analysis_radius(walking = 800))` | `od_w_rw800` |
 | `segment_group_integration(gg, analysis_radius(walking = 1000))` | `gi_rw1000`, `nc_rw1000`, `td_rw1000` |
 
