@@ -20,7 +20,7 @@ angular_choice(g, radius = analysis_radius(steps = 3), spatial_output_file = "ro
   `columns` = the non-geometry columns in file order, `format` = `"flatgeobuf"`/`"geoparquet"`, plus `spatial = TRUE`,
   `source`, `geometry_column`, `replaced`, `appended`).
 * `output_file` and `spatial_output_file` are **mutually exclusive** (an error).
-* `overwrite` applies to the destination only. The source network is never written, replaced or touched.
+* `overwrite` applies to the destination file and, as of the output-naming scheme, to result columns that already exist in the source (they are replaced only in the new file). The source network is never written, replaced or touched.
 * The graph must have been built **from a file path**. A matrix- or `sf`-built graph has no source file and gives an
   explicit error (reconstructing geometry from the graph is deliberately not offered).
 * **Intentional contract, not a temporary restriction:** the output format equals the source format (GeoParquet →
@@ -52,9 +52,14 @@ still caught by the writer's own validation). The source is never hashed.
 
 ## 3. Column semantics (the Chalmers PST add-or-replace rule, applied to the new file)
 
-* A result column whose name equals a source column **replaces** it in place (same position, new type and nullability).
+* A result column whose name equals a source column is a **collision**. With `overwrite = FALSE` (the default) the call stops
+  before the analysis runs, with an error naming the conflicting columns, and nothing is written. With `overwrite = TRUE` the
+  source column is **replaced** in place in the new file (same position, new type and nullability); the source file is never
+  modified. The same `overwrite` argument also governs an existing destination file.
 * Any other result column is **appended** (result order). Unrelated source columns, their types, nulls and values are
-  preserved. Re-running an analysis on its own output replaces the same columns again; no duplicate is ever written.
+  preserved. Re-running the same analysis on its own output therefore needs `overwrite = TRUE`; no duplicate is ever written.
+  Because result names identify the calculation (`docs/output-naming.md`), analyses of different radii or measures do not collide
+  and accumulate in one dataset.
 * Rejected, with nothing written: duplicate source column names; a result name equal to the GeoParquet geometry column;
   duplicate result names; for FlatGeobuf, source columns, or a source column and a result column, that differ only by ASCII
   letter case (GDAL looks fields up case-insensitively); a source column of unknown FlatGeobuf type; more than 65,535

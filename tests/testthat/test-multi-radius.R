@@ -292,22 +292,27 @@ test_that("FlatGeobuf spatial output holds one combined table equal to the in-me
                    c("ac_a_rw25_n", "nc_a_rw25", "td_a_rw25", "ac_a_rw25_c"))
 })
 
-test_that("a source column with a result's name is replaced; stale earlier tagged columns are never silently dropped", {
+test_that("a source column with a result's name needs overwrite = TRUE; earlier columns are kept as ordinary attributes", {
   skip_multi_fgb()
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   m <- so_segments(20)
   attrs <- so_attributes(20); attrs$ac_a_rw25_n <- 1:20; attrs$nc_a_rw10 <- 1:20
   src <- so_write_fgb(file.path(dir, "net.fgb"), m, attrs)
+  before <- so_md5(src)
   g <- segment_graph(src)
-  res <- angular_choice(g, analysis_radius(walking = c(25, 10)), spatial_output_file = file.path(dir, "o.fgb"))
+  expect_error(rPSTool::angular_choice(g, analysis_radius(walking = c(25, 10)), spatial_output_file = file.path(dir, "o.fgb")),
+               "already exist in the source: ac_a_rw25_n, nc_a_rw10")
+  expect_false(file.exists(file.path(dir, "o.fgb")))
+  res <- rPSTool::angular_choice(g, analysis_radius(walking = c(25, 10)), spatial_output_file = file.path(dir, "o.fgb"), overwrite = TRUE)
   expect_setequal(res$replaced, c("ac_a_rw25_n", "nc_a_rw10"))
-  back <- so_read(file.path(dir, "o.fgb"), "flatgeobuf")
+  expect_identical(so_md5(src), before)
+  back <- so_read(file.path(dir, "o.fgb"), "flatgeobuf", legacy = FALSE)
   expect_identical(sum(back$names == "ac_a_rw25_n"), 1L)
   expect_equal(as.numeric(back$attrs$ac_a_rw25_n), angular_choice(g, analysis_radius(walking = 25))$choice, tolerance = 0)
   # chain: a second run with different radii keeps the first run's columns as ordinary attributes
-  res2 <- angular_choice(segment_graph(file.path(dir, "o.fgb")), analysis_radius(walking = c(25, 99)),
-                             spatial_output_file = file.path(dir, "o2.fgb"))
-  expect_true(all(c("ac_a_rw10_n", "ac_a_rw25_n", "ac_a_rw99_n") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf")$names))
+  res2 <- rPSTool::angular_choice(segment_graph(file.path(dir, "o.fgb")), analysis_radius(walking = c(25, 99)),
+                             spatial_output_file = file.path(dir, "o2.fgb"), overwrite = TRUE)
+  expect_true(all(c("ac_a_rw10_n", "ac_a_rw25_n", "ac_a_rw99_n") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf", legacy = FALSE)$names))
   expect_false("ac_a_rw10_n" %in% res2$columns[res2$columns %in% c("ac_a_rw99_n")])
 })
 

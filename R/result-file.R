@@ -199,7 +199,7 @@
 #'
 #' **`overwrite`.** With `overwrite = FALSE` (default) an existing destination is never replaced; with `TRUE` it is replaced. Files
 #' are written under a temporary name and published only when complete, so replacement is a single rename and the old file is
-#' untouched if anything fails. No guarantee of durability after a crash is made. `overwrite` applies to the output file only, never to the source.
+#' untouched if anything fails. No guarantee of durability after a crash is made. With `spatial_output_file`, `overwrite = TRUE` additionally allows result columns that already exist in the source to be replaced in the new file; with `FALSE` such a collision is an error raised before the analysis. `overwrite` never modifies the source.
 #'
 #' **Descriptor.** The descriptor is a list with the absolute `path`, the number of `rows`, the `columns` in file order and the
 #' `format` (`"parquet"`). For `spatial_output_file` it additionally has `spatial = TRUE`, the `source` network path, the

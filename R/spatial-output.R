@@ -102,7 +102,16 @@
     stop("Writing a GeoParquet spatial output requires the package 'jsonlite' (already needed to read GeoParquet).", call. = FALSE)
   invisible(TRUE)
 }
-.pst_spatial_preflight <- function(src, result_names) {
+# Result columns that already exist in the source: with overwrite = FALSE this is an error naming them; with overwrite = TRUE
+# they are replaced in the NEW file (the source is never modified).
+.pst_spatial_existing_columns <- function(source_names, result_names, overwrite) {
+  existing <- intersect(result_names, source_names)
+  if (length(existing) && !isTRUE(overwrite))
+    stop("Analysis output columns already exist in the source: ", paste(existing, collapse = ", "),
+         ". Use overwrite = TRUE to replace them in the new output file; the source file is never modified.", call. = FALSE)
+  invisible(existing)
+}
+.pst_spatial_preflight <- function(src, result_names, overwrite = FALSE) {
   if (anyDuplicated(tolower(result_names))) stop("Two result columns have the same name.", call. = FALSE)
   if (identical(src$format, "flatgeobuf")) {
     cols <- .Call(C_rpst_fgb_columns, .pst_native_path(src$path))
@@ -113,6 +122,7 @@
            "FlatGeobuf readers look fields up case-insensitively, so the output would be ambiguous.", call. = FALSE)
     }
     if (any(cols$type > 14L)) stop("A source column has an unknown FlatGeobuf column type; its values cannot be copied safely.", call. = FALSE)
+    .pst_spatial_existing_columns(cols$name, result_names, overwrite)
     clash <- which(low %in% tolower(result_names) & !(cols$name %in% result_names))
     if (length(clash))
       stop("The result column '", result_names[match(low[clash[[1L]]], tolower(result_names))], "' differs from the source column '",
@@ -135,6 +145,7 @@
       stop("The source's GeoParquet metadata no longer names a geometry column.", call. = FALSE)
     if (primary %in% result_names)
       stop("A result column has the name of the geometry column ('", primary, "').", call. = FALSE)
+    .pst_spatial_existing_columns(schema$names, result_names, overwrite)
   }
   invisible(TRUE)
 }
@@ -240,7 +251,7 @@
                            codec = .pst_spatial_parquet_codec)
   if (identical(src$format, "geoparquet")) .pst_spatial_parquet_capabilities()
   result_names <- columns[-1L]   # the first column is the implicit positional id; the source keeps its own identifiers
-  .pst_spatial_preflight(src, result_names)
+  .pst_spatial_preflight(src, result_names, overwrite)
   stream <- .Call(C_rpst_arrow_stream_new)
   on.exit(.Call(C_rpst_arrow_stream_free, stream), add = TRUE)
   native_rows <- export(stream, as.double(batch_rows))   # the single analysis
