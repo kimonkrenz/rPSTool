@@ -75,9 +75,8 @@ The gate observations are not aggregated: several rows can refer to the same axi
 
 \section{Source}{
 
-See the section "Source of the data" in \code{\link[=load_example_data]{load_example_data()}}. The axial map is attributed to Hillier and Iida (2005); the
-movement observations were originally used in Penn et al. (1998), as documented in the README of the original dataset, and
-that attribution concerns the \code{gates} observations only.
+The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz. The data are included and redistributed with permission from the authors. The original research and data remain attributable to their respective authors.
+The movement gate counts were originally reported by Penn et al. (1998). See also the section "Source of the data" in \code{\link[=load_example_data]{load_example_data()}}.
 }
 
 \references{

@@ -8,13 +8,11 @@
 #' @return A list with the `sf` objects `axial`, `unlinks` and `gates` and a `metadata` attribute (a character string describing
 #'   the data, its origin and its conventions).
 #' @section Source of the data:
-#' The axial map is that distributed with Hillier and Iida (2005) through UCL Discovery. The pedestrian and vehicular movement
-#' observations were originally used in Penn et al. (1998), as documented in the README of the original dataset. That attribution
-#' concerns the movement observations only: it does not imply that every axial map, network metric or other attribute originated in the
-#' 1998 study. The Barnsbury geometry was subsequently georeferenced to British National Grid and spatially transformed (a best-fit
-#' transformation supplied by Kimon Krenz). The coordinates in this package are therefore transformed coordinates and must not be
-#' taken to be the original, unmodified coordinates of the source data. No explicit redistribution licence was located in the supplied
-#' material and the attribution does not establish one; see the package's installed `COPYRIGHTS` file for provenance.
+#' The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz. The data are included and redistributed with permission from the authors. The original research and data remain attributable to their respective authors.
+#' The movement gate counts were originally reported by Penn et al. (1998).
+#'
+#' The original data were not supplied in British National Grid. The coordinates in this package are the transformed coordinates in
+#' EPSG:27700 (metres) and must not be taken to be the original, unmodified coordinates. The LGPL (>= 3) licence applies to rPSTool's software. The Barnsbury data are included with the authors' permission and remain attributable to them.
 #'
 #' @references Hillier, B. and Iida, S. (2005). Network and Psychological Effects in Urban Movement. In Cohn, A.G. and Mark, D.M.
 #'   (eds), *Spatial Information Theory*, Lecture Notes in Computer Science 3693, pp. 475-490. Springer.

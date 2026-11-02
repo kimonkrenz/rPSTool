@@ -1,12 +1,14 @@
 # Example data: Hillier and Iida (2005)
 
-`load_example_data()` returns the bundled Barnsbury (London) spatial data distributed with Hillier, B. and Iida, S. (2005), *Network and
-Psychological Effects in Urban Movement*, Spatial Information Theory, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), obtained from UCL
-Discovery (<https://discovery.ucl.ac.uk/id/eprint/1232/>). The pedestrian and vehicular movement observations were originally used in
-Penn, A., Hillier, B., Banister, D. and Xu, J. (1998), *Configurational modelling of urban movement networks*, Environment and Planning
-B: Planning and Design, 25(1), 59-84 (DOI 10.1068/b250059), as documented in the README of the original dataset. That attribution
-concerns the movement observations only; it does not imply that every axial map, network metric or other attribute originated in the
-1998 study.
+`load_example_data()` returns the bundled Barnsbury (London) spatial data.
+
+The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz. The data are included and redistributed with permission from the authors. The original research and data remain attributable to their respective authors. The movement gate counts were originally reported by Penn et al. (1998).
+
+Sources: Hillier, B. and Iida, S. (2005), *Network and Psychological Effects in Urban Movement*, Spatial Information Theory, LNCS 3693,
+pp. 475-490 (DOI 10.1007/11556114_30), with the original data obtained from UCL Discovery
+(<https://discovery.ucl.ac.uk/id/eprint/1232/>); and Penn, A., Hillier, B., Banister, D. and Xu, J. (1998), *Configurational modelling of
+urban movement networks*, Environment and Planning B: Planning and Design, 25(1), 59-84 (DOI 10.1068/b250059). The Penn et al.
+attribution concerns the movement observations only.
 
 **The coordinates are not the original coordinates.** The Barnsbury geometry was subsequently georeferenced to British National Grid
 (EPSG:27700) and spatially transformed with a best-fit transformation supplied by Kimon Krenz, so it must not be represented as the
@@ -43,21 +45,15 @@ and compare the loader output with `readRDS()` of the installed file, and check 
 the area label and that the example map builds an axial graph.
 
 The Penn et al. attribution was verified by the maintainer against the supplied README (`SATC_readme1`, p. 1; the original dataset README) and Hillier and Iida (2005),
-Section 5 (p. 483). That verification was supplied by the maintainer; those sources were not accessible from the development session
-(the README and paper were not provided to it and discovery.ucl.ac.uk is blocked there). The bibliographic details of Penn et al. (1998)
-(authors, title, journal, volume, pages, DOI) were additionally checked against public bibliographic records.
+Section 5 (p. 483). The bibliographic details of Penn et al. (1998) (authors, title, journal, volume, pages, DOI) were additionally checked against public bibliographic records.
 
 The loader is adapted from the supplied one only as far as repository conventions require: the `directory`, `package` and case-selection
 arguments were removed (it always reads the one installed rPSTool file).
 
-## Licensing and provenance of the data
+## Permission, attribution and licence
 
-* No explicit redistribution licence was located in the supplied material.
-* The movement observations were originally used in the 1998 study. The attribution does not establish a collection date.
-* The age of the material is relevant to any database-right assessment, but expiry and other rights have not been formally
-  established.
-* The maintainer has elected to retain the attributed dataset in the package.
-
-The dataset is not labelled public domain, Creative Commons or LGPL: the package licence (LGPL >= 3) covers rPSTool code, not this data, and neither
-attribution nor open availability on UCL Discovery is taken to establish unrestricted redistribution. See [licensing](licensing.md) (open
-item 7).
+* The data are included and redistributed with permission from the authors, and the original research and data remain attributable to
+  them.
+* The georeferencing and spatial transformation are by Kimon Krenz; the coordinates are not the original coordinates.
+* The LGPL (>= 3) licence applies to rPSTool's software. The Barnsbury data are included with the authors' permission and are not
+  relicensed under the package licence. See [licensing](licensing.md).

@@ -100,13 +100,12 @@ Other bundled material
   (3) Two palettes designed for rPSTool (Coral Night, Coral Day).
   The depthmapX Blue-Red and Purple-Orange values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
   ColorBrewer's licence terms were not verified (docs/licensing.md, open item 9).
-- Example data (inst/extdata/hillier_iida/): the Barnsbury axial map, unlinks and gate observations distributed with Hillier, B. and
-  Iida, S. (2005), Network and Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), obtained from
-  https://discovery.ucl.ac.uk/id/eprint/1232/. The geometry was subsequently georeferenced to EPSG:27700 and spatially transformed
-  (best-fit transformation supplied by Kimon Krenz); the coordinates are therefore not the original, unmodified coordinates. The
-  pedestrian and vehicular movement observations were originally used in Penn, A., Hillier, B., Banister, D. and Xu, J. (1998),
-  Configurational modelling of urban movement networks, Environment and Planning B: Planning and Design, 25(1), pp. 59-84
-  (DOI 10.1068/b250059), as documented in the README of the original dataset; this attribution concerns the movement observations only and
-  was verified by the maintainer. No explicit redistribution licence was located in the supplied material; the age of the material is relevant to any
-  database-right assessment but expiry and other rights have not been formally established; the maintainer has elected to retain the
-  attributed dataset. It is not labelled public domain, Creative Commons or LGPL (docs/licensing.md, open item 7: provenance and redistribution status of the example data, as described in this entry).
+- Example data (inst/extdata/hillier_iida/): the Barnsbury example data are derived from Hillier, B. and Iida, S. (2005), Network and
+  Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), and include the axial network, unlinks and
+  observed movement gate counts; the original data were obtained from https://discovery.ucl.ac.uk/id/eprint/1232/. The geometries
+  were georeferenced to EPSG:27700 and spatially transformed (best-fit transformation) by Kimon Krenz; the coordinates are therefore
+  not the original, unmodified coordinates. The data are included and redistributed with permission from the authors. The original
+  research and data remain attributable to their respective authors. The movement gate counts were originally reported by Penn, A.,
+  Hillier, B., Banister, D. and Xu, J. (1998), Configurational modelling of urban movement networks, Environment and Planning B:
+  Planning and Design, 25(1), pp. 59-84 (DOI 10.1068/b250059). The package licence (LGPL-3-or-later) applies to rPSTool's software; the
+  Barnsbury data are included with the authors' permission and remain attributable to them (docs/example-data.md).

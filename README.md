@@ -69,8 +69,9 @@ plot(sf::st_geometry(ex$axial),
      col = colour_map(res$integration, "coral_day", limits = range(res$integration)), lwd = 2)
 ```
 
-The vignette [Getting started with rPSTool: the Barnsbury example](vignettes/getting-started.Rmd) walks through a complete
-analysis, including Angular Choice with a 3 km walking radius. Open it from R with
+The vignette [Getting started with rPSTool: the Barnsbury example](vignettes/getting-started.Rmd) covers two workflows: an in-memory
+Angular Choice analysis on `sf` objects with a mapped result, and a file-backed Angular Integration that reads a GeoParquet network
+(FlatGeobuf works the same way) and writes a spatial GeoParquet result with `spatial_output_file`. Open it from R with
 `vignette("getting-started", package = "rPSTool")` once the package is installed with vignettes.
 
 ## Analyses
@@ -112,7 +113,7 @@ The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNO
 * Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
 * `network_integration()` accepts only step radii.
 * Coordinates must be projected. PST works in single precision around a centre point.
-* The Barnsbury example data are not covered by the package licence, and their coordinates are not the original coordinates.
+* The Barnsbury example data are attributed to Hillier and Iida (2005); the coordinates were georeferenced and transformed and are not the original coordinates.
 * The test suite and `R CMD check` passed on Linux, macOS (ARM64) and Windows at the validated commit; results have not been
   compared with real runs of the PST plugin for QGIS.
 
@@ -127,7 +128,8 @@ metadata for version 3.3.2 credits Alexander Ståhle, Lars Marcus, Daniel Koch, 
 Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont and Pablo Miranda, and the upstream README names Pablo Miranda Carranza. The
 original Place Syntax approach was introduced by Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with
 Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. The Barnsbury example
-data come from Hillier and Iida (2005); the movement observations were originally used by Penn, Hillier, Banister and Xu (1998).
+data are derived from Hillier and Iida (2005) and are included with the authors' permission; the movement gate counts were originally
+reported by Penn, Hillier, Banister and Xu (1998).
 Development of rPSTool was supported by OpenAI's ChatGPT and Anthropic's Claude for code optimisation, review, debugging and
 documentation. All contributions were reviewed and validated by the package author, who retains responsibility for the software.
 
@@ -137,4 +139,5 @@ Please credit PST when you use rPSTool. Run `citation("rPSTool")` for the packag
 
 rPSTool is licensed under the **GNU Lesser General Public License, version 3 or later** (`LGPL (>= 3)`). It compiles the PST/pstalgo
 engine (Copyright 2019 Meta Berghauser Pont, LGPL-3-or-later) and some other third-party components, whose attribution is recorded in
-`inst/COPYRIGHTS`. The Barnsbury example data are not covered by the package licence. See [licensing](docs/licensing.md).
+`inst/COPYRIGHTS`. The LGPL applies to rPSTool's software. The Barnsbury example data are derived from Hillier and Iida (2005), included with
+the authors' permission, and remain attributable to them. See [example data](docs/example-data.md) and [licensing](docs/licensing.md).
