@@ -15,18 +15,18 @@ test_that("Network Integration matches the independent pinned upstream oracle", 
   g <- axial_graph(reference$lines)
   result <- network_integration(g)
   expect_s3_class(result, "data.frame")
-  expect_identical(names(result), c("line_id", "integration", "node_count", "total_depth"))
+  expect_identical(names(result), c("line_id", "ni_s_rg", "nc_s_rg", "td_s_rg"))
   expect_identical(result$line_id, 1:5)
-  expect_type(result$integration, "double")
-  expect_type(result$node_count, "integer")
-  expect_type(result$total_depth, "double")
-  expect_identical(result$node_count, reference$node_count)
-  expect_identical(result$total_depth, reference$total_depth)
+  expect_type(pick(result, "^ni_"), "double")
+  expect_type(pick(result, "^nc_"), "integer")
+  expect_type(pick(result, "^td_"), "double")
+  expect_identical(pick(result, "^nc_"), reference$node_count)
+  expect_identical(pick(result, "^td_"), reference$total_depth)
   # Reproduce IsRoughlyEqual(actual, expected) exactly: actual is the relative
   # denominator, with an absolute comparison when actual is zero.
-  expect_true(all(is.finite(result$integration)))
-  matches_upstream <- vapply(seq_along(result$integration), function(i) {
-    actual <- result$integration[[i]]
+  expect_true(all(is.finite(pick(result, "^ni_"))))
+  matches_upstream <- vapply(seq_along(pick(result, "^ni_")), function(i) {
+    actual <- pick(result, "^ni_")[[i]]
     expected <- reference$integration[[i]]
     tolerance <- reference$integration_relative_tolerance
     if (actual == 0) return(abs(expected - actual) <= tolerance)
@@ -35,9 +35,9 @@ test_that("Network Integration matches the independent pinned upstream oracle", 
   expect_true(all(matches_upstream))
   # Native outputs are copied verbatim to named R columns, never recomputed.
   raw <- native_integration(g$ptr)
-  expect_identical(result$integration, raw[[1L]])
-  expect_identical(result$node_count, raw[[2L]])
-  expect_identical(result$total_depth, raw[[3L]])
+  expect_identical(pick(result, "^ni_"), raw[[1L]])
+  expect_identical(pick(result, "^nc_"), raw[[2L]])
+  expect_identical(pick(result, "^td_"), raw[[3L]])
 })
 
 test_that("the upstream step-radius oracle holds on the same persistent graph", {
@@ -48,12 +48,16 @@ test_that("the upstream step-radius oracle holds on the same persistent graph", 
   gc()
   before <- graph_lifecycle()
   for (case in reference$steps) {
-    expect_identical(network_integration(g, steps = case$limit)$node_count, case$node_count)
-    expect_identical(network_integration(g, steps = as.double(case$limit))$node_count,
+    expect_identical(pick(network_integration(g, steps = case$limit), "^nc_"), case$node_count)
+    expect_identical(pick(network_integration(g, steps = as.double(case$limit)), "^nc_"),
                      case$node_count)
   }
   expect_identical(network_integration(g), original)
-  expect_identical(network_integration(g, steps = 2147483647), original)
+  # An explicit step limit is named by the limit rather than the "global" token,
+  # so only the values (not the column names) are identical to the unlimited run.
+  limited <- network_integration(g, steps = 2147483647)
+  expect_match(names(limited)[[2L]], "^ni_s_rs2147483647$")
+  expect_identical(unname(as.list(limited)), unname(as.list(original)))
   expect_identical(g$ptr, pointer)
   expect_identical(graph_lifecycle(), before) # Analysis does not create/free owners.
   expect_output(print(g), "5 lines")
@@ -65,22 +69,22 @@ test_that("the upstream step-radius oracle holds on the same persistent graph", 
 test_that("single and disconnected lines preserve upstream sentinel behaviour", {
   reference <- integration_reference()
   single <- network_integration(axial_graph(reference$single_line))
-  expect_identical(single$integration, reference$single_integration)
-  expect_identical(single$node_count, reference$single_node_count)
-  expect_identical(single$total_depth, reference$single_total_depth)
+  expect_identical(pick(single, "^ni_"), reference$single_integration)
+  expect_identical(pick(single, "^nc_"), reference$single_node_count)
+  expect_identical(pick(single, "^td_"), reference$single_total_depth)
   disconnected <- network_integration(axial_graph(rbind(c(0, 0, 3, 0), c(10, 1, 13, 1))))
-  expect_identical(disconnected$integration, c(-1, -1))
-  expect_identical(disconnected$node_count, c(1L, 1L))
-  expect_identical(disconnected$total_depth, c(0, 0))
+  expect_identical(pick(disconnected, "^ni_"), c(-1, -1))
+  expect_identical(pick(disconnected, "^nc_"), c(1L, 1L))
+  expect_identical(pick(disconnected, "^td_"), c(0, 0))
   g <- axial_graph(reference$lines)
   zero <- network_integration(g, steps = 0)
-  expect_identical(zero$integration, rep(-1, 5))
-  expect_identical(zero$total_depth, rep(0, 5))
+  expect_identical(pick(zero, "^ni_"), rep(-1, 5))
+  expect_identical(pick(zero, "^td_"), rep(0, 5))
   # The exact pinned formula has 0/0 for N=2, and a zero denominator for
   # zero relative asymmetry when N=3. The wrapper must preserve these values.
   one <- network_integration(g, steps = 1)
-  expect_true(all(is.nan(one$integration[c(1L, 5L)])))
-  expect_identical(one$integration[2:4], rep(Inf, 3))
+  expect_true(all(is.nan(pick(one, "^ni_")[c(1L, 5L)])))
+  expect_identical(pick(one, "^ni_")[2:4], rep(Inf, 3))
 })
 
 test_that("input line ordering is retained without mutating the graph", {
@@ -89,9 +93,9 @@ test_that("input line ordering is retained without mutating the graph", {
   baseline <- network_integration(axial_graph(reference$lines))
   result <- network_integration(axial_graph(reference$lines[order, ]))
   expect_identical(result$line_id, 1:5)
-  expect_identical(result$node_count, baseline$node_count[order])
-  expect_identical(result$total_depth, baseline$total_depth[order])
-  expect_identical(result$integration, baseline$integration[order])
+  expect_identical(pick(result, "^nc_"), pick(baseline, "^nc_")[order])
+  expect_identical(pick(result, "^td_"), pick(baseline, "^td_")[order])
+  expect_identical(pick(result, "^ni_"), pick(baseline, "^ni_")[order])
 })
 
 test_that("invalid graph owners and step limits are rejected before PST calls", {
@@ -116,7 +120,7 @@ test_that("invalid graph owners and step limits are rejected before PST calls", 
     expect_error(native_integration(g$ptr, steps), "steps must be NULL")
   }
   expect_identical(graph_lifecycle(), before)
-  expect_identical(network_integration(g)$node_count, rep(5L, 5))
+  expect_identical(pick(network_integration(g), "^nc_"), rep(5L, 5))
   restored <- unserialize(serialize(g, NULL))
   expect_error(network_integration(restored), "no longer live")
   release_graph(g$ptr)
@@ -140,7 +144,7 @@ test_that("analysis results outlive graphs while aliases preserve ownership", {
   rm(alias)
   gc()
   expect_identical(graph_lifecycle() - before, c(1, 1, 0))
-  expect_identical(result$total_depth, c(10, 7, 6, 7, 10))
+  expect_identical(pick(result, "^td_"), c(10, 7, 6, 7, 10))
   gc()
   expect_identical(graph_lifecycle() - before, c(1, 1, 0))
 })
@@ -162,7 +166,7 @@ test_that("a non-null incompatible pointer tag fails before any PST graph call",
   labelled_segment <- g
   labelled_segment$type <- "segment"
   expect_error(network_integration(labelled_segment), "live axial pst_graph")
-  expect_identical(network_integration(g)$node_count, rep(5L, 5))
+  expect_identical(pick(network_integration(g), "^nc_"), rep(5L, 5))
 })
 
 test_that("only unrestricted and steps-only radii are accepted, as in the official PST v3.3.2 interface", {
@@ -172,8 +176,8 @@ test_that("only unrestricted and steps-only radii are accepted, as in the offici
   # accepted, and unchanged from the unrestricted implementation
   expect_identical(network_integration(g, radius = analysis_radius()), unrestricted)
   expect_identical(network_integration(g, steps = 2), network_integration(g, radius = analysis_radius(steps = 2)))
-  expect_identical(network_integration(g, steps = 2), legacy_ni_run(g, steps = 2))
-  expect_identical(network_integration(g, steps = 0)$node_count, rep(1L, 5L))
+  expect_identical(network_integration(g, steps = 2), rPSTool:::.pst_network_integration_run(g, steps = 2))
+  expect_identical(pick(network_integration(g, steps = 0), "^nc_"), rep(1L, 5L))
   # rejected before any native call, whatever the combination
   for (r in list(analysis_radius(walking = 5), analysis_radius(straight = 5), analysis_radius(angular = 90),
                  analysis_radius(axmeter = 5), analysis_radius(steps = 2, walking = 5),
@@ -199,8 +203,8 @@ test_that("public Network Integration matches the pinned internal runner on a no
   g <- do.call(axial_graph, c(list(ax_case_lines(case)), ax_case_args(case)))
   for (radius in list(NULL, analysis_radius(steps = 2))) {
     expect_identical(network_integration(g, radius = radius),
-                     legacy_ni_run(g, radius = radius))
+                     rPSTool:::.pst_network_integration_run(g, radius = radius))
     expect_identical(network_integration(g, radius = radius, junctions = TRUE),
-                     legacy_ni_run(g, radius = radius, junctions = TRUE))
+                     rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE))
   }
 })

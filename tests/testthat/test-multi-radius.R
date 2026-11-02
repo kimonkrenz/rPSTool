@@ -89,22 +89,23 @@ test_that("Angular Choice: every multi column equals the scalar call", {
       expect_identical(multi$segment_id, seq_len(nrow(mr_segments())))
       per <- 3 + weighted + 3
       expect_equal(ncol(multi), 1 + length(values) * per)
-      tag <- function(v) paste0("_", setup$code, rPSTool:::.pst_radius_value_text(v, setup$dim == "steps"))
       for (i in seq_along(values)) {
         one <- radius; one[[setup$dim]] <- values[[i]]
         for (nm in c("turner", "syntax", "standard")) {
           ref <- angular_choice(g, one, weigh_by_length = weighted, normalization = nm,
                                     angle_threshold = 20, angle_precision = 3)
-          expect_identical(multi[[paste0("choice", tag(values[[i]]))]], ref$choice)
-          expect_identical(multi[[paste0("node_count", tag(values[[i]]))]], ref$node_count)
-          expect_identical(multi[[paste0("total_depth", tag(values[[i]]))]], ref$total_depth)
-          expect_identical(multi[[paste0("choice_", nm, tag(values[[i]]))]], ref$normalized)
-          if (weighted) expect_identical(multi[[paste0("total_depth_weight", tag(values[[i]]))]], ref$total_depth_weight)
+          expect_identical(mcol(multi, "choice", i), pick(ref, re_ac_raw))
+          expect_identical(mcol(multi, "node_count", i), pick(ref, "^nc_"))
+          expect_identical(mcol(multi, "total_depth", i), pick(ref, "^td_"))
+          if (nm == "none") expect_false("none" %in% attr(multi, "rpst_manifest")$columns$normalization)
+          else expect_identical(mcol(multi, "normalized", i, nm), pick(ref, re_ac_norm))
+          if (weighted) expect_identical(mcol(multi, "total_depth_weight", i), pick(ref, "^tdw_"))
         }
       }
       # radius-major order: the requested order is the column order
       first <- names(multi)[2L]
-      expect_identical(first, paste0("choice", tag(values[[1L]])))
+      expect_identical(first, attr(multi, "rpst_manifest")$columns$name[[1L]])
+      expect_identical(attr(multi, "rpst_manifest")$columns$radius[[1L]], 1L)
     }
   }
   m <- attr(rPSTool::angular_choice(g, analysis_radius(walking = c(5, 9)), normalization = c("syntax", "turner")), "rpst_manifest")
@@ -115,15 +116,17 @@ test_that("Angular Choice: every multi column equals the scalar call", {
 test_that("Angular Choice: scalar calls keep their schema; length-one vectors are scalar; several norms alone use the multi schema", {
   g <- mr_graph()
   scalar <- angular_choice(g, analysis_radius(walking = 12), normalization = "syntax")
-  expect_identical(names(scalar), c("segment_id", "choice", "node_count", "total_depth", "normalized"))
+  expect_identical(names(scalar), c("segment_id", "ac_a_rw12_n", "nc_a_rw12", "td_a_rw12", "ac_a_rw12_c"))
   expect_null(attr(scalar, "rpst_manifest"))
   expect_identical(angular_choice(g, analysis_radius(walking = c(12)), normalization = c("syntax")), scalar)
-  expect_identical(names(angular_choice(g)), c("segment_id", "choice", "node_count", "total_depth"))
+  expect_identical(names(angular_choice(g)), c("segment_id", "ac_a_rg_n", "nc_a_rg", "td_a_rg"))
   one_radius <- angular_choice(g, analysis_radius(walking = 12, angular = 180), normalization = c("syntax", "turner"))
-  expect_identical(names(one_radius), c("segment_id", "choice", "node_count", "total_depth", "choice_syntax", "choice_turner"))
-  expect_identical(one_radius$choice_syntax, angular_choice(g, analysis_radius(walking = 12, angular = 180), normalization = "syntax")$normalized)
+  expect_identical(names(one_radius), c("segment_id", "ac_a_rw12_ra180_n", "nc_a_rw12_ra180", "td_a_rw12_ra180",
+                                        "ac_a_rw12_ra180_c", "ac_a_rw12_ra180_t"))
+  expect_identical(mcol(one_radius, "normalized", 1L, "syntax"),
+                   pick(angular_choice(g, analysis_radius(walking = 12, angular = 180), normalization = "syntax"), re_ac_norm))
   none <- angular_choice(g, analysis_radius(walking = c(3, 4)), normalization = c("none", "none")[1])
-  expect_identical(names(none), c("segment_id", "choice_w3", "node_count_w3", "total_depth_w3", "choice_w4", "node_count_w4", "total_depth_w4"))
+  expect_identical(names(none), c("segment_id", "ac_a_rw3_n", "nc_a_rw3", "td_a_rw3", "ac_a_rw4_n", "nc_a_rw4", "td_a_rw4"))
   expect_error(angular_choice(g, normalization = c("syntax", "syntax")), "duplicates")
   expect_error(angular_choice(g, normalization = c("syntax", "bogus")), "one or more of")
   expect_error(angular_choice(g, normalization = character()), "normalization must be one of")
@@ -145,24 +148,26 @@ test_that("Angular Integration: every multi column equals the scalar call", {
       for (nm in norms) {
         ref <- angular_integration(g, radius = one, weigh_by_length = weighted, normalization = nm,
                                        angle_threshold = 15, angle_precision = 2, weight_outputs = outputs)
-        expect_identical(multi[[paste0("integration_", nm, "_w", v)]], ref$integration)
-        expect_identical(multi[[paste0("node_count_w", v)]], ref$node_count)
-        expect_identical(multi[[paste0("total_depth_w", v)]], ref$total_depth)
+        i <- match(v, c(25, 6, 14))
+        expect_identical(mcol(multi, "integration", i, nm), pick(ref, "^ai_"))
+        expect_identical(mcol(multi, "node_count", i), pick(ref, "^nc_"))
+        expect_identical(mcol(multi, "total_depth", i), pick(ref, "^td_"))
         if (has_w) {
-          expect_identical(multi[[paste0("total_weight_w", v)]], ref$total_weight)
-          expect_identical(multi[[paste0("total_depth_weight_w", v)]], ref$total_depth_weight)
+          expect_identical(mcol(multi, "total_weight", i), pick(ref, "^tw_"))
+          expect_identical(mcol(multi, "total_depth_weight", i), pick(ref, "^tdw_"))
         }
       }
     }
-    expect_identical(names(multi)[2:4], paste0("integration_", norms, "_w25"))
+    expect_identical(names(multi)[2:4], attr(multi, "rpst_manifest")$columns$name[1:3])
+    expect_identical(attr(multi, "rpst_manifest")$columns$normalization[1:3], norms)
   }
   scalar <- angular_integration(g, radius = analysis_radius(walking = 6), normalization = "syntax")
-  expect_identical(names(scalar), c("segment_id", "integration", "node_count", "total_depth"))
+  expect_identical(names(scalar), c("segment_id", "ai_a_rw6_a", "nc_a_rw6", "td_a_rw6"))
   expect_identical(angular_integration(g, radius = analysis_radius(walking = 6), normalization = c("syntax")), scalar)
   steps_multi <- angular_integration(g, radius = analysis_radius(steps = c(2, 1)), normalization = c("turner", "syntax"))
-  expect_identical(steps_multi$integration_turner_n1, angular_integration(g, steps = 1)$integration)
-  legacy <- angular_integration(g, steps = 2, normalization = c("turner", "hillier"))
-  expect_identical(names(legacy), c("segment_id", "integration_turner", "integration_hillier", "node_count", "total_depth"))
+  expect_identical(mcol(steps_multi, "integration", 2L, "turner"), pick(angular_integration(g, steps = 1), "^ai_"))
+  several_norms <- angular_integration(g, steps = 2, normalization = c("turner", "hillier"))
+  expect_identical(names(several_norms), c("segment_id", "ai_a_rs2_t", "ai_a_rs2_h", "nc_a_rs2", "td_a_rs2"))
   expect_error(angular_integration(g, steps = 2, radius = analysis_radius(walking = c(1, 2))), "not both")
   expect_error(angular_integration(g, normalization = c("turner", "turner")), "duplicates")
   expect_error(angular_integration(g, normalization = c("none", "turner")), "one or more of")
@@ -171,13 +176,13 @@ test_that("Angular Integration: every multi column equals the scalar call", {
 test_that("Zero radii, vector-of-length-one and requested order behave like the scalar calls", {
   g <- mr_graph()
   m <- angular_choice(g, analysis_radius(walking = c(0, 8, 3)), normalization = c("turner", "standard"))
-  for (v in c(0, 8, 3)) {
-    ref <- angular_choice(g, analysis_radius(walking = v), normalization = "turner")
-    expect_identical(m[[paste0("choice_turner_w", v)]], ref$normalized)
+  for (i in seq_along(c(0, 8, 3))) {
+    ref <- angular_choice(g, analysis_radius(walking = c(0, 8, 3)[[i]]), normalization = "turner")
+    expect_identical(mcol(m, "normalized", i, "turner"), pick(ref, re_ac_norm))
   }
   rev_m <- angular_choice(g, analysis_radius(walking = c(3, 8, 0)), normalization = c("standard", "turner"))
-  expect_identical(rev_m$choice_w8, m$choice_w8)
-  expect_identical(names(rev_m)[2], "choice_w3")
+  expect_identical(rev_m$ac_a_rw8_n, m$ac_a_rw8_n)
+  expect_identical(names(rev_m)[2], "ac_a_rw3_n")
 })
 
 test_that("PST runs once per radius, never once per normalisation; normalisers are the exported ones", {
@@ -306,13 +311,13 @@ test_that("a source column with a result's name needs overwrite = TRUE; earlier 
   res <- rPSTool::angular_choice(g, analysis_radius(walking = c(25, 10)), spatial_output_file = file.path(dir, "o.fgb"), overwrite = TRUE)
   expect_setequal(res$replaced, c("ac_a_rw25_n", "nc_a_rw10"))
   expect_identical(so_md5(src), before)
-  back <- so_read(file.path(dir, "o.fgb"), "flatgeobuf", legacy = FALSE)
+  back <- so_read(file.path(dir, "o.fgb"), "flatgeobuf")
   expect_identical(sum(back$names == "ac_a_rw25_n"), 1L)
-  expect_equal(as.numeric(back$attrs$ac_a_rw25_n), angular_choice(g, analysis_radius(walking = 25))$choice, tolerance = 0)
+  expect_equal(as.numeric(back$attrs$ac_a_rw25_n), pick(angular_choice(g, analysis_radius(walking = 25)), re_ac_raw), tolerance = 0)
   # chain: a second run with different radii keeps the first run's columns as ordinary attributes
   res2 <- rPSTool::angular_choice(segment_graph(file.path(dir, "o.fgb")), analysis_radius(walking = c(25, 99)),
                              spatial_output_file = file.path(dir, "o2.fgb"), overwrite = TRUE)
-  expect_true(all(c("ac_a_rw10_n", "ac_a_rw25_n", "ac_a_rw99_n") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf", legacy = FALSE)$names))
+  expect_true(all(c("ac_a_rw10_n", "ac_a_rw25_n", "ac_a_rw99_n") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf")$names))
   expect_false("ac_a_rw10_n" %in% res2$columns[res2$columns %in% c("ac_a_rw99_n")])
 })
 
@@ -394,7 +399,7 @@ test_that("file-backed multi-radius calls record fixed straight / steps restrict
                 else angular_integration(g, radius = first, weigh_by_length = TRUE, normalization = "turner", angle_threshold = 25, angle_precision = 4)
       first_name <- paste0(if (analysis == "choice") "ac_a_" else "ai_a_", rPSTool:::.pst_nm_radius(first),
                            if (analysis == "choice") "_t_at25_ap4" else "_wl_t_at25_ap4")
-      expect_identical(frame[[first_name]], if (analysis == "choice") scalar$normalized else scalar$integration)
+      expect_identical(frame[[first_name]], if (analysis == "choice") pick(scalar, re_ac_norm) else pick(scalar, "^ai_"))
     }
   }
   # the angle controls matter: different controls give different columns (the call is not ignoring them)

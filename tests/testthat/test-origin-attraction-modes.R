@@ -39,24 +39,24 @@ test_that("optional modes match pinned exports and compact normalization oracles
     if (case$routine == "reach") {
       out <- network_reach(g, radius, points)
       expect_identical(out$origin_id, seq_len(nrow(points)))
-      expect_identical(out$reached_count, as.integer(case$count))
-      origin_near(out$reached_length, case$score)
-      origin_near(out$reached_area, case$depth)
+      expect_identical(pick(out, "^rc_"), as.integer(case$count))
+      origin_near(pick(out, "^rln_"), case$score)
+      origin_near(pick(out, "^rca_"), case$depth)
     } else {
       out <- network_betweenness(g, radius, case$distance, weights = case$weights,
                             attraction_points = points)
       expect_identical(out$line_id, seq_along(case$count))
-      expect_identical(out$node_count, as.integer(case$count))
-      origin_near(out$betweenness, case$score)
-      origin_near(out$total_depth, case$depth)
+      expect_identical(pick(out, "^a?nc_"), as.integer(case$count))
+      origin_near(pick(out, re_nb_raw), case$score)
+      origin_near(pick(out, "^a?td_"), case$depth)
       for (norm in names(case$normalizations)) {
         normalized <- network_betweenness(g, radius, case$distance, norm,
                                       case$weights, points)
         expect_identical(normalized[names(out)], out)
-        origin_near(normalized$normalized, case$normalizations[[norm]])
+        origin_near(pick(normalized, re_nb_norm), case$normalizations[[norm]])
         if (norm != "standard")
-          expect_identical(is.na(normalized$normalized),
-                           is.na(out$node_count) | is.nan(normalized$normalized))
+          expect_identical(is.na(pick(normalized, re_nb_norm)),
+                           is.na(pick(out, "^a?nc_")) | is.nan(pick(normalized, re_nb_norm)))
       }
     }
   }
@@ -67,42 +67,42 @@ test_that("zero and negative weights retain raw semantics and missing diagnostic
   for (distance in c("walking", "steps", "angular", "axmeter")) {
     for (weights in list(c(1,0,1), c(1,-1,1))) {
       raw <- network_betweenness(g, distance = distance, weights = weights)
-      expect_identical(raw$betweenness, if (weights[2] == 0) c(0.75,1,0.75) else rep(0.5,3))
-      expect_identical(raw$node_count, c(3L,NA_integer_,3L))
-      expect_true(is.na(raw$total_depth[2]) && !is.nan(raw$total_depth[2]))
+      expect_identical(pick(raw, re_nb_raw), if (weights[2] == 0) c(0.75,1,0.75) else rep(0.5,3))
+      expect_identical(pick(raw, "^nc_"), c(3L,NA_integer_,3L))
+      expect_true(is.na(pick(raw, "^td_")[2]) && !is.nan(pick(raw, "^td_")[2]))
       for (i in 1:3) expect_identical(network_betweenness(g, distance = distance, weights = weights), raw)
       for (norm in c("standard", "freeman", "syntax")) {
         out <- network_betweenness(g, distance = distance, normalization = norm, weights = weights)
         expect_identical(out[names(raw)], raw)
-        expect_identical(is.na(out$normalized), if (norm == "standard") rep(FALSE,3) else c(FALSE,TRUE,FALSE))
+        expect_identical(is.na(pick(out, re_nb_norm)), if (norm == "standard") rep(FALSE,3) else c(FALSE,TRUE,FALSE))
       }
     }
     unit <- network_betweenness(g, distance = distance, weights = wt_rep_1_3)
     plain <- network_betweenness(g, distance = distance)
     # Three unit lines add PST's endpoint (1) and self (0.25) contributions.
-    expect_identical(unit$betweenness, plain$betweenness + 1.25)
-    expect_identical(unit$node_count, plain$node_count)
-    expect_identical(unit$total_depth, plain$total_depth)
+    expect_identical(pick(unit, re_nb_raw), pick(plain, re_nb_raw) + 1.25)
+    expect_identical(pick(unit, "^nc_"), pick(plain, "^nc_"))
+    expect_identical(pick(unit, "^td_"), pick(plain, "^td_"))
     sparse <- network_betweenness(g, distance = distance, attraction_points = matrix(c(0.5,0),1))
-    expect_identical(sparse$node_count, c(3L,NA_integer_,NA_integer_))
-    expect_identical(is.na(sparse$total_depth), c(FALSE,TRUE,TRUE))
+    expect_identical(pick(sparse, "^anc_"), c(3L,NA_integer_,NA_integer_))
+    expect_identical(is.na(pick(sparse, "^atd_")), c(FALSE,TRUE,TRUE))
     zero <- network_betweenness(g, distance = distance, weights = wt_0,
                            attraction_points = matrix(c(0.5,0),1))
-    expect_identical(zero$betweenness, rep(0,3))
-    expect_identical(zero$node_count, rep(NA_integer_,3))
-    expect_identical(zero$total_depth, rep(NA_real_,3))
-    expect_identical(network_betweenness(g, distance = distance, weights = wt_0,
-      attraction_points = matrix(c(0.5,0),1), normalization = "standard")$normalized, rep(1,3))
+    expect_identical(pick(zero, re_nb_raw), rep(0,3))
+    expect_identical(pick(zero, "^anc_"), rep(NA_integer_,3))
+    expect_identical(pick(zero, "^atd_"), rep(NA_real_,3))
+    expect_identical(pick(network_betweenness(g, distance = distance, weights = wt_0,
+      attraction_points = matrix(c(0.5,0),1), normalization = "standard"), re_nb_norm), rep(1,3))
     for (norm in c("freeman", "syntax"))
-      expect_identical(network_betweenness(g, distance = distance, weights = wt_0,
-        attraction_points = matrix(c(0.5,0),1), normalization = norm)$normalized, rep(NA_real_,3))
+      expect_identical(pick(network_betweenness(g, distance = distance, weights = wt_0,
+        attraction_points = matrix(c(0.5,0),1), normalization = norm), re_nb_norm), rep(NA_real_,3))
   }
   single <- axial_graph(matrix(c(0,0,1,0),1))
-  expect_identical(network_betweenness(single, weights = wt_2)$betweenness, 1)
+  expect_identical(pick(network_betweenness(single, weights = wt_2), re_nb_raw), 1)
   signed <- network_betweenness(g, weights = wt_c_1_10_1, normalization = "syntax")
   # A written normalizer NaN is distinct from rPSTool's missing skipped row.
-  expect_identical(is.nan(signed$normalized), c(TRUE,FALSE,TRUE))
-  expect_true(is.na(signed$normalized[2]) && !is.nan(signed$normalized[2]))
+  expect_identical(is.nan(pick(signed, re_nb_norm)), c(TRUE,FALSE,TRUE))
+  expect_true(is.na(pick(signed, re_nb_norm)[2]) && !is.nan(pick(signed, re_nb_norm)[2]))
 })
 
 test_that("PST accumulates attractions and preserves paired row permutation", {
@@ -110,14 +110,15 @@ test_that("PST accumulates attractions and preserves paired row permutation", {
   p <- rbind(c(0.25,0),c(0.75,0),c(2.5,0))
   for (distance in c("walking", "steps", "angular", "axmeter")) {
     implicit <- network_betweenness(g, distance = distance, attraction_points = p)
-    expect_identical(implicit, network_betweenness(g, distance = distance, weights = wt_rep_1_3, attraction_points = p))
-    expect_identical(implicit, network_betweenness(g, distance = distance, weights = wt_c_2_0_1))
+    # Names differ by design (a weight identifier is added), so compare the values.
+    expect_identical(unnamed(implicit), unnamed(network_betweenness(g, distance = distance, weights = wt_rep_1_3, attraction_points = p)))
+    expect_identical(unnamed(implicit), unnamed(network_betweenness(g, distance = distance, weights = wt_c_2_0_1)))
     unequal <- network_betweenness(g, distance = distance, weights = wt_c_2_3_4, attraction_points = p)
-    expect_identical(unequal, network_betweenness(g, distance = distance, weights = wt_c_5_0_4))
+    expect_identical(unnamed(unequal), unnamed(network_betweenness(g, distance = distance, weights = wt_c_5_0_4)))
     order <- c(3L,1L,2L)
     wt_reordered <- c(2,3,4)[order]
-    expect_identical(unequal, network_betweenness(g, distance = distance,
-      weights = wt_reordered, attraction_points = p[order,]))
+    expect_identical(unnamed(unequal), unnamed(network_betweenness(g, distance = distance,
+      weights = wt_reordered, attraction_points = p[order,])))
     away <- origin_points(); away[,2] <- c(2,-2)
     expect_identical(network_betweenness(g, distance = distance, attraction_points = away),
                      network_betweenness(g, distance = distance, attraction_points = origin_points()))
@@ -129,12 +130,12 @@ test_that("point Reach retains strict boundary, circle area and input row order"
   p <- rbind(c(-0.4999,0),c(-0.5,0),c(-0.5001,0))
   out <- network_reach(g, analysis_radius(straight = 1), p)
   expect_identical(out$origin_id, 1:3)
-  expect_identical(out$reached_count, c(1L,0L,0L))
-  expect_identical(out$reached_length, c(1,0,0))
-  expect_equal(out$reached_area, rep(pi,3), tolerance = 1e-6)
-  expect_identical(network_reach(g, analysis_radius(straight=0), matrix(c(0.5,0),1))$reached_count, 0L)
-  expect_identical(network_reach(g, analysis_radius(straight=0))$reached_count, rep(1L,3))
-  expect_identical(network_reach(g, analysis_radius(straight=1))$reached_count, c(2L,3L,2L))
+  expect_identical(pick(out, "^rc_"), c(1L,0L,0L))
+  expect_identical(pick(out, "^rln_"), c(1,0,0))
+  expect_equal(pick(out, "^rca_"), rep(pi,3), tolerance = 1e-6)
+  expect_identical(pick(network_reach(g, analysis_radius(straight=0), matrix(c(0.5,0),1)), "^rc_"), 0L)
+  expect_identical(pick(network_reach(g, analysis_radius(straight=0)), "^rc_"), rep(1L,3))
+  expect_identical(pick(network_reach(g, analysis_radius(straight=1)), "^rc_"), c(2L,3L,2L))
   p <- rbind(c(2.5,0), c(0.5,0), c(0.5,2))
   for (radius in list(analysis_radius(), analysis_radius(walking=1), analysis_radius(steps=1),
                      analysis_radius(angular=0), analysis_radius(axmeter=2), analysis_radius(straight=1,steps=1))) {
@@ -144,7 +145,7 @@ test_that("point Reach retains strict boundary, circle area and input row order"
     expect_identical(permuted$origin_id, 1:3)
     for (name in names(out)[-1]) expect_identical(permuted[[name]], out[[name]][order])
   }
-  expect_identical(network_reach(g, analysis_radius(walking=0), matrix(c(0.5,2),1))$reached_count, 0L)
+  expect_identical(pick(network_reach(g, analysis_radius(walking=0), matrix(c(0.5,2),1)), "^rc_"), 0L)
 })
 
 test_that("point and weight validation fails closed in the native boundary", {
@@ -190,15 +191,15 @@ test_that("point and weight validation fails closed in the native boundary", {
   named <- p; colnames(named) <- c("y", "x")
   expect_identical(network_reach(g,origins=named),network_reach(g,origins=p))
   expect_identical(network_betweenness(g,attraction_points=named),network_betweenness(g,attraction_points=p))
-  expect_identical(network_betweenness(g,weights=wt_1_3),network_betweenness(g,weights=wt_c_1_2_3))
-  expect_identical(network_betweenness(g,weights=wt_c_1_1_1),network_betweenness(g,weights=wt_c_1l_1l_1l))
+  expect_identical(unnamed(network_betweenness(g,weights=wt_1_3)),unnamed(network_betweenness(g,weights=wt_c_1_2_3)))
+  expect_identical(unnamed(network_betweenness(g,weights=wt_c_1_1_1)),unnamed(network_betweenness(g,weights=wt_c_1l_1l_1l)))
   # A representable subnormal weight is allowed; only narrowing to zero fails.
   expect_no_error(network_betweenness(g,weights=wt_rep_1e_45_3))
   expect_no_error(network_betweenness(g,weights=wt_rep_m1e_45_3))
   # Points are independent: their mutual distance need not fit native float
   # squared storage when each point/network extent does fit.
   distant <- rbind(c(1e19,0),c(-1e19,0))
-  expect_identical(network_reach(g,analysis_radius(straight=1),distant)$reached_count,c(0L,0L))
+  expect_identical(pick(network_reach(g,analysis_radius(straight=1),distant), "^rc_"),c(0L,0L))
   expect_no_error(network_betweenness(g,attraction_points=distant))
   offset <- 1e14
   shifted <- axial_graph(origin_chain()+offset)

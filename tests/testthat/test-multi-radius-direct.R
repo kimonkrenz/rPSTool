@@ -10,7 +10,6 @@ mrd_compare <- function(actual, expected) {
   expect_equal(actual[is.finite(expected)], expected[is.finite(expected)], tolerance = 3e-6)
   sum(!is.finite(expected))
 }
-mrd_code <- c(straight = "s", walking = "w", steps = "n", angular = "a")
 
 test_that("multi-radius and multi-normalisation columns equal the direct pinned-PST results", {
   ref <- dget(test_path("fixtures", "angular-multi-radius-direct-v3.3.2.R"))
@@ -43,19 +42,18 @@ test_that("multi-radius and multi-normalisation columns equal the direct pinned-
     expect_identical(ncol(out), 1L + length(fam$values) * (if (fam$routine == "integration") 3L + 4L else 3L + fam$weighted + 3L))
     for (i in seq_along(fam$values)) {
       run <- fam$runs[[i]]
-      tag <- paste0("_", mrd_code[[fam$vary]], rPSTool:::.pst_radius_value_text(fam$values[[i]], fam$vary == "steps"))
-      col <- function(base) out[[paste0(base, tag)]]
+      col <- function(role, norm = NA_character_) mcol(out, role, i, norm)
       expect_identical(col("node_count"), as.integer(unlist(run$counts)))
       nonfinite <- nonfinite + mrd_compare(col("total_depth"), run$depths)
       if (fam$routine == "integration") {
-        for (n in norms) nonfinite <- nonfinite + mrd_compare(out[[paste0("integration_", n, tag)]], run$normalized[[n]])
+        for (n in norms) nonfinite <- nonfinite + mrd_compare(col("integration", n), run$normalized[[n]])
         nonfinite <- nonfinite + mrd_compare(col("total_weight"), run$weights)          # present although weigh_by_length may be FALSE
         nonfinite <- nonfinite + mrd_compare(col("total_depth_weight"), run$depth_weights)
       } else {
         nonfinite <- nonfinite + mrd_compare(col("choice"), run$scores)
-        for (n in norms) nonfinite <- nonfinite + mrd_compare(out[[paste0("choice_", n, tag)]], run$normalized[[n]])
+        for (n in norms) nonfinite <- nonfinite + mrd_compare(col("normalized", n), run$normalized[[n]])
         if (fam$weighted) nonfinite <- nonfinite + mrd_compare(col("total_depth_weight"), run$depth_weights)
-        else expect_null(col("total_depth_weight"))
+        else expect_false("total_depth_weight" %in% attr(out, "rpst_manifest")$columns$role)
       }
     }
     if (nonfinite > before) nonfinite_graphs <- c(nonfinite_graphs, fam$graph)

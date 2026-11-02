@@ -128,20 +128,20 @@ test_that("sf junction output matches the direct fixture junction results (all o
     g <- do.call(axial_graph, args)
     for (expected in case$integrations) {
       radius <- do.call(analysis_radius, expected$radius)
-      native <- legacy_ni_run(g, radius = radius, junctions = TRUE)
-      out <- legacy_ni_run(g, radius = radius, junctions = TRUE, junction_output = "sf")
+      native <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE)
+      out <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE, junction_output = "sf")
       expect_identical(names(out), c("lines", "junctions"))
       expect_identical(out$lines, native$lines)
       expect_s3_class(out$lines, "data.frame"); expect_false(inherits(out$lines, "sf"))
       j <- out$junctions
       expect_s3_class(j, "sf")
-      expect_identical(names(j), c("junction_id", "integration", "geometry"))
+      expect_columns(j, c("^junction_id$", "^nj_", "^geometry$"))
       expect_identical(j$junction_id, native$junctions$junction_id)
-      expect_identical(j$integration, native$junctions$integration) # NaN/Inf/-2 multiplicity preserved
+      expect_identical(pick(j, "^nj_"), pick(native$junctions, "^nj_")) # NaN/Inf/-2 multiplicity preserved
       xy <- if (nrow(j)) do.call(rbind, lapply(sf::st_geometry(j), unclass)) else matrix(numeric(), 0L, 2L)
       expect_identical(unname(xy), unname(cbind(native$junctions$x, native$junctions$y)))
       expect_true(is.na(sf::st_crs(j)))
-      expect_identical(legacy_ni_run(g, radius = radius, junctions = TRUE), native)
+      expect_identical(rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE), native)
       checked <- checked + 1L
     }
   }
@@ -155,11 +155,11 @@ test_that("junction sf output covers CRS, zero junctions, repeats, lifetime and 
   native <- network_integration(g, steps = 1, junctions = TRUE)
   out <- network_integration(g, steps = 1, junctions = TRUE, junction_output = "sf")
   expect_equal(sf::st_crs(out$junctions), sf::st_crs(3857))
-  expect_identical(out$junctions$integration, native$junctions$integration)
-  expect_true(any(is.nan(out$junctions$integration)) && any(is.infinite(out$junctions$integration)))
+  expect_identical(pick(out$junctions, "^nj_"), pick(native$junctions, "^nj_"))
+  expect_true(any(is.nan(pick(out$junctions, "^nj_"))) && any(is.infinite(pick(out$junctions, "^nj_"))))
   for (i in 1:3) expect_identical(network_integration(g, steps = 1, junctions = TRUE, junction_output = "sf"), out)
   expect_identical(network_integration(g, junctions = TRUE, junction_output = "native"), network_integration(g, junctions = TRUE))
-  expect_identical(names(network_integration(g, junctions = TRUE)$junctions), c("junction_id", "x", "y", "integration"))
+  expect_identical(names(network_integration(g, junctions = TRUE)$junctions), c("junction_id", "x", "y", "nj_s_rg"))
   expect_identical(network_integration(g, steps = 1), native$lines)
   # Result lifetime is independent of the graph.
   snapshot <- serialize(out, NULL)
@@ -171,8 +171,8 @@ test_that("junction sf output covers CRS, zero junctions, repeats, lifetime and 
   single <- axial_graph(matrix(c(0, 0, 1, 0), 1L))
   empty <- network_integration(single, junctions = TRUE, junction_output = "sf")$junctions
   expect_s3_class(empty, "sf"); expect_identical(nrow(empty), 0L)
-  expect_identical(names(empty), c("junction_id", "integration", "geometry"))
-  expect_identical(typeof(empty$junction_id), "integer"); expect_identical(typeof(empty$integration), "double")
+  expect_identical(names(empty), c("junction_id", "nj_s_rg", "geometry"))
+  expect_identical(typeof(empty$junction_id), "integer"); expect_identical(typeof(empty$nj_s_rg), "double")
   sf_single <- axial_graph(sb_lines(matrix(c(0, 0, 1, 0), 1L), 3857))
   expect_equal(sf::st_crs(network_integration(sf_single, junctions = TRUE, junction_output = "sf")$junctions), sf::st_crs(3857))
 })

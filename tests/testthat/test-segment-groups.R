@@ -29,11 +29,11 @@ test_that("grouping structures and integration values match direct pinned PST", 
   for (case in rpst_cases(reference$integrations, every = 20L, by = list(rpst_case_signature), each = list(rpst_case_edges))) {
     g <- segment_group_graph(segments[[case$network]], case$ids)
     result <- segment_group_integration(g, do.call(analysis_radius, case$radius))
-    expect_identical(names(result), c("group_id", "integration", "node_count", "total_depth"))
+    expect_columns(result, c("^group_id$", "^gi_", "^nc_", "^td_"))
     expect_identical(result$group_id, seq_along(case$integration))
-    expect_identical(result$node_count, as.integer(case$node_count))
-    expect_group_values(result$integration, case$integration)
-    expect_group_values(result$total_depth, case$total_depth)
+    expect_identical(pick(result, "^nc_"), as.integer(case$node_count))
+    expect_group_values(pick(result, "^gi_"), case$integration)
+    expect_group_values(pick(result, "^td_"), case$total_depth)
     group_native("graph_release", g$ptr)
   }
 })
@@ -50,9 +50,9 @@ test_that("whole no-node graphs return typed NA while mixed isolated groups reta
       for (radius in list(analysis_radius(), analysis_radius(steps=0), analysis_radius(walking=0))) {
         r <- segment_group_integration(g, radius)
         n <- g$n_groups
-        expect_identical(r$integration, rep(NA_real_, n))
-        expect_identical(r$node_count, rep(NA_integer_, n))
-        expect_identical(r$total_depth, rep(NA_real_, n))
+        expect_identical(pick(r, "^gi_"), rep(NA_real_, n))
+        expect_identical(pick(r, "^nc_"), rep(NA_integer_, n))
+        expect_identical(pick(r, "^td_"), rep(NA_real_, n))
       }
     }
   }
@@ -62,9 +62,9 @@ test_that("whole no-node graphs return typed NA while mixed isolated groups reta
     g <- segment_group_graph(s, ids)
     r <- segment_group_integration(g)
     isolated <- ids[[4L]]
-    expect_identical(r$integration[[isolated]], -1)
-    expect_identical(r$node_count[[isolated]], 0L)
-    expect_identical(r$total_depth[[isolated]], 0)
+    expect_identical(pick(r, "^gi_")[[isolated]], -1)
+    expect_identical(pick(r, "^nc_")[[isolated]], 0L)
+    expect_identical(pick(r, "^td_")[[isolated]], 0)
     expect_false(anyNA(r))
   }
 })
@@ -73,23 +73,23 @@ test_that("connected controls retain PST finite, NaN, Inf and small-neighbourhoo
   s <- segment_graph(group_chain(3))
   g <- segment_group_graph(s, 1:3)
   unlimited <- segment_group_integration(g)
-  expect_identical(unlimited$node_count, rep(3L, 3))
-  expect_identical(unlimited$total_depth, c(3, 2, 3))
-  expect_true(all(is.finite(unlimited$integration[c(1,3)])))
-  expect_identical(unlimited$integration[[2L]], Inf)
+  expect_identical(pick(unlimited, "^nc_"), rep(3L, 3))
+  expect_identical(pick(unlimited, "^td_"), c(3, 2, 3))
+  expect_true(all(is.finite(pick(unlimited, "^gi_")[c(1,3)])))
+  expect_identical(pick(unlimited, "^gi_")[[2L]], Inf)
   restricted <- segment_group_integration(g, analysis_radius(steps=1))
-  expect_identical(is.nan(restricted$integration), c(TRUE, FALSE, TRUE))
-  expect_identical(restricted$integration[[2L]], Inf)
-  expect_false(any(is.na(restricted$integration) & !is.nan(restricted$integration)))
+  expect_identical(is.nan(pick(restricted, "^gi_")), c(TRUE, FALSE, TRUE))
+  expect_identical(pick(restricted, "^gi_")[[2L]], Inf)
+  expect_false(any(is.na(pick(restricted, "^gi_")) & !is.nan(pick(restricted, "^gi_"))))
   zero <- segment_group_integration(g, analysis_radius(steps=0))
-  expect_identical(zero$integration, rep(-1, 3))
-  expect_identical(zero$node_count, rep(1L, 3))
-  expect_identical(zero$total_depth, rep(0, 3))
+  expect_identical(pick(zero, "^gi_"), rep(-1, 3))
+  expect_identical(pick(zero, "^nc_"), rep(1L, 3))
+  expect_identical(pick(zero, "^td_"), rep(0, 3))
   # Transcribe the pinned five-singleton-group chain's diagnostic expectations.
   g <- segment_group_graph(segment_graph(group_chain()), 1:5)
   r <- segment_group_integration(g)
-  expect_identical(r$node_count, rep(5L, 5))
-  expect_identical(r$total_depth, c(10, 7, 6, 7, 10))
+  expect_identical(pick(r, "^nc_"), rep(5L, 5))
+  expect_identical(pick(r, "^td_"), c(10, 7, 6, 7, 10))
 })
 
 test_that("production conversion uses diagnostic masks, never an integration sentinel", {
@@ -138,16 +138,16 @@ test_that("grouping and group IDs validate native storage before PST access", {
   expect_identical(segment_group_graph(s,1:3)$n_groups,3L)
   gap <- segment_group_graph(s,c(1,3,3))
   gap_result <- segment_group_integration(gap)
-  expect_identical(gap_result$integration[[2L]],-1)
-  expect_identical(gap_result$node_count[[2L]],0L)
-  expect_identical(gap_result$total_depth[[2L]],0)
+  expect_identical(pick(gap_result, "^gi_")[[2L]],-1)
+  expect_identical(pick(gap_result, "^nc_")[[2L]],0L)
+  expect_identical(pick(gap_result, "^td_")[[2L]],0)
   s$n_segments <- 999L
   expect_identical(segment_group_graph(s,1:3)$n_groups,3L)
   gap <- segment_group_graph(s,c(1,3,3))
   gap_result <- segment_group_integration(gap)
-  expect_identical(gap_result$integration[[2L]],-1)
-  expect_identical(gap_result$node_count[[2L]],0L)
-  expect_identical(gap_result$total_depth[[2L]],0)
+  expect_identical(pick(gap_result, "^gi_")[[2L]],-1)
+  expect_identical(pick(gap_result, "^nc_")[[2L]],0L)
+  expect_identical(pick(gap_result, "^td_")[[2L]],0)
   expect_error(segment_group_graph(s,rep(1L,999)),"native segment")
 })
 
@@ -200,12 +200,12 @@ test_that("group owner outlives source graph/input and is freed exactly once", {
   expect_output(print(alias),"5 groups")
   rm(alias); gc()
   expect_identical(group_native("graph_lifecycle")-before,c(1,1,0))
-  expect_identical(expected$node_count,rep(5L,5))
+  expect_identical(pick(expected, "^nc_"),rep(5L,5))
   for (i in seq_len(80L)) {
     s <- segment_graph(group_chain(3)); ids <- 1:3
     g <- segment_group_graph(s,ids)
     .Call(rPSTool:::C_rpst_segment_graph_release,s$ptr)
-    expect_identical(segment_group_integration(g)$node_count,rep(3L,3))
+    expect_identical(pick(segment_group_integration(g), "^nc_"),rep(3L,3))
     if (i %% 2L == 0L) {
       group_native("graph_release",g$ptr); group_native("graph_release",g$ptr)
     }
@@ -234,7 +234,7 @@ test_that("central worker policy controls connected and no-node group integratio
   for (cap in c("1","2","4294967295")) {
     Sys.setenv(RPST_NUM_THREADS=cap)
     expect_identical(segment_group_integration(connected),base)
-    expect_identical(segment_group_integration(no_nodes)$node_count,NA_integer_)
+    expect_identical(pick(segment_group_integration(no_nodes), "^nc_"),NA_integer_)
   }
   for (bad in c("0","-1","1.5","2x"," 2","4294967296")) {
     Sys.setenv(RPST_NUM_THREADS=bad)
