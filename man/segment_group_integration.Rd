@@ -22,8 +22,8 @@ null in all three exactly when PST wrote neither its count nor its depth, which 
 holds \code{NA}.}
 }
 \value{
-A data frame in group order with \code{group_id} (integer), \code{integration} (double), \code{node_count}
-(integer) and \code{total_depth} (double). Outputs PST did not write are \code{NA}. With \code{output_file} an invisible
+A data frame in group order with \code{group_id} (integer), \verb{gi_<radius>} (integration, double), \verb{nc_<radius>}
+(node count, integer) and \verb{td_<radius>} (total depth, double); see \link{result_column_names}. Outputs PST did not write are \code{NA}. With \code{output_file} an invisible
 \link{pst_result_file} descriptor is returned instead.
 }
 \description{

@@ -91,17 +91,17 @@ choice <- angular_choice(
 
 set.seed(1)
 breaks <- classInt::classIntervals(
-  choice$choice,
+  choice$ac_a_rw3000_n,
   n = 9,
   style = "fisher"
 )$brks
 
-ord <- order(choice$choice, na.last = FALSE)
+ord <- order(choice$ac_a_rw3000_n, na.last = FALSE)
 
 plot(
   sf::st_geometry(segments$segments)[ord],
   col = colour_map(
-    choice$choice,
+    choice$ac_a_rw3000_n,
     "coral_day",
     breaks = breaks
   )[ord],
@@ -112,7 +112,9 @@ plot(
 * The coordinates are in metres, so `walking = 3000` is 3 km.
 * `create_segment_map()` splits the axial lines into the segments that angular analyses need, applying the unlinks.
   `segment_graph()` hands them to the engine, which keeps the network in native memory. `angular_choice()` returns one row per
-  segment, in the order of `segments$segments`.
+  segment, in the order of `segments$segments`. Result columns are named after the calculation: `ac_a_rw3000_n` is the raw
+  Angular Choice (`ac`) with angular distance (`a`), a walking radius of 3000 (`rw3000`) and no normalisation (`n`);
+  `nc_a_rw3000` and `td_a_rw3000` are the node count and total depth. `?result_column_names` lists all codes.
 * `classInt::classIntervals(style = "fisher")` divides the values into nine classes. rPSTool does not classify values itself;
   the breaks are passed to `colour_map()`. `classInt` samples large data sets for Fisher breaks, so `set.seed(1)` makes the
   classes, and so the map, repeatable.
@@ -154,7 +156,9 @@ tab <- tab$ReplaceSchemaMetadata(list(geo = geo))
 arrow::write_parquet(tab, input)
 ```
 
-The file-backed analysis itself is two steps.
+The file-backed analysis itself is two steps. The result columns are named as in memory (`ai_a_rw3000_t` is Angular
+Integration with angular distance, a walking radius of 3000 and Turner normalisation), so successive analyses of different radii
+or measures can be accumulated by passing each output file to the next analysis.
 
 ```{r gpq-run, eval = has_gpq}
 graph_file <- segment_graph(input)

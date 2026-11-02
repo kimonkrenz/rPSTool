@@ -29,10 +29,12 @@ see \link{pst_result_file}. \code{spatial_output_file} is available only with \c
 A data frame with one row per origin, in line order (or in the order of \code{origins}):
 \itemize{
 \item \code{line_id} (or \code{origin_id} for point origins): one-based identifier,
-\item \code{reached_count}: integer number of lines reached,
-\item \code{reached_length}: total length reached, and
-\item \code{reached_area}: area covered (see Details).
+\item \verb{rc_<radius>}: integer number of lines reached,
+\item \verb{rln_<radius>}: total length reached, and
+\item \verb{rca_<radius>}: area covered (see Details).
 }
+
+Column names follow \link{result_column_names}; for example \code{rc_rw400} for a walking radius of 400.
 
 Lengths and areas are doubles widened from PST's single precision. With \code{output_file} or
 \code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file} descriptor is

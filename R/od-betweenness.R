@@ -25,6 +25,9 @@
 #'   object (zero features allowed). Origin order is preserved.
 #' @param radius Distance limits created by [analysis_radius()].
 #' @param distance `"walking"` (default) or `"angular"`.
+#' @param origin_weight_name,destination_weight_name `NULL`, or short names for `origin_weights` and
+#'   `destination_weights` used in the result column names (`..._wo<name>_wd<name>`); see `weight_name` in
+#'   [network_betweenness()].
 #' @param destination_mode `"all"` (default) or `"closest"`.
 #' @param origin_weights `NULL` for unit weights, or one finite value per origin. Zero and negative values are
 #'   passed unchanged.
@@ -32,7 +35,7 @@
 #'   polygon or point group). Zero and negative values are excluded by PST.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them; see
 #'   [pst_result_file].
-#' @return A data frame in line order with one-based `line_id` and `od_betweenness` (double, widened from single
+#' @return A data frame in line order with one-based `line_id` and `od_<d>_<radius>` (for example `od_w_rw800`; see [result_column_names]) (double, widened from single
 #'   precision). Empty origin or destination sets give PST's written zero scores. With `output_file` or
 #'   `spatial_output_file` the results are written to a file and an invisible [pst_result_file] descriptor is returned.
 #' @seealso [network_betweenness()], [attraction_reach()], [axial_graph()]
@@ -44,7 +47,7 @@
 od_betweenness <- function(graph, origins, radius = analysis_radius(),
     distance = "walking", destination_mode = "all", origin_weights = NULL,
     destination_weights = NULL, output_file = NULL, overwrite = FALSE,
-    spatial_output_file = NULL) {
+    spatial_output_file = NULL, origin_weight_name = NULL, destination_weight_name = NULL) {
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file)
   .pst_validate_radius(radius)
@@ -55,18 +58,24 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   .pst_sf_analysis_crs(graph, origins)
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
+  origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_weight_name, "origin_weight_name", "wo")
+  destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_weight_name,
+                                            "destination_weight_name", "wd")
+  cols <- .pst_nm_od_betweenness(radius, distance, destination_mode, origin_weight, destination_weight)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "od_betweenness",
       list(radius = .pst_radius_parameters(radius), distance = distance, destination_mode = destination_mode,
            origins = NROW(origins), origin_weights = .pst_count_or_null(origin_weights),
-           destination_weights = .pst_count_or_null(destination_weights)),
-      graph, ptr, c("line_id", "od_betweenness"),
+           origin_weight_name = origin_weight_name,
+           destination_weights = .pst_count_or_null(destination_weights),
+           destination_weight_name = destination_weight_name),
+      graph, ptr, c("line_id", .pst_nm_names(cols)),
       "native line order (source feature order); no external feature identifiers",
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_od_betweenness_stream, ptr, origins, radius, distance,
         destination_mode, origin_weights, destination_weights, stream, columns, metadata_names, metadata_values, batch_rows),
-      spatial_output_file = spatial_output_file))
+      spatial_output_file = spatial_output_file, cols = cols))
   out <- .Call(C_rpst_od_betweenness, ptr, origins, radius, distance,
                destination_mode, origin_weights, destination_weights)
-  data.frame(line_id = seq_along(out), od_betweenness = out)
+  structure(data.frame(line_id = seq_along(out), od_betweenness = out), names = c("line_id", .pst_nm_names(cols)))
 }

@@ -47,7 +47,7 @@ test_that("persisted angular results equal the in-memory results and the direct-
       }
       persisted <- rs_read(file)
       note(label, rs_diff_tables(persisted, memory))
-      if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
+      if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
       if (case$routine == "integration") {
         note(label, rs_diff_reference(persisted$integration, case$normalized[[norm]]))
         note(label, rs_diff_reference(persisted$total_weight, case$weights))
@@ -88,7 +88,7 @@ test_that("column selection, parameters and worker counts follow the in-memory c
           memory <- do.call(angular_integration, args)
           do.call(angular_integration, c(args, list(output_file = file, overwrite = TRUE)))
           what <- rs_diff_tables(rs_read(file), memory)
-          if (!identical(names(memory), rPSTool:::.pst_angular_integration_names(weigh || wo))) what <- "names helper"
+          if (!identical(names(memory), legacy_integration_names(weigh || wo))) what <- "names helper"
           if (nzchar(what)) problems <- c(problems, paste("integration", threads, weigh, wo, norm, what))
           runs <- runs + 1
         }
@@ -100,7 +100,7 @@ test_that("column selection, parameters and worker counts follow the in-memory c
           memory <- do.call(angular_choice, args)
           do.call(angular_choice, c(args, list(output_file = file, overwrite = TRUE)))
           what <- rs_diff_tables(rs_read(file), memory)
-          if (!identical(names(memory), rPSTool:::.pst_angular_choice_names(weigh, norm))) what <- "names helper"
+          if (!identical(names(memory), legacy_choice_names(weigh, norm))) what <- "names helper"
           if (nzchar(what)) problems <- c(problems, paste("choice", threads, weigh, norm, what))
           runs <- runs + 1
         }
@@ -197,7 +197,7 @@ test_that("a multi-batch result with many row groups equals the in-memory result
   file <- file.path(dir, "r.parquet")
   g <- rf_graph(); on.exit(rs_native("segment_graph_release", g$ptr), add = TRUE)
   memory <- angular_choice(g, weigh_by_length = TRUE, normalization = "turner", radius = analysis_radius(steps = 3))
-  cols <- rPSTool:::.pst_angular_choice_names(TRUE, "turner")
+  cols <- c("segment_id", rPSTool:::.pst_nm_names(rPSTool:::.pst_nm_angular_choice(analysis_radius(steps = 3), TRUE, "turner", 0, 1)))
   ptr <- g$ptr
   for (batch in c(1, 7, 59, 60, 61, 1000)) {
     expect_no_error(rPSTool:::.pst_write_result_file(file, TRUE, columns = cols, expected_rows = 60,

@@ -58,7 +58,7 @@ test_that("attraction results equal the in-memory results and the direct-PST ref
       out <- do.call(fn, c(list(graph = g), args, list(output_file = file, overwrite = TRUE)))
       persisted <- rs_read(file)
       note(label, rs_diff_tables(persisted, memory))
-      if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
+      if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
       if (!identical(persisted$origin_id, seq_along(case$scores))) note(label, "origin_id")
       note(label, rs_diff_reference(persisted[[2L]], case$scores, tolerance = 2e-6))
       if (case$analysis == "distance" && isTRUE(indices)) {
@@ -121,7 +121,7 @@ test_that("Network Integration and Reach results equal the in-memory results and
   ni <- dget(test_path("fixtures", "network-integration-v3.3.2.R"))
   g <- axial_graph(ni$lines); graphs$ni <- g
   memory <- network_integration(g)
-  expect_identical(network_integration(g, output_file = file)$columns, c("line_id", "integration", "node_count", "total_depth"))
+  expect_identical(network_integration(g, output_file = file)$columns, c("line_id", "ni_s_rg", "nc_s_rg", "td_s_rg"))
   persisted <- rs_read(file)
   note("ni", rs_diff_tables(persisted, memory))
   expect_identical(persisted$node_count, ni$node_count)
@@ -141,8 +141,8 @@ test_that("Network Integration and Reach results equal the in-memory results and
     if (case$routine == "integration") {
       # The oracle exercises the native engine with every radius field, so the unrestricted internal implementation is used
       # (the public network_integration() accepts only steps radii; the public rejection is tested in test-network-integration.R and at the end of this file).
-      memory <- rPSTool:::.pst_network_integration_run(a, radius = radius)
-      rPSTool:::.pst_network_integration_run(a, radius = radius, output_file = file, overwrite = TRUE)
+      memory <- legacy_ni_run(a, radius = radius)
+      legacy_ni_run(a, radius = radius, output_file = file, overwrite = TRUE)
       persisted <- rs_read(file)
       expect_identical(persisted$node_count, as.integer(case$count))
     } else {
@@ -224,21 +224,24 @@ test_that("a zero-row result (no junctions or points of the requested origin kin
 })
 
 test_that("public signatures append output_file/overwrite/spatial_output_file and leave every earlier formal untouched", {
-  expect_identical(names(formals(network_integration)),
+  # weight_name arguments (output naming) are appended after them, so no earlier positional argument moves
+  expect_identical(names(formals(rPSTool::network_integration)),
                    c("graph", "steps", "radius", "junctions", "junction_output", "output_file", "overwrite", "spatial_output_file"))
-  expect_identical(names(formals(network_reach)), c("graph", "radius", "origins", "output_file", "overwrite", "spatial_output_file"))
-  expect_identical(names(formals(od_betweenness)),
+  expect_identical(names(formals(rPSTool::network_reach)), c("graph", "radius", "origins", "output_file", "overwrite", "spatial_output_file"))
+  expect_identical(names(formals(rPSTool::od_betweenness)),
                    c("graph", "origins", "radius", "distance", "destination_mode", "origin_weights",
-                     "destination_weights", "output_file", "overwrite", "spatial_output_file"))
-  expect_identical(names(formals(attraction_reach)),
+                     "destination_weights", "output_file", "overwrite", "spatial_output_file",
+                     "origin_weight_name", "destination_weight_name"))
+  expect_identical(names(formals(rPSTool::attraction_reach)),
                    c("graph", "attraction_points", "radius", "origin", "distance", "points_per_polygon",
                      "polygon_point_interval", "attraction_values", "decay", "decay_constant", "distribution",
-                     "collection", "output_file", "overwrite", "spatial_output_file"))
-  expect_identical(names(formals(attraction_distance)),
+                     "collection", "output_file", "overwrite", "spatial_output_file", "weight_name"))
+  expect_identical(names(formals(rPSTool::attraction_distance)),
                    c("graph", "attraction_points", "radius", "origin", "distance", "points_per_polygon",
                      "polygon_point_interval", "line_weights", "point_edge_weight", "destination_indices",
-                     "output_file", "overwrite", "spatial_output_file"))
-  for (f in list(network_integration, network_reach, od_betweenness, attraction_reach, attraction_distance)) {
+                     "output_file", "overwrite", "spatial_output_file", "weight_name"))
+  for (f in list(rPSTool::network_integration, rPSTool::network_reach, rPSTool::od_betweenness,
+                 rPSTool::attraction_reach, rPSTool::attraction_distance)) {
     expect_null(formals(f)$output_file)
     expect_false(formals(f)$overwrite)
   }

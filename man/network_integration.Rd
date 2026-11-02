@@ -38,13 +38,15 @@ With \code{junctions = FALSE}, a data frame with one row per input line, in the 
 supplied to \code{\link[=axial_graph]{axial_graph()}}:
 \itemize{
 \item \code{line_id}: one-based row index of the line,
-\item \code{integration}: PST's integration score,
-\item \code{node_count}: integer number of lines reached, including the line itself,
-\item \code{total_depth}: the sum of the topological steps to the reached lines.
+\item \verb{ni_s_<radius>}: PST's integration score (for example \code{ni_s_rs3} within three steps, \code{ni_s_rg} unrestricted),
+\item \verb{nc_s_<radius>}: integer number of lines reached, including the line itself,
+\item \verb{td_s_<radius>}: the sum of the topological steps to the reached lines.
 }
 
+The names are described in \link{result_column_names}.
+
 With \code{junctions = TRUE}, a list with \code{lines} (that data frame) and \code{junctions}, a data frame with
-one-based \code{junction_id}, world coordinates \code{x} and \code{y} and \code{integration} (a POINT \code{sf} object if
+one-based \code{junction_id}, world coordinates \code{x} and \code{y} and the junction score \verb{nj_s_<radius>} (a POINT \code{sf} object if
 \code{junction_output = "sf"}). A graph without crossings gives a zero-row junction table. With \code{output_file}
 or \code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file}
 descriptor is returned.

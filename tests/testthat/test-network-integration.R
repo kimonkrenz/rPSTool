@@ -172,7 +172,7 @@ test_that("only unrestricted and steps-only radii are accepted, as in the offici
   # accepted, and unchanged from the unrestricted implementation
   expect_identical(network_integration(g, radius = analysis_radius()), unrestricted)
   expect_identical(network_integration(g, steps = 2), network_integration(g, radius = analysis_radius(steps = 2)))
-  expect_identical(network_integration(g, steps = 2), rPSTool:::.pst_network_integration_run(g, steps = 2))
+  expect_identical(network_integration(g, steps = 2), legacy_ni_run(g, steps = 2))
   expect_identical(network_integration(g, steps = 0)$node_count, rep(1L, 5L))
   # rejected before any native call, whatever the combination
   for (r in list(analysis_radius(walking = 5), analysis_radius(straight = 5), analysis_radius(angular = 90),
@@ -199,8 +199,8 @@ test_that("public Network Integration matches the pinned internal runner on a no
   g <- do.call(axial_graph, c(list(ax_case_lines(case)), ax_case_args(case)))
   for (radius in list(NULL, analysis_radius(steps = 2))) {
     expect_identical(network_integration(g, radius = radius),
-                     rPSTool:::.pst_network_integration_run(g, radius = radius))
+                     legacy_ni_run(g, radius = radius))
     expect_identical(network_integration(g, radius = radius, junctions = TRUE),
-                     rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE))
+                     legacy_ni_run(g, radius = radius, junctions = TRUE))
   }
 })

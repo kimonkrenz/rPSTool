@@ -20,7 +20,8 @@ attraction_reach(
   collection = "mean",
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL
+  spatial_output_file = NULL,
+  weight_name = NULL
 )
 
 attraction_distance(
@@ -36,7 +37,8 @@ attraction_distance(
   destination_indices = TRUE,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL
+  spatial_output_file = NULL,
+  weight_name = NULL
 )
 }
 \arguments{
@@ -77,6 +79,11 @@ point or polygon. Zero and negative values are skipped by PST.}
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}. \code{spatial_output_file} is available only with \code{origin = "lines"}.}
 
+\item{weight_name}{\code{NULL}, or a short name for the weight vector (\code{attraction_values} or \code{line_weights}) used in
+the result column names (\code{..._wpopulation}). Without it, user weights are labelled \code{wv}. The name is lower-cased
+and every other character than letters, digits and \verb{_} becomes \verb{_}; the original is kept in the result metadata.
+It is a label only: it does not check that the same name always means the same values.}
+
 \item{line_weights}{\code{attraction_distance()} only. \code{NULL}, or for \code{distance = "weights"} one non-negative finite
 weight per graph line.}
 
@@ -87,8 +94,9 @@ edges for custom weighted distance (default 0).}
 omit it.}
 }
 \value{
-A data frame with one-based \code{origin_id} and \code{attraction_reach} or \code{attraction_distance} (doubles widened
-from PST's single precision). \code{attraction_distance()} also returns the integer \code{destination_index} unless
+A data frame with one-based \code{origin_id} and \code{ar_...} (attraction reach) or \code{ad_...} (attraction distance)
+(doubles widened from PST's single precision), named as described in \link{result_column_names} (for example
+\code{ar_w_rw800}). \code{attraction_distance()} also returns the integer destination index \code{di_...} unless
 \code{destination_indices = FALSE}. With \code{output_file} or \code{spatial_output_file} the results are written to a file and an
 invisible \link{pst_result_file} descriptor is returned.
 }

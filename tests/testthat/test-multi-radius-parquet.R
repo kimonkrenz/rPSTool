@@ -20,11 +20,11 @@ test_that("attribute-only Parquet: one combined table, schema 2 metadata, exact 
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   g <- segment_graph(so_write_gpq(file.path(dir, "net.parquet"), so_segments(30)))
   for (case in list(
-      list(fn = angular_choice, args = list(radius = analysis_radius(walking = c(25, 10, 60), straight = 70, angular = 170),
+      list(fn = rPSTool::angular_choice, args = list(radius = analysis_radius(walking = c(25, 10, 60), straight = 70, angular = 170),
                                                 weigh_by_length = TRUE, normalization = c("syntax", "none", "standard", "turner"),
                                                 angle_threshold = 15, angle_precision = 3),
            vary = "walking", fixed = c("straight", "angular"), roles = "choice"),
-      list(fn = angular_integration, args = list(radius = analysis_radius(steps = c(3, 1, 2), angular = 180),
+      list(fn = rPSTool::angular_integration, args = list(radius = analysis_radius(steps = c(3, 1, 2), angular = 180),
                                                      normalization = c("hillier", "turner"), weight_outputs = TRUE,
                                                      angle_threshold = 15, angle_precision = 3),
            vary = "steps", fixed = "angular", roles = "integration"))) {
@@ -40,8 +40,8 @@ test_that("attribute-only Parquet: one combined table, schema 2 metadata, exact 
     d <- as.data.frame(t)
     expect_identical(d$segment_id, frame$segment_id)
     for (nm in setdiff(names(frame), "segment_id")) mp_same_values(d[[nm]], frame[[nm]])
-    for (nm in grep("^node_count", names(frame), value = TRUE)) expect_true(t$schema$GetFieldByName(nm)$type$ToString() == "int32")
-    for (nm in grep("^(choice|integration|total)", names(frame), value = TRUE)) expect_true(t$schema$GetFieldByName(nm)$type$ToString() == "float")
+    for (nm in grep("^nc_", names(frame), value = TRUE)) expect_true(t$schema$GetFieldByName(nm)$type$ToString() == "int32")
+    for (nm in grep("^(ac|ai|td|tw|tdw)_", names(frame), value = TRUE)) expect_true(t$schema$GetFieldByName(nm)$type$ToString() == "float")
     md <- mp_meta(path)
     expect_identical(md[["rpst:schema"]], "2")
     expect_identical(md[["rpst:function"]], paste0("angular_", case$roles))
@@ -56,34 +56,35 @@ test_that("attribute-only Parquet: one combined table, schema 2 metadata, exact 
     expect_equal(params$angle_threshold, 15); expect_equal(params$angle_precision, 3)
     expect_identical(md[["rpst:pst_commit"]], unname(rPSTool:::.pst_engine_pin()[["pst_commit"]]))
   }
-  # a scalar call keeps schema 1 and has no manifest
+  # a scalar call keeps schema 1; it now carries the same column manifest as the multi-result schema
   scalar <- file.path(dir, "scalar.parquet")
   angular_choice(g, analysis_radius(walking = 25), normalization = "syntax", output_file = scalar)
   expect_identical(mp_meta(scalar)[["rpst:schema"]], "1")
-  expect_null(mp_meta(scalar)[["rpst:columns"]])
-  expect_identical(names(rs_read_parquet(scalar)), c("segment_id", "choice", "node_count", "total_depth", "normalized"))
+  expect_identical(vapply(mp_json(mp_meta(scalar)[["rpst:columns"]]), function(x) x$name, ""),
+                   c("ac_a_rw25_n", "nc_a_rw25", "td_a_rw25", "ac_a_rw25_c"))
+  expect_identical(names(rs_read_parquet(scalar)), c("segment_id", "ac_a_rw25_n", "nc_a_rw25", "td_a_rw25", "ac_a_rw25_c"))
 })
 
 test_that("GeoParquet spatial output: geometry, attributes, CRS and row groups pass through; results are sliced across row groups", {
   skip_multi_parquet()
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   m <- so_segments(30)
-  attrs <- so_attributes(30); attrs$choice_w25 <- seq_len(30)   # a source column that a result column replaces
+  attrs <- so_attributes(30); attrs$ac_a_rw25_n <- seq_len(30)   # a source column that a result column replaces
   src <- so_write_gpq(file.path(dir, "net.parquet"), m, attrs, chunk = 7L)
   g <- segment_graph(src)
   radius <- analysis_radius(walking = c(25, 10), angular = 180)
   norms <- c("turner", "syntax")
-  frame <- angular_choice(g, radius, normalization = norms)
+  frame <- rPSTool::angular_choice(g, radius, normalization = norms)
   out <- file.path(dir, "out.parquet")
   res <- angular_choice(g, radius, normalization = norms, spatial_output_file = out)
   expect_s3_class(res, "pst_result_file")
   expect_true(res$spatial)
-  expect_identical(res$replaced, "choice_w25")
-  expect_identical(res$appended, setdiff(names(frame), c("segment_id", "choice_w25")))
+  expect_identical(res$replaced, "ac_a_rw25_n")
+  expect_identical(res$appended, setdiff(names(frame), c("segment_id", "ac_a_rw25_n")))
   expect_identical(so_leftovers(dir), character())
   back <- so_read(out, "geoparquet")
   source_names <- setdiff(names(rs_read_parquet(src, as_data_frame = FALSE)), "geometry")
-  expect_identical(back$names, c(source_names, setdiff(names(frame), c("segment_id", "choice_w25"))))
+  expect_identical(back$names, c(source_names, setdiff(names(frame), c("segment_id", "ac_a_rw25_n"))))
   for (nm in setdiff(names(frame), "segment_id")) mp_same_values(as.numeric(back$attrs[[nm]]), frame[[nm]])
   # geometry and the untouched source attributes are byte for byte the source's
   original <- as.data.frame(rs_read_parquet(src, as_data_frame = FALSE))
@@ -99,7 +100,7 @@ test_that("GeoParquet spatial output: geometry, attributes, CRS and row groups p
   reader <- rs_pq(out)
   expect_identical(reader$num_row_groups, rs_pq(src)$num_row_groups)
   # integration, same route
-  fi <- angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE)
+  fi <- rPSTool::angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE)
   angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE,
                           spatial_output_file = file.path(dir, "int.parquet"))
   back2 <- so_read(file.path(dir, "int.parquet"), "geoparquet")
@@ -114,8 +115,8 @@ test_that("native NaN and infinities in a multi-radius GeoParquet are stored exa
   m <- matrix(unlist(ref$graphs$large_star), ncol = 4, byrow = TRUE)
   g <- segment_graph(so_write_gpq(file.path(dir, "star.parquet"), m, data.frame(id = seq_len(nrow(m)))))
   radius <- analysis_radius(walking = c(1e19, 6e18))
-  frame <- angular_integration(g, radius = radius, weigh_by_length = TRUE, normalization = c("hillier", "syntax"))
-  expect_true(any(!is.finite(frame$integration_hillier_w10000000000000000000)))
+  frame <- rPSTool::angular_integration(g, radius = radius, weigh_by_length = TRUE, normalization = c("hillier", "syntax"))
+  expect_true(any(!is.finite(frame$ai_a_rw10000000000000000000_wl_h)))
   out <- file.path(dir, "o.parquet")
   angular_integration(g, radius = radius, weigh_by_length = TRUE, normalization = c("hillier", "syntax"), spatial_output_file = out)
   back <- so_read(out, "geoparquet")
