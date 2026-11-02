@@ -20,6 +20,13 @@ test suite (`RPST_FULL_TESTS=true`, with `arrow` 26.0.0 and `sf` 1.1.3):
 
 *Pending:* win-builder and R-hub, if used. The final tarball is to be rebuilt and re-checked from the frozen release commit.
 
+## Vignette example awaiting execution
+
+The second example in `vignettes/getting-started.Rmd` (file-backed GeoParquet analysis with `spatial_output_file`) was written after
+the validated commit and has not yet been executed with `arrow` installed; the equivalent FlatGeobuf pipeline was run and
+checked. It is to be executed in the final CRAN validation runs, where `arrow` is available. The chunks are skipped when `arrow`
+(>= 25.0.0), `jsonlite` or `sf` is missing.
+
 ## R CMD check results
 
 Linux, `R CMD check --as-cran` with `_R_CHECK_CRAN_INCOMING_`, `_R_CHECK_CRAN_INCOMING_REMOTE_` and `_R_CHECK_FORCE_SUGGESTS_` enabled

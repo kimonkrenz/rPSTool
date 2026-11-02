@@ -83,24 +83,16 @@ attribute). The same table goes to \code{output_file} or \code{spatial_output_fi
 }
 \section{Limitations}{
 
-\strong{Very long chains of shortest-path steps can crash R.} PST gathers choice scores with a recursive
-procedure that has no depth limit and runs on a worker thread with the operating system's default stack. The
-recursion depth is set by the longest chain of consecutive shortest-path steps reachable within the radius
-(equal-cost ties included), not by the number of segments in the network. A very long, nearly straight
-sequence of short segments analysed with an unrestricted or large radius can exhaust the stack and terminate
-the R process without an R error.
+\strong{Very long chains of shortest-path steps can crash R.} PST's Angular Choice calculation recurses once per step
+along a chain of consecutive shortest-path steps, with no depth limit. On a very long, nearly straight chain of short
+segments, analysed with an unrestricted or large radius, the stack can be exhausted and the R process terminates without
+an R error. rPSTool has no safeguard against this. The failure has been reproduced on synthetic chains (for example
+8,000 segments on macOS ARM64); the usable depth depends on the platform.
 
-What has been observed: an unrestricted 8,000-segment collinear chain terminated the process on macOS ARM64,
-whereas a radius-limited run of the same chain succeeded. With an 8 MB thread stack on Linux, chains of tens of thousands
-of segments completed. The failure has only been reproduced on synthetic chains, and no realistic street
-network is known to reach such depths. The usable depth depends on the platform, compiler and flags, and has not
-been measured on Windows.
-
-Workaround: restrict the radius. A \code{steps} radius bounds the depth by its value, and a \code{walking} or \code{straight}
-radius by the number of segments that fit inside it. An \code{angular} radius does not bound runs of
-near-collinear segments. \code{\link[=angular_integration]{angular_integration()}} shares part of this recursion with a larger tolerance. rPSTool does not change
-PST's traversal. See \code{KNOWN_LIMITATIONS.md} in the repository and
-\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md}.
+What to do: restrict the radius. A \code{steps} radius bounds the depth by its value, and a \code{walking} or \code{straight} radius by
+the number of segments that fit inside; an \code{angular} radius does not bound runs of near-collinear segments.
+\code{\link[=angular_integration]{angular_integration()}} shares part of this recursion with a larger tolerance. See \code{KNOWN_LIMITATIONS.md} in the
+repository.
 }
 
 \examples{
