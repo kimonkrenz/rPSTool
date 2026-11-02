@@ -47,19 +47,19 @@ test_that("persisted angular results equal the in-memory results and the direct-
       }
       persisted <- rs_read(file)
       note(label, rs_diff_tables(persisted, memory))
-      if (!identical(legacy_names(out$columns), names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
+      if (!identical(out$columns, names(memory)) || !identical(out$rows, nrow(memory))) note(label, "descriptor")
       if (case$routine == "integration") {
-        note(label, rs_diff_reference(persisted$integration, case$normalized[[norm]]))
-        note(label, rs_diff_reference(persisted$total_weight, case$weights))
-        note(label, rs_diff_reference(persisted$total_depth_weight, case$depth_weights))
+        note(label, rs_diff_reference(pick(persisted, "^ai_"), case$normalized[[norm]]))
+        note(label, rs_diff_reference(pick(persisted, "^tw_"), case$weights))
+        note(label, rs_diff_reference(pick(persisted, "^tdw_"), case$depth_weights))
       } else {
-        note(label, rs_diff_reference(persisted$choice, case$scores))
-        note(label, rs_diff_reference(persisted$normalized, case$normalized[[norm]]))
-        if (case$weighted) note(label, rs_diff_reference(persisted$total_depth_weight, case$depth_weights))
+        note(label, rs_diff_reference(pick(persisted, re_ac_raw), case$scores))
+        note(label, rs_diff_reference(pick(persisted, re_ac_norm), case$normalized[[norm]]))
+        if (case$weighted) note(label, rs_diff_reference(pick(persisted, "^tdw_"), case$depth_weights))
       }
       if (!identical(persisted$segment_id, seq_along(case$counts))) note(label, "segment_id")
-      if (!identical(persisted$node_count, as.integer(unlist(case$counts)))) note(label, "node_count")
-      note(label, rs_diff_reference(persisted$total_depth, case$depths))
+      if (!identical(pick(persisted, "^nc_"), as.integer(unlist(case$counts)))) note(label, "node_count")
+      note(label, rs_diff_reference(pick(persisted, "^td_"), case$depths))
       for (column in persisted) if (is.double(column)) { nan <- nan + sum(is.nan(column)); inf <- inf + sum(is.infinite(column)) }
       written <- written + 1
     }
@@ -88,7 +88,7 @@ test_that("column selection, parameters and worker counts follow the in-memory c
           memory <- do.call(angular_integration, args)
           do.call(angular_integration, c(args, list(output_file = file, overwrite = TRUE)))
           what <- rs_diff_tables(rs_read(file), memory)
-          if (!identical(names(memory), legacy_integration_names(weigh || wo))) what <- "names helper"
+          if (!columns_match(memory, c("^segment_id$", "^ai_", "^nc_", "^td_", if (weigh || wo) c("^tw_", "^tdw_")))) what <- "names helper"
           if (nzchar(what)) problems <- c(problems, paste("integration", threads, weigh, wo, norm, what))
           runs <- runs + 1
         }
@@ -100,7 +100,7 @@ test_that("column selection, parameters and worker counts follow the in-memory c
           memory <- do.call(angular_choice, args)
           do.call(angular_choice, c(args, list(output_file = file, overwrite = TRUE)))
           what <- rs_diff_tables(rs_read(file), memory)
-          if (!identical(names(memory), legacy_choice_names(weigh, norm))) what <- "names helper"
+          if (!columns_match(memory, c("^segment_id$", "^ac_.*_n(_at[0-9mp]+)?(_ap[0-9mp]+)?$", "^nc_", "^td_", if (weigh) "^tdw_", if (norm != "none") "^ac_"))) what <- "names helper"
           if (nzchar(what)) problems <- c(problems, paste("choice", threads, weigh, norm, what))
           runs <- runs + 1
         }
@@ -127,8 +127,8 @@ test_that("float columns are stored as float32 and counts as int32; the schema i
   expect_false(any(vapply(schema$fields, function(f) f$nullable, NA)))
   # floats are exactly representable: widening the stored float32 reproduces the in-memory double bit for bit
   memory <- angular_choice(g, weigh_by_length = TRUE, normalization = "syntax", radius = analysis_radius(steps = 4))
-  expect_identical(rs_bytes(rs_read(file)$choice), rs_bytes(memory$choice))
-  expect_true(all(memory$choice == as.double(readBin(writeBin(memory$choice, raw(), size = 4L), "numeric", n = nrow(memory), size = 4L))))
+  expect_identical(rs_bytes(pick(rs_read(file), re_ac_raw)), rs_bytes(pick(memory, re_ac_raw)))
+  expect_true(all(pick(memory, re_ac_raw) == as.double(readBin(writeBin(pick(memory, re_ac_raw), raw(), size = 4L), "numeric", n = nrow(memory), size = 4L))))
 })
 
 test_that("the pst_result_file descriptor is returned invisibly and in-memory calls are unchanged", {

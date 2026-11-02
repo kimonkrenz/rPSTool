@@ -118,7 +118,7 @@ test_that("every eligible analysis writes the source geometry and attributes plu
           expect_identical(unname(res$attrs[[col]]), unname(mem[[col]]), info = paste(format, indexed, kind, name, col))
           expect_identical(unname(res$attrs[[col]]), unname(exp$fresh[-1L][[col]]), info = paste(format, indexed, kind, name, col, "fresh"))
         }
-        expect_identical(desc$rows, 30L); expect_identical(legacy_names(desc$appended), names(mem)); expect_identical(desc$replaced, character())
+        expect_identical(desc$rows, 30L); expect_identical(desc$appended, names(mem)); expect_identical(desc$replaced, character())
         checked <- checked + 1
       }
     }
@@ -162,7 +162,7 @@ test_that("a result column with a source column's name needs overwrite = TRUE an
     expect_false(file.exists(out1)); expect_length(so_leftovers(dir), 0L)
     d1 <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2), spatial_output_file = out1, overwrite = TRUE)
     expect_identical(d1$replaced, c("ac_a_rs2_n", "nc_a_rs2")); expect_identical(d1$appended, "td_a_rs2")
-    r1 <- so_read(out1, format, legacy = FALSE)
+    r1 <- so_read(out1, format)
     expect_identical(names(r1$attrs), c(names(attrs), "td_a_rs2"))        # in-place replacement, one appended, no duplicates
     mem <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2))
     expect_identical(unname(r1$attrs$ac_a_rs2_n), mem$ac_a_rs2_n); expect_identical(unname(r1$attrs$nc_a_rs2), mem$nc_a_rs2)
@@ -174,7 +174,7 @@ test_that("a result column with a source column's name needs overwrite = TRUE an
     out2 <- file.path(dir, paste0("o2.", so_ext[[format]]))
     d2 <- rPSTool::angular_choice(g2, radius = analysis_radius(steps = 3), spatial_output_file = out2)
     expect_identical(d2$replaced, character()); expect_identical(d2$appended, c("ac_a_rs3_n", "nc_a_rs3", "td_a_rs3"))
-    r2 <- so_read(out2, format, legacy = FALSE)
+    r2 <- so_read(out2, format)
     expect_identical(names(r2$attrs), c(names(r1$attrs), d2$appended)); expect_false(anyDuplicated(names(r2$attrs)) > 0)
     # the same calculation on its own output is a collision again
     out3 <- file.path(dir, paste0("o3.", so_ext[[format]]))
@@ -227,7 +227,7 @@ test_that("GeoParquet: source row-group layout, column types and metadata surviv
   src <- rs_read_parquet(path, as_data_frame = FALSE); res <- rs_read_parquet(out, as_data_frame = FALSE)
   for (nm in ss$names) expect_true(src$GetColumnByName(nm)$Equals(res$GetColumnByName(nm)), info = nm)
   mem <- angular_integration(g, steps = 3)
-  expect_identical(as.vector(res$GetColumnByName("ai_a_rs3_t")), mem$integration)
+  expect_identical(as.vector(res$GetColumnByName("ai_a_rs3_t")), pick(mem, "^ai_"))
   # a batch size that does not divide the source row groups
   md <- rPSTool:::.pst_result_metadata("x", list(), "segment", 30, g)
   desc <- rPSTool:::.pst_write_result_file(NULL, FALSE, export = function(stream, batch_rows)
@@ -235,7 +235,7 @@ test_that("GeoParquet: source row-group layout, column types and metadata surviv
             c("segment_id", "ai_a_rs3_t", "nc_a_rs3", "td_a_rs3"), names(md), unname(md), batch_rows),
     columns = c("segment_id", "ai_a_rs3_t", "nc_a_rs3", "td_a_rs3"), expected_rows = 30, batch_rows = 4,
     spatial_output_file = file.path(dir, "b4.parquet"), graph = g, metadata = md)
-  expect_identical(as.vector(rs_read_parquet(file.path(dir, "b4.parquet"), as_data_frame = FALSE)$GetColumnByName("ai_a_rs3_t")), mem$integration)
+  expect_identical(as.vector(rs_read_parquet(file.path(dir, "b4.parquet"), as_data_frame = FALSE)$GetColumnByName("ai_a_rs3_t")), pick(mem, "^ai_"))
 })
 
 # ---- nulls and non-finite values, driven by the synthetic native producer ---------------------------------------------------
@@ -585,10 +585,10 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
   expect_false(grepl('"steps\\":2', m3, fixed = TRUE))   # nothing of the first calculation survives
   for (mm in list(m1, m2, m3)) expect_identical(lengths(regmatches(mm, gregexpr('"rpst:function"', mm, fixed = TRUE))), 1L)   # no duplicate keys
   # each calculation has its own columns (different radii and analyses accumulate; nothing is duplicated)
-  expect_identical(so_read(o3, "flatgeobuf", legacy = FALSE)$names,
-                   c(names(so_read(src, "flatgeobuf", legacy = FALSE)$attrs), "ac_a_rs2_n", "nc_a_rs2", "td_a_rs2",
+  expect_identical(so_read(o3, "flatgeobuf")$names,
+                   c(names(so_read(src, "flatgeobuf")$attrs), "ac_a_rs2_n", "nc_a_rs2", "td_a_rs2",
                      "ai_a_rs5_t", "nc_a_rs5", "td_a_rs5", "ac_a_rs9_n", "nc_a_rs9", "td_a_rs9"))
-  expect_identical(so_read(o3, "flatgeobuf", legacy = FALSE)$attrs$ac_a_rs9_n,
+  expect_identical(so_read(o3, "flatgeobuf")$attrs$ac_a_rs9_n,
                    rPSTool::angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9))$ac_a_rs9_n)
 
   # an rPSTool object that ALSO holds an unrelated pair: the unrelated pair survives byte for byte, rPSTool's pairs are refreshed
@@ -620,7 +620,7 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
     angular_integration(segment_graph(op), steps = 3, spatial_output_file = oo)
     expect_identical(so_fgb_meta(oo), before, info = basename(op))   # preserved byte for byte, never extended or corrupted
     expect_identical(so_read(oo, "flatgeobuf")$wkb, so_read(op, "flatgeobuf")$wkb)
-    expect_true("ai_a_rs3_t" %in% so_read(oo, "flatgeobuf", legacy = FALSE)$names)
+    expect_true("ai_a_rs3_t" %in% so_read(oo, "flatgeobuf")$names)
   }
   expect_length(so_leftovers(dir), 0L)
 })

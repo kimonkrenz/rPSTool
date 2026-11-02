@@ -46,7 +46,7 @@ test_that("both attraction bindings match supported pinned native modes", {
       at_check(out[[2L]], case$scores)
       expect_identical(names(out)[1L], "origin_id")
       if (case$analysis == "distance" && isTRUE(args$destination_indices))
-        expect_identical(out$destination_index, as.integer(unlist(case$indices)))
+        expect_identical(pick(out, "^di_"), as.integer(unlist(case$indices)))
       else expect_length(out, 2L)
     }
     for (g in graphs) at_native("graph_release", g$ptr)
@@ -73,7 +73,7 @@ test_that("only straight-only group Distance is rejected before PST computation"
     weights <- if (distance == "weights") c(1,2) else NULL
     out <- attraction_distance(g,a,origin="point_groups",distance=distance,line_weights=weights)
     expect_false(anyNA(out))
-    expect_identical(out$destination_index,c(0L,0L))
+    expect_identical(pick(out, "^di_"),c(0L,0L))
     expect_equal(out[[2L]],attraction_distance(g,a,origin="point_groups",distance=distance,
                                                   destination_indices=FALSE,line_weights=weights)[[2L]])
   }
@@ -150,8 +150,8 @@ test_that("malformed attraction inputs fail at the native boundary without damag
   expect_error(at_native("attraction_distance",g$ptr,analysis_radius(),"lines","axmeter",a,
                          NULL,NULL,NULL,0,TRUE), "Unsupported distance")
   zero_cost <- c(0,0); negative_value <- -1
-  expect_identical(attraction_distance(g,a,distance="weights",line_weights=zero_cost)$attraction_distance,c(0,0))
-  expect_identical(attraction_reach(g,a,attraction_values=negative_value)$attraction_reach,c(0,0))
+  expect_identical(pick(attraction_distance(g,a,distance="weights",line_weights=zero_cost), "^ad_"),c(0,0))
+  expect_identical(pick(attraction_reach(g,a,attraction_values=negative_value), "^ar_"),c(0,0))
   at_native("graph_release",g$ptr)
 })
 
