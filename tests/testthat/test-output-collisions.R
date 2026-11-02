@@ -73,6 +73,10 @@ test_that("axial analyses with custom weights are checked before native computat
   expect_error(rPSTool::network_betweenness(g, analysis_radius(steps = 2), weights = w, weight_name = "Population", spatial_output_file = out),
                "already exist in the source: nb_s_rs2_wpopulation_n")
   expect_false(file.exists(out)); expect_identical(so_md5(src), before)
+  # names that normalise to the same identifier name the same column, so they collide as well
+  expect_error(rPSTool::network_betweenness(g, analysis_radius(steps = 2), weights = w, weight_name = "POPULATION (%)", spatial_output_file = out),
+               "already exist in the source: nb_s_rs2_wpopulation_n")
+  expect_false(file.exists(out))
   # a different weight name is a different quantity: no collision, the calculation starts
   expect_error(rPSTool::network_betweenness(g, analysis_radius(steps = 2), weights = w, weight_name = "jobs", spatial_output_file = out),
                col_sentinel)
@@ -84,8 +88,8 @@ test_that("name validation precedes both collision handling and native computati
   g <- axial_graph(col_fgb_axial(dir, character())); col_mock_native()
   w <- rep(1, g$n_lines)
   expect_error(rPSTool::network_betweenness(g, weights = w), "Custom weights require weight_name")
-  expect_error(rPSTool::network_betweenness(g, weights = w, weight_name = "Jobs-2021"), "weight_name")
-  expect_error(rPSTool::network_betweenness(g, weights = w, weight_name = "Jobs-2021", spatial_output_file = file.path(dir, "o.fgb")), "weight_name")
+  expect_error(rPSTool::network_betweenness(g, weights = w, weight_name = "%%"), "weight_name")
+  expect_error(rPSTool::network_betweenness(g, weights = w, weight_name = "%%", spatial_output_file = file.path(dir, "o.fgb")), "weight_name")
   expect_false(file.exists(file.path(dir, "o.fgb")))
 })
 

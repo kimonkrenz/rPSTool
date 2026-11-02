@@ -35,16 +35,18 @@
 # Weight identifiers that would collide with a built-in weighting code: `wl` is length weighting.
 .pst_nm_reserved_weights <- "l"
 
-# Strict normalisation of a user weight identifier: lower case, spaces become '_', and only the ASCII letters a-z, digits and
-# '_' are allowed; anything else is an error (never silently replaced). The name is never truncated, and the original
-# is kept in the metadata. Different identifiers that normalise alike (`Jobs 2021`, `jobs_2021`) name the same field.
+# Automatic normalisation of a user weight name: lower case; every run of characters outside [a-z0-9_] becomes one '_';
+# leading and trailing underscores are removed. Only a name that is empty or has no letter or digit left is an error. The
+# name is never truncated and the original is kept in the metadata. Names that normalise alike (`Jobs 2021`, `Jobs-2021`,
+# `jobs_2021`) give the same column name, which the collision checks then treat as the same field.
 .pst_nm_weight_id <- function(name, arg) {
   if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name))
     stop(arg, " must be one non-empty string, for example ", arg, " = \"population\".", call. = FALSE)
-  id <- gsub(" ", "_", tolower(name), fixed = TRUE)
-  if (!grepl("^[a-z0-9_]+$", id) || !grepl("[a-z0-9]", id))
-    stop(arg, " = \"", name, "\" is not a valid weight identifier: use only the letters a-z, digits, spaces and '_' ",
-         "(spaces become '_'), with at least one letter or digit.", call. = FALSE)
+  id <- gsub("[^a-z0-9_]+", "_", tolower(enc2utf8(name)), perl = TRUE)
+  id <- gsub("^_+|_+$", "", id, perl = TRUE)
+  if (!grepl("[a-z0-9]", id, perl = TRUE))
+    stop(arg, " = \"", name, "\" contains no letter or digit, so it cannot name the weights. Supply a descriptive ",
+         "identifier, for example ", arg, " = \"population\".", call. = FALSE)
   if (id %in% .pst_nm_reserved_weights)
     stop(arg, " = \"", name, "\" would give the weight code 'w", id, "', which is reserved for length weighting. ",
          "Choose a longer name.", call. = FALSE)

@@ -12,7 +12,8 @@ First release.
 * `network_betweenness()`, `attraction_reach()`, `attraction_distance()` and `od_betweenness()` gain a
   required `weight_name` (`origin_weight_name` and `destination_weight_name` for the latter) whenever custom weights are
   supplied; the name becomes part of the column names. Weights without a name, a name without weights, and names with
-  characters other than `a-z`, `0-9`, space and `_` are errors raised before any calculation.
+  no letter or digit are errors raised before any calculation. Names are normalised automatically (lower case, runs of other
+  characters become one `_`, outer underscores removed: `Jobs-2021` gives `jobs_2021`); the original is kept in the metadata.
 * Existing result columns in a spatial-output source are detected before the native calculation starts: a clash needs
   `overwrite = TRUE` (replacing the column in the new file only), and a clash differing only by letter case is always an error.
 * The metadata of every result file carries a `rpst:columns` manifest describing each column.

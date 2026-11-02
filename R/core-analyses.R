@@ -120,8 +120,8 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #'   see [pst_result_file]. In a result file, the `NA` values described below are stored as nulls.
 #' @param weight_name Required whenever `weights` is supplied, and an error otherwise: a descriptive name for the
 #'   weights (for example `"population"`) used in the result column names (`..._wpopulation_...`). It is lower-cased,
-#'   spaces become `_`, and only the letters a-z, digits and `_` are allowed; anything else is an error. The original is
-#'   kept in the result metadata. It is a label only: it does not check that the same name always means the same values.
+#'   every run of other characters becomes one `_` and leading/trailing underscores are dropped (`"Jobs-2021"` gives
+#'   `jobs_2021`); only a name with no letter or digit left is an error. The original is kept in the result metadata. It is a label only: it does not check that the same name always means the same values.
 #' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`, or `at_...` with
 #'   `attraction_points`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
 #'   (`..._s`, `..._f` or `..._y`) when requested; see [result_column_names]. The raw score and `"standard"`
