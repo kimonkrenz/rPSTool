@@ -1,100 +1,82 @@
-#' Construct an in-memory PST axial graph from two-point lines
+#' Build an axial graph from lines
 #'
-#' Calls the pinned PST v3.3.2 `PSTACreateGraph` routine. Indexed endpoints,
-#' unlinks, retained points and polygon-generated point groups use the same
-#' native builder. Each matrix row is
-#' one line in the default four-column `x1, y1, x2, y2` interface. With
-#' indexed coordinates, rows of `line_indices` define lines. Column names are
-#' optional and do not change that order. Lines are passed unchanged to PST's
-#' axial graph builder, which finds their crossings; they are not automatically
-#' split into a separate PST segment graph.
+#' Creates an axial graph, the representation PST uses for axial-line and crossing-based analyses
+#' ([network_integration()], [network_reach()], [network_betweenness()], [od_betweenness()],
+#' [attraction_reach()] and [attraction_distance()]). The graph is built once and can be reused by any
+#' number of analyses. PST finds the crossings between the lines; the lines are not split into segments (use
+#' [create_segment_map()] and [segment_graph()] for segment-based analyses).
 #'
-#' Coordinates must be finite (except NaN/NaN polygon ring separators), and
-#' their extent must fit PST's native local float and squared-distance
-#' representation. PST centres double coordinates and stores local coordinates
-#' as floats; lengths and positions reflect that rounding, and rPSTool preserves
-#' that behaviour. Sampling intervals must fit native float storage, and a
-#' conservative perimeter/interval bound must fit signed native point counts.
-#' No snapping, reprojection, filtering, reordering or unit conversion is
-#' performed.
+#' @details
+#' **Lines.** Each row of a four-column matrix is one line: `x1, y1, x2, y2`. Column names are optional and
+#' do not change that order. Alternatively, supply a two-column matrix of coordinates (`x, y`) and a
+#' `line_indices` matrix whose rows give the one-based coordinate rows of each line's endpoints. Unused
+#' coordinates still affect PST's world origin. Rows and endpoint direction are preserved, and nothing is
+#' snapped, reprojected, filtered, reordered or converted between units.
 #'
-#' PST samples each closed polygon ring beginning at its first corner, carries
-#' spacing across edges and adjusts the closing gap. Ring order and empty groups
-#' are preserved. Polygon corner counts include separator rows. `n_points` counts
-#' generated samples rather than supplied corners. `n_point_groups` uses the
-#' native graph getter because the pinned exported info routine always reports
-#' zero.
-#' This matrix interface has no CRS metadata: supply suitable planar coordinates
-#' in the units intended for subsequent analyses.
+#' **Coordinates.** Coordinates must be finite (except `NaN`/`NaN` polygon-ring separators) and their extent
+#' must fit PST's single-precision local coordinates. PST centres the coordinates and stores them as
+#' single-precision values, so lengths and positions reflect that rounding. Supply planar coordinates in the
+#' units you intend to use for radii. A matrix carries no coordinate reference system.
 #'
-#' With optional package `sf` installed, `x` also accepts `sf`/`sfc` XY
-#' LINESTRING features with exactly two vertices, or POINT features when using
-#' `line_indices`. `unlinks` accepts XY POINT features. `points` accepts XY POINT
-#' or POLYGON features; polygon counts are derived (leave `points_per_polygon`
-#' NULL) and `polygon_point_interval` is still required. Polygon rings retain
-#' order and winding; only their final repeated closing coordinate is removed,
-#' and NaN/NaN separates rings. Each POLYGON feature is one native group sampling
-#' all its ring boundaries, including holes. Empty POLYGON features retain empty
-#' groups. MULTIPOLYGON, multipart lines/points, collections, empty POINT/LINESTRING
-#' features and Z/M are rejected. No input attributes are interpreted or retained.
+#' **Unlinks.** Each row of `unlinks` is a point that removes the nearest eligible crossing; PST applies no
+#' tolerance. A crossing is eligible only if the first line of the pair crosses in its interior.
 #'
-#' File input. `x` may instead be one character path to a GeoParquet (1.0/1.1,
-#' WKB) or FlatGeobuf (major version 3) file; the format is identified from the file
-#' content, not its extension, with the file contract documented for
-#' [segment_graph()]: every feature is one non-null XY LineString with
-#' exactly two finite vertices, geographic CRS is rejected, and nothing is split,
-#' snapped, reprojected or repaired. `line_indices` must be NULL with a path;
-#' `unlinks`, `points`, `points_per_polygon` and
-#' `polygon_point_interval` keep their matrix or sf forms. Lines are used in the
-#' file's physical order, which fixes line numbering, crossing order and which line of
-#' a pair is first for unlink eligibility; a spatially indexed FlatGeobuf is stored in
-#' Hilbert order, not the writer's order. The file's CRS becomes the graph's
-#' `crs` attribute, and sf `unlinks`/`points` must have compatible CRS
-#' (unknown cannot be mixed with known; matrices carry no CRS). The file is read in
-#' one pass into a transient native coordinate array and then discarded; no sf object
-#' or R coordinate matrix is built, but PST's own graph storage still dominates memory.
+#' **Points and polygons.** `points` adds points to the graph, which are assigned to their nearest line and
+#' are used by the attraction analyses and by [od_betweenness()]. With `points_per_polygon`, `points` holds
+#' polygon corners instead. `points_per_polygon` gives the number of corner rows of each polygon,
+#' including separator rows. `NaN`/`NaN` rows separate rings within one polygon, and each ring closes
+#' automatically, so do not repeat its first corner. PST samples every closed ring at
+#' `polygon_point_interval`, starting at the first corner, carrying the spacing across edges and adjusting
+#' the closing gap. Each polygon becomes one point group. Ring order and empty groups are preserved, and
+#' `n_points` counts the generated samples, not the corners.
 #'
-#' Known geographic CRS is rejected: transform explicitly before calling PST.
-#' Multiple sf inputs must have compatible CRS, including missing CRS (unknown
-#' cannot be mixed with known). Unknown CRS is allowed on user responsibility.
-#' Mixed matrix/sf coordinates must already share the same coordinate frame;
-#' matrices are not assigned a CRS or converted. Projected units are unchanged.
-#' Only sf CRS metadata is retained as the graph's `crs` attribute; geometry and
-#' input objects are not retained. Matrix-only calls keep their existing contract.
+#' **`sf` input.** With the suggested package 'sf', `x` may be an `sf` or `sfc` object of XY LINESTRING
+#' features with exactly two vertices (or POINT features when `line_indices` is used). `unlinks` accepts XY
+#' POINT features and `points` accepts XY POINT or POLYGON features. For polygons the corner counts are
+#' derived (leave `points_per_polygon` as `NULL`), while `polygon_point_interval` is still required. Polygon
+#' rings keep their order and winding and only the repeated closing coordinate is removed; holes are sampled
+#' along with the outer ring. Attributes are ignored.
 #'
-#' The graph lives on the native heap until its external pointer becomes
-#' unreachable and R finalises it with `PSTAFreeGraph`. Copying the R object
-#' shares ownership of the same pointer. Native graphs cannot be persisted
-#' with `saveRDS()` or sent to another R process: reconstruct from coordinates
-#' after reading or transferring data. Inputs are not retained. The finalizer
-#' calls `PSTAFreeGraph` once after the last external-pointer reference
-#' disappears. Inspection and analysis results own independent R storage.
+#' **File input.** `x` may instead be one path to a GeoParquet (1.0 or 1.1, WKB) or FlatGeobuf (major
+#' version 3) file whose features are all two-vertex XY LineStrings; the format is recognised from the file
+#' content, not its extension. See [segment_graph()] for the file contract. `line_indices` must be `NULL`
+#' with a path. Lines are used in the file's physical order, which fixes line numbering and crossing order
+#' (a spatially indexed FlatGeobuf is stored in Hilbert order rather than the writer's order). The file's
+#' coordinate reference system becomes the graph's `crs` attribute. The file is read in one pass without
+#' building an `sf` object or an R coordinate matrix.
 #'
-#' @param x An integer or double matrix with at least one row: four columns `x1, y1, x2, y2`, or
-#'   two columns `x, y` when `line_indices` is supplied; or one character path to a
+#' **Coordinate reference systems.** A known geographic CRS is rejected: transform to a projected CRS
+#' yourself. When several `sf` inputs are supplied their CRS must be compatible, and an unknown CRS cannot be
+#' mixed with a known one. An unknown CRS is allowed on your responsibility, and mixed matrix and `sf`
+#' inputs must already share the same coordinate frame. Only the CRS is retained, as the graph's `crs`
+#' attribute.
+#'
+#' **Using the graph.** The graph is held in native memory and is released automatically once no R object
+#' refers to it. It cannot be saved with `saveRDS()` or sent to another R process; rebuild it from the
+#' coordinates instead. Inputs are not retained.
+#'
+#' @section Limitations:
+#' MULTIPOLYGON, multipart lines or points, geometry collections, empty POINT or LINESTRING features and Z/M
+#' coordinates are rejected. Native graphs cannot be serialised (see Details).
+#'
+#' @param x An integer or double matrix with at least one row: four columns `x1, y1, x2, y2`, or two
+#'   columns `x, y` when `line_indices` is supplied; an `sf`/`sfc` object (see Details); or one path to a
 #'   GeoParquet or FlatGeobuf file of two-vertex LineStrings.
-#' @param line_indices Optional numeric two-column matrix of whole one-based
-#'   indices into `x`. Each row defines a line; unused coordinates still affect
-#'   PST's world origin. Rows and endpoint direction are preserved.
-#' @param unlinks Optional numeric two-column coordinate matrix. Each unlink
-#'   removes the nearest eligible pairwise crossing; PST applies no tolerance.
-#'   Eligibility requires the first line of the pair to cross in its interior.
-#' @param points Optional numeric two-column matrix of graph points, or polygon
-#'   corners when `points_per_polygon` is supplied. PST retains native nearest-
-#'   line assignments. Polygon rings close automatically; do not repeat their
-#'   first corner. NaN/NaN rows separate rings within a polygon (NA is invalid).
-#' @param points_per_polygon Optional numeric vector of non-negative whole
-#'   corner-row counts, including separator rows, summing to `nrow(points)`.
-#'   Each polygon produces one native point group; zero counts retain empty groups.
-#' @param polygon_point_interval Positive finite native-float sampling interval,
-#'   required with polygons. PST generates points along the closed ring edges.
-#'   Optional coordinate matrices may have zero rows. All construction inputs are
-#'   copied by PST and are not retained by the R wrapper.
-#' @return An S3 `pst_graph` list containing `ptr` (an owned external pointer),
-#'   `type` (`"axial"`), `n_lines`, `n_crossings`, `n_points`, `n_point_groups`
-#'   (counts read from PST), and `pst_version` (`"3.3.2"`). Treat these fields as
-#'   read-only. Geometry is held by PST rather than the R list. Printing
-#'   (`print.pst_graph()`) returns the object invisibly.
+#' @param line_indices Optional two-column numeric matrix of whole, one-based indices into the rows of `x`.
+#'   Each row defines one line.
+#' @param unlinks Optional two-column numeric matrix of `x, y` coordinates (or XY POINT features) that
+#'   remove the nearest eligible crossing.
+#' @param points Optional two-column numeric matrix of points to add to the graph, or of polygon corners
+#'   when `points_per_polygon` is supplied.
+#' @param points_per_polygon Optional vector of non-negative whole numbers: the number of corner rows (including
+#'   separator rows) of each polygon, summing to `nrow(points)`. A zero keeps an empty group.
+#' @param polygon_point_interval Positive, finite sampling interval in coordinate units. Required with
+#'   polygons.
+#' @return An object of class `pst_graph`: a list with `type` (`"axial"`), `n_lines`, `n_crossings`,
+#'   `n_points`, `n_point_groups` (counts read from PST) and `pst_version`, plus the native handle `ptr`.
+#'   Treat these fields as read-only. `print()` shows a summary and returns the object invisibly.
+#' @seealso [segment_graph()] for segment-based analyses, [axial_line_lengths()] and [axial_crossing_coords()]
+#'   to inspect the graph, [load_example_data()] for an example network.
 #' @export
 #' @examples
 #' lines <- rbind(c(0, 0, 2, 0), c(1, -1, 1, 1))
@@ -164,22 +146,24 @@ print.pst_graph <- function(x, ...) {
   invisible(x)
 }
 
-#' Inspect native axial graph lengths and crossings
+#' Inspect the lines and crossings of an axial graph
 #'
-#' Calls `PSTAGetGraphLineLengths` and `PSTAGetGraphCrossingCoords`. Lengths are
-#' native float values widened to doubles. Crossings are native local floats
-#' converted back to world doubles, in PST's crossing order, including endpoint
-#' joins retained by PST. No ordering, rounding or values are computed in R.
-#' @param graph A live axial `pst_graph` created by [axial_graph()].
-#' @param output Geometry return form for `axial_crossing_coords()`:
-#'   `"native"` (default matrix) or `"sf"` (requires optional package `sf`).
-#' @return `axial_line_lengths()` returns a double vector in input line-row
-#'   order. `axial_crossing_coords()` returns a double matrix with columns
-#'   `x, y`, including a zero-row matrix when there are no crossings.
-#'   Both results own their R storage independently of the graph.
-#'   With `output = "sf"`, crossing coordinates become XY POINT geometry with
-#'   one-based `crossing_id` in native crossing order, and the graph's retained
-#'   CRS (otherwise unknown). Coordinates come solely from the native output.
+#' `axial_line_lengths()` returns the length of every line in a graph and `axial_crossing_coords()` returns
+#' the coordinates where PST found the lines to cross. Both read values stored in the graph; nothing is
+#' recalculated.
+#'
+#' @details
+#' Lengths are PST's single-precision values widened to doubles, so they reflect PST's coordinate rounding.
+#' Crossings are listed in PST's crossing order, including endpoint joins that PST retains.
+#'
+#' @param graph An axial graph created by [axial_graph()].
+#' @param output For `axial_crossing_coords()`: `"native"` (default) returns a matrix and `"sf"` returns
+#'   point geometry (requires the suggested package 'sf').
+#' @return `axial_line_lengths()` returns a numeric vector in the row order of the lines supplied to
+#'   [axial_graph()]. `axial_crossing_coords()` returns a numeric matrix with columns `x` and `y`, with zero
+#'   rows when there are no crossings. With `output = "sf"` the crossings are XY POINT features with a
+#'   one-based `crossing_id` in the same order, carrying the graph's CRS (unknown if it has none).
+#' @seealso [axial_graph()]
 #' @export
 #' @examples
 #' g <- axial_graph(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1)))

@@ -2,22 +2,20 @@
 % Please edit documentation in R/isovist.R
 \name{isovist_context_free}
 \alias{isovist_context_free}
-\title{Release a native isovist context}
+\title{Release an isovist context}
 \usage{
 isovist_context_free(context)
 }
 \arguments{
-\item{context}{A \code{pst_isovist_context}.}
+\item{context}{An isovist context created by \code{\link[=isovist_context]{isovist_context()}}.}
 }
 \value{
-Invisibly \code{NULL}.
+\code{NULL}, invisibly.
 }
 \description{
-Explicitly releases a native isovist context. Explicit release invalidates
-every R wrapper sharing this pointer. Repeated release is safe; subsequent
-calculations reject the dead pointer. No native result escapes a calculation:
-each has already freed its dependent native result, and all returned
-calculation outputs have independent R storage.
+Releases the memory held by an isovist context. Releasing is optional, since a context is also released when it is no
+longer in use, and repeating it is safe. After release the context (and every copy of it) can no longer be used, but
+earlier results are unaffected.
 }
 \examples{
 ctx <- isovist_context()

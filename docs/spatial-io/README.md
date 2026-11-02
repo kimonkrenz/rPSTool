@@ -75,4 +75,4 @@ feature IDs, GeoPackage/Shapefile output, Arrow IPC/Feather.
 **Windows.** File publication is implemented through the Win32 API ([result files](result-files.md) §5 item 6) with the same
 contract as POSIX (exclusive temporary, no-clobber publication, replacement that preserves the old file on failure, source-file
 identity protection, Unicode paths), except that a replacement fails while another process holds the destination open without
-sharing it for deletion. The development test suite has passed on Windows; validation of the final release candidate on Windows is still outstanding (`tools/validation/windows/README.md`, [release checklist](../release-checklist.md) item 10).
+sharing it for deletion. The full development test suite and `R CMD check` passed on Windows x86-64 at commit `4119f2b` (R 4.6.2, Rtools GCC 14.3.0). The Wine-based procedure in `tools/validation/windows/README.md` has not been repeated.

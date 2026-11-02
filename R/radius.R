@@ -1,27 +1,39 @@
-#' Specify independent PST analysis radii
+#' Specify the distance limits of an analysis
 #'
-#' Each non-NULL field sets a native limit; NULL leaves that field unrestricted.
-#' Limits combine according to PST's traversal semantics. Straight and walking
-#' use coordinate length units, angular uses degrees, and axmeter is PST's
-#' accumulated length with topological weighting. No units are converted.
-#' Angular analyses reject axmeter, which their pinned engine does not consume.
-#' Native float narrowing is checked for overflow and underflow; straight also
-#' requires a finite float square. Steps use signed native integer storage.
+#' Creates the `radius` argument used by the network analyses. A radius sets up to five independent
+#' limits on how far an analysis travels from each origin. A limit left as `NULL` is unrestricted.
 #'
-#' A field may also be a vector of several values (a *multi-radius*). At most one field
-#' may hold more than one value; the other fields are fixed restrictions that apply to every
-#' calculation. The result is never a Cartesian product: `analysis_radius(walking = c(500, 1000),
-#' angular = 180)` means two calculations, each limited to 180 degrees. The supplied order is
-#' kept; `NA`, non-finite, invalid and duplicate values (duplicates also after narrowing to the native float)
-#' are rejected, as are empty vectors such as `numeric(0)` (a field must be `NULL` or hold at least one value).
-#' A radius of `0` is a valid value. Only [angular_choice()] and [angular_integration()]
-#' accept a multi-radius; every other analysis rejects it before doing any work. Each radius is
-#' expanded into an independent scalar configuration that passes the unchanged scalar
-#' validation. See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
+#' @details
+#' Each limit is expressed in its own units and nothing is converted:
 #'
-#' @param straight,walking,angular,axmeter NULL, or finite nonnegative numeric value(s); one scalar or a vector (see Details).
-#' @param steps NULL, or nonnegative whole number(s) at most 2147483647; one scalar or a vector.
-#' @return A `pst_radius` list of five independent limits.
+#' * `straight` and `walking`: coordinate length units (metres for the Barnsbury data).
+#' * `angular`: degrees of accumulated turning.
+#' * `steps`: the number of direction changes (topological steps) as a whole number.
+#' * `axmeter`: PST's accumulated length with topological weighting.
+#'
+#' When several limits are set, PST applies all of them together, following its own traversal rules.
+#' Angular analyses do not accept `axmeter`. Values must fit PST's single-precision storage: very large or
+#' vanishingly small values are rejected, and a `straight` limit must also have a finite square.
+#' `steps` must not exceed 2147483647.
+#'
+#' **Several radii in one call.** One field may hold a vector of values (a *multi-radius*), for example
+#' `analysis_radius(walking = c(500, 1000))`. The other fields are then fixed limits that apply to every
+#' calculation, so `analysis_radius(walking = c(500, 1000), angular = 180)` means two calculations, each
+#' limited to 180 degrees; no Cartesian product is formed. The order you supply is kept. Missing,
+#' non-finite, invalid and duplicate values (duplicates also after narrowing to single precision) and empty
+#' vectors are rejected. A radius of `0` is valid. Only [angular_choice()] and [angular_integration()]
+#' accept a multi-radius; every other analysis rejects it before doing any work. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
+#'
+#' Each analysis accepts a subset of the limits; see its help page. For example,
+#' [network_integration()] accepts only `steps`, and [segment_group_integration()] only `walking` and `steps`.
+#'
+#' @param straight,walking,angular,axmeter `NULL`, or finite non-negative numbers. One value, or several
+#'   for a multi-radius (see Details).
+#' @param steps `NULL`, or non-negative whole numbers no greater than 2147483647. One value, or several
+#'   for a multi-radius.
+#' @return A `pst_radius` object: a list of the five limits.
+#' @seealso [network_reach()], [network_betweenness()], [angular_choice()], [angular_integration()]
 #' @export
 #' @examples
 #' analysis_radius(walking = 100, steps = 3)

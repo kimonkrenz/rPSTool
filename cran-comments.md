@@ -1,34 +1,40 @@
 # cran-comments.md
 
-This file is completed from the final validation matrix at submission time (see `docs/release-checklist.md`); the sections marked
-*pending* have no results recorded yet.
+This file records the validation completed so far. It is finalised at submission time (see `docs/release-checklist.md`); sections
+marked *pending* have no results recorded yet.
 
 ## Submission
 
 New submission of rPSTool 0.1.0. Maintainer: Kimon Krenz <k.krenz@ucl.ac.uk>.
 
-## Pre-submission dependencies (all open)
-
-* Repository public: `URL` and `BugReports` in `DESCRIPTION` (`https://github.com/kimonkrenz/rPSTool` and `/issues`) must resolve
-  publicly before submission; the URL check has not been re-run.
-* CRAN incoming check: one `R CMD check --as-cran` with `_R_CHECK_CRAN_INCOMING_` enabled has not been run.
-* Frozen-commit validation: the full gate on one frozen commit on macOS, Windows and Linux with `arrow`, and a re-check of the tarball
-  built from that commit, have not been run. Earlier states passed on macOS and Windows; Windows validation of the release candidate
-  and the Arrow-enabled Linux gate are outstanding.
-
 ## Test environments
 
-*Pending:* local `R CMD check --as-cran` on macOS (Apple Silicon), Windows (Rtools) and Linux; win-builder or R-hub if used.
+Validated at commit `4119f2b847bafedff84f6d6fbf357196aed77add` on GitHub Actions runners, each with R 4.6.2 and the full development
+test suite (`RPST_FULL_TESTS=true`, with `arrow` 26.0.0 and `sf` 1.1.3):
+
+* Linux x86-64 (Ubuntu, GCC 15.2.0): 160,814 test expectations; `R CMD check` `Status: OK`.
+* macOS ARM64 (macos-15, Apple clang 17.0.0): 160,814 test expectations; `R CMD check` `Status: OK`.
+* Windows x86-64 (Windows Server 2022, Rtools GCC 14.3.0): 160,759 test expectations; `R CMD check` `Status: OK`. The count is 55 lower than on the other
+  platforms; this has not been independently explained. Four tests that need POSIX-only facilities are skipped on Windows by
+  design (`tools/ci/windows-test-skips.tsv`).
+
+*Pending:* win-builder and R-hub, if used. The final tarball is to be rebuilt and re-checked from the frozen release commit.
 
 ## R CMD check results
 
-*Pending.* Items that must be explained if they remain:
+Linux, `R CMD check --as-cran` with `_R_CHECK_CRAN_INCOMING_`, `_R_CHECK_CRAN_INCOMING_REMOTE_` and `_R_CHECK_FORCE_SUGGESTS_` enabled
+(commit `4119f2b`): 0 errors, 0 warnings, 1 note.
 
-* Compiler diagnostics from the bundled, pinned PST C++ engine: every diagnostic that R classes as significant is removed through verified
-  build copies; the remaining non-significant diagnostics (unused variables and functions, sign comparisons) are inventoried exactly
-  (`docs/build-and-platforms.md`).
-* Installed-size NOTE on some Linux toolchains: the shared library contains debug symbols from the platform's default compiler flags (about
-  15 MB with Debian's flags, about 1 MB without); the package does not strip symbols itself.
+* NOTE: CRAN incoming feasibility, "New submission".
+
+`R CMD check` was not run with CRAN incoming checks enabled on macOS or Windows. Items that must be explained if they remain in
+the final submission checks:
+
+* Compiler diagnostics from the bundled, pinned PST C++ engine: every diagnostic that R classes as significant is removed through
+  verified build copies; the remaining non-significant diagnostics (unused variables and functions, sign comparisons) are inventoried
+  exactly (`docs/build-and-platforms.md`). The Linux run recorded none.
+* An installed-size NOTE may appear on some Linux toolchains: the shared library then contains debug symbols from the platform's
+  default compiler flags (about 15 MB with Debian's flags, about 1 MB without); the package does not strip symbols itself.
 
 ## Notes for the reviewer
 
@@ -37,6 +43,5 @@ New submission of rPSTool 0.1.0. Maintainer: Kimon Krenz <k.krenz@ucl.ac.uk>.
 * PST creates worker threads internally. rPSTool limits them to two when `_R_CHECK_LIMIT_CORES_` is set (any non-empty value other than `false`,
   as R's parallel package does) and honours `RPST_NUM_THREADS`.
 * Result files (`output_file`, `spatial_output_file`) are written through POSIX calls on Unix-alikes and through the Win32 API
-  (`MoveFileExW`) on Windows. The Windows implementation passed the development test suite on Windows; validation of the final release
-  candidate on Windows is still outstanding (to be updated from the frozen-commit results).
+  (`MoveFileExW`) on Windows; the Windows implementation is covered by the full test suite run above.
 * `arrow`, `sf` and `jsonlite` are optional (Suggests); tests and examples that need them are skipped when they are unavailable.

@@ -3,35 +3,38 @@
 \name{axial_line_lengths}
 \alias{axial_line_lengths}
 \alias{axial_crossing_coords}
-\title{Inspect native axial graph lengths and crossings}
+\title{Inspect the lines and crossings of an axial graph}
 \usage{
 axial_line_lengths(graph)
 
 axial_crossing_coords(graph, output = c("native", "sf"))
 }
 \arguments{
-\item{graph}{A live axial \code{pst_graph} created by \code{\link[=axial_graph]{axial_graph()}}.}
+\item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{output}{Geometry return form for \code{axial_crossing_coords()}:
-\code{"native"} (default matrix) or \code{"sf"} (requires optional package \code{sf}).}
+\item{output}{For \code{axial_crossing_coords()}: \code{"native"} (default) returns a matrix and \code{"sf"} returns
+point geometry (requires the suggested package 'sf').}
 }
 \value{
-\code{axial_line_lengths()} returns a double vector in input line-row
-order. \code{axial_crossing_coords()} returns a double matrix with columns
-\verb{x, y}, including a zero-row matrix when there are no crossings.
-Both results own their R storage independently of the graph.
-With \code{output = "sf"}, crossing coordinates become XY POINT geometry with
-one-based \code{crossing_id} in native crossing order, and the graph's retained
-CRS (otherwise unknown). Coordinates come solely from the native output.
+\code{axial_line_lengths()} returns a numeric vector in the row order of the lines supplied to
+\code{\link[=axial_graph]{axial_graph()}}. \code{axial_crossing_coords()} returns a numeric matrix with columns \code{x} and \code{y}, with zero
+rows when there are no crossings. With \code{output = "sf"} the crossings are XY POINT features with a
+one-based \code{crossing_id} in the same order, carrying the graph's CRS (unknown if it has none).
 }
 \description{
-Calls \code{PSTAGetGraphLineLengths} and \code{PSTAGetGraphCrossingCoords}. Lengths are
-native float values widened to doubles. Crossings are native local floats
-converted back to world doubles, in PST's crossing order, including endpoint
-joins retained by PST. No ordering, rounding or values are computed in R.
+\code{axial_line_lengths()} returns the length of every line in a graph and \code{axial_crossing_coords()} returns
+the coordinates where PST found the lines to cross. Both read values stored in the graph; nothing is
+recalculated.
+}
+\details{
+Lengths are PST's single-precision values widened to doubles, so they reflect PST's coordinate rounding.
+Crossings are listed in PST's crossing order, including endpoint joins that PST retains.
 }
 \examples{
 g <- axial_graph(rbind(c(0, 0, 2, 0), c(1, -1, 1, 1)))
 axial_line_lengths(g)
 axial_crossing_coords(g)
+}
+\seealso{
+\code{\link[=axial_graph]{axial_graph()}}
 }

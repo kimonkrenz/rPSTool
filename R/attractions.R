@@ -1,96 +1,80 @@
-#' Calculate PST Attraction Reach and Attraction Distance
+#' Attraction Reach and Attraction Distance
 #'
-#' These analyses reuse an axial graph and its retained points or polygon point
-#' groups. PST performs all sampling, assignment, traversal, collection and
-#' decay. Outputs follow native origin order and own independent R storage.
-#' Reach supports straight, walking, steps, angular, axmeter and none distances;
-#' none uses native zero cost. Distance supports straight, walking, steps,
-#' angular and custom weights. Distance's straight mode requires no radius or
-#' a straight-only radius, and rejects point-group origins before computation:
-#' pinned PST leaves those group outputs unwritten. Network Distance rejects
-#' axmeter radii. No missing-output policy or replacement aggregation is applied.
+#' `attraction_reach()` measures how much attraction (for example shops or stations) can be reached from each
+#' origin within a radius, with optional decay. `attraction_distance()` measures the distance from each origin to
+#' the nearest attraction. Both use the attraction points or polygons stored in an axial graph.
 #'
-#' Native quirks are retained: Reach skips nonpositive attraction values and
-#' collects each group's native point prefix; finite straight line Reach applies
-#' decay at the radius. Distance's network path ignores a straight radius.
-#' Finite straight destination indices can identify the last eligible attraction.
-#' Polygon indices identify generated samples in straight mode and group network
-#' mode, and polygons in non-group network mode. Indices are returned exactly as
-#' PST writes them (zero-based, with -1 for unreachable). Native unreachable
-#' distances are -1. Written NaN/Inf and other scores are preserved.
+#' @details
+#' **Origins and attractions.** Origins are lines, junctions, or the graph's retained points or point groups
+#' (`origin`). Attractions are the points or polygon point groups supplied to [axial_graph()]; polygons are
+#' sampled by PST. Results follow PST's origin order.
 #'
-#' Calls wait for internal workers and use no R callbacks. Worker caps follow
-#' [network_betweenness()]. Graphs remain reusable; finite straight line Reach's shared
-#' native scratch query is protected in generated build copies.
+#' **Attraction Reach** accepts `"straight"`, `"walking"`, `"steps"`, `"angular"`, `"axmeter"` and `"none"`
+#' distances (`"none"` uses zero cost). Non-positive attraction values are skipped. Each point group collects its
+#' native point prefix, and a finite straight-radius line reach applies decay at the radius.
 #'
-#' Optional sf/sfc inputs require XY geometry and compatible CRS metadata with
-#' the graph when retained, including known versus unknown CRS. Known
-#' geographic CRS is rejected; transform explicitly. Matrix-only graphs have no
-#' CRS to compare: the numerical frame remains the caller's responsibility. No
-#' reprojection, unit conversion or attribute interpretation occurs; inputs are
-#' not retained.
-#' @param graph A live axial graph from [axial_graph()].
-#' @param attraction_points Integer/double matrix with zero or more rows and two
-#'   columns x,y. Native world/local coordinates and distances must fit. For
-#'   polygons, NaN/NaN separates rings; NA and unmatched NaN are rejected. Also
-#'   accepts sf/sfc XY POINT or POLYGON features. POLYGON rings lose only their
-#'   explicit final closure and use NaN/NaN separators; order, winding and holes
-#'   are preserved. PST samples all ring boundaries in one group per feature.
-#'   Empty POLYGON features represent zero-count groups; empty polygon
-#'   collections, multipart, mixed, Z/M and empty POINT features are rejected.
-#' @param radius Independent limits from [analysis_radius()].
-#' @param origin Exact name: lines, junctions, points, or point_groups. Points and
-#'   point groups are those retained by graph construction, not supplied origins.
-#' @param distance Exact name of the native distance (default `"steps"`). The accepted values differ between the two
-#'   functions. `attraction_reach()`: `"straight"`, `"walking"`, `"steps"`, `"angular"`, `"axmeter"` or `"none"`
-#'   (`"none"` uses native zero cost). `attraction_distance()`: `"straight"`, `"walking"`, `"steps"`, `"angular"` or
-#'   `"weights"` (custom weights, see `line_weights` and `point_edge_weight`); it has no `"axmeter"` or `"none"`
-#'   distance and rejects an axmeter radius. The `"straight"` radius of
-#'   `attraction_distance()` is not applied by PST to the network distances it
-#'   computes (it is ignored, not rejected). In `attraction_reach()`, a distance
-#'   that does not match the radius metrics (the default `"steps"` with a
-#'   walking radius) can be extremely slow and memory hungry, since PST then
-#'   searches steps and walking together; use `"none"` or the matching distance.
-#' @param points_per_polygon NULL for point attractions, or non-negative whole
-#'   counts summing to the attraction row count, one per polygon. Native polygons
-#'   close automatically; avoid repeating the first vertex. Must be NULL for
-#'   sf input: POLYGON counts are derived from geometry.
-#' @param polygon_point_interval Positive finite native float spacing, required
-#'   with polygons. Sampling count and loop-progress bounds are checked.
-#' @param attraction_values Reach only. NULL for native unit values, or finite native float
-#'   values per attraction point/polygon. Zero and negative values are preserved
-#'   as inputs and skipped by PST.
-#' @param decay Reach only. Decay: `"constant"` (default), `"power"`, `"curve"` or `"divide"`.
-#' @param decay_constant Finite native float parameter passed unchanged to PST.
-#'   `NULL` (default) selects an effective value from `decay`: 0 for `"constant"`
-#'   (the long-standing default) and 1 for `"power"`, `"curve"` and `"divide"`,
-#'   the default of the original PST for QGIS wizard (`C = 1`). Any explicitly
-#'   supplied value, including 0, is passed unchanged and keeps its native
-#'   meaning. Power/curve use the selected distance's radius for scaling.
-#' @param distribution Reach only. Polygon distribution: `"divide"` (default) or `"copy"`.
-#' @param collection Reach only. Point-group collection: `"mean"` (default), `"sum"`, `"min"` or `"max"`.
-#' @param line_weights Distance only. NULL for other distances; otherwise one non-negative finite
-#'   native float per graph line; used with distance = weights.
-#' @param point_edge_weight Distance only. Non-negative finite native float cost per coordinate
-#'   unit on point edges, used by custom weighted Distance (default zero).
-#' @param destination_indices Distance only. TRUE to append raw native destination_index,
-#'   FALSE to omit indices and use PST's distance-only path.
-#' @param output_file `NULL` (default) returns the data frame. A path writes the same table directly to one
-#'   Parquet file from PST's native result arrays and returns an invisible `pst_result_file` descriptor, without
-#'   building R result vectors. Requires the optional package `arrow (>= 25.0.0)` (platform notes, including Windows, are in [pst_result_file]; validation of the final release candidate on Windows is still outstanding). Columns, order and
-#'   values are those of the data frame (ids and counts int32, results float32 as PST computed them; no missing
-#'   values are introduced). See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md>.
-#' @param overwrite `TRUE` or `FALSE` (default). With `output_file` or `spatial_output_file`, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see [pst_result_file] for the platform differences, notably on Windows.
-#' @param spatial_output_file `NULL` (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-#'   is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-#'   columns, matched to the source features by position (no spatial join). The output format equals the source format
-#'   (GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-#'   replaces it, other result columns are appended. The destination must end in `.fgb` (FlatGeobuf source) or `.parquet` (GeoParquet source), in any letter case. Mutually exclusive with `output_file`; needs a graph built from a
-#'   file path; `overwrite` applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible [pst_result_file] descriptor. Only with `origin = "lines"` (one result per network line). See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
-#' @return Data frame with `origin_id` (one-based) and `attraction_reach` or
-#'   `attraction_distance` (native floats widened to doubles). `attraction_distance()` also includes
-#'   integer `destination_index` unless `destination_indices = FALSE`, in the native index convention above
-#'   (zero-based, `-1` for unreachable). With `output_file` or `spatial_output_file`, the result is written to a file instead and an invisible `pst_result_file` descriptor (`path`, `rows`, `columns`, `format`) is returned; see [pst_result_file].
+#' **Attraction Distance** accepts `"straight"`, `"walking"`, `"steps"`, `"angular"` and `"weights"` (custom
+#' weights; see `line_weights` and `point_edge_weight`). Axmeter radii are rejected. The `"straight"` distance
+#' requires no radius or a straight-only radius and rejects point-group origins, because PST leaves those outputs
+#' unwritten. A straight radius is ignored (not rejected) for network distances, which PST does not limit by
+#' straight distance.
+#'
+#' **Destination indices.** `attraction_distance()` can return the index of the nearest attraction, exactly as PST
+#' writes it: zero-based, with `-1` for unreachable origins. Unreachable distances are also `-1`. For finite
+#' straight distances the index identifies the last eligible attraction. Polygon indices identify generated samples
+#' in straight mode and group network mode, and polygons in non-group network mode. Written `NaN`, `Inf` and other
+#' scores are returned unchanged; no missing-value policy is applied.
+#'
+#' **Decay.** `decay_constant = NULL` selects 0 for `"constant"` decay and 1 for `"power"`, `"curve"` and
+#' `"divide"` (the default of the PST for QGIS wizard). Any value you supply, including 0, is passed to PST
+#' unchanged. Power and curve decay scale by the selected distance's radius. A decay that does not match the radius
+#' metric yields no decay.
+#'
+#' **Coordinate reference systems.** `sf` inputs need XY geometry and a CRS compatible with the graph's (known versus
+#' unknown included). A known geographic CRS is rejected. Nothing is reprojected or converted.
+#'
+#' **Threads.** PST uses several worker threads; see [network_betweenness()] for how to cap them.
+#'
+#' @section Limitations:
+#' In `attraction_reach()` a distance that does not match the radius metrics, such as the default `"steps"` with a
+#' walking radius, makes PST search steps and walking together, which can be extremely slow and memory-hungry on dense
+#' networks. Results are not affected. Use `distance = "none"` or the matching distance, or add a `steps` radius.
+#'
+#' @param graph An axial graph created by [axial_graph()].
+#' @param attraction_points Numeric matrix with zero or more rows and two columns (`x`, `y`), or an XY POINT or
+#'   POLYGON `sf`/`sfc` object. For polygons in a matrix, `NaN`/`NaN` rows separate rings, and `NA` and unmatched `NaN`
+#'   are rejected. Polygon rings lose only their explicit closing vertex; order, winding and holes are preserved,
+#'   and each feature becomes one group (an empty polygon is a zero-count group). Empty collections, multipart, mixed,
+#'   Z/M and empty POINT features are rejected.
+#' @param radius Distance limits created by [analysis_radius()].
+#' @param origin `"lines"`, `"junctions"`, `"points"` or `"point_groups"`. Points and point groups are those retained
+#'   when the graph was built, not newly supplied origins.
+#' @param distance The distance used, default `"steps"`. For `attraction_reach()`: `"straight"`, `"walking"`, `"steps"`,
+#'   `"angular"`, `"axmeter"` or `"none"`. For `attraction_distance()`: `"straight"`, `"walking"`, `"steps"`,
+#'   `"angular"` or `"weights"`.
+#' @param points_per_polygon `NULL` for point attractions, or non-negative whole numbers summing to the number of
+#'   attraction rows, one per polygon. Must be `NULL` for `sf` input, where polygons are derived from the geometry.
+#' @param polygon_point_interval Positive, finite sampling interval in coordinate units. Required with polygons.
+#' @param attraction_values `attraction_reach()` only. `NULL` for unit values, or one finite value per attraction
+#'   point or polygon. Zero and negative values are skipped by PST.
+#' @param decay `attraction_reach()` only. `"constant"` (default), `"power"`, `"curve"` or `"divide"`.
+#' @param decay_constant A finite number passed to PST, or `NULL` for the default described in Details.
+#' @param distribution `attraction_reach()` only. How polygon values are distributed: `"divide"` (default) or `"copy"`.
+#' @param collection `attraction_reach()` only. How point-group values are collected: `"mean"` (default), `"sum"`,
+#'   `"min"` or `"max"`.
+#' @param line_weights `attraction_distance()` only. `NULL`, or for `distance = "weights"` one non-negative finite
+#'   weight per graph line.
+#' @param point_edge_weight `attraction_distance()` only. Non-negative finite cost per coordinate unit on point
+#'   edges for custom weighted distance (default 0).
+#' @param destination_indices `attraction_distance()` only. `TRUE` to also return the destination index, `FALSE` to
+#'   omit it.
+#' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them; see
+#'   [pst_result_file]. `spatial_output_file` is available only with `origin = "lines"`.
+#' @return A data frame with one-based `origin_id` and `attraction_reach` or `attraction_distance` (doubles widened
+#'   from PST's single precision). `attraction_distance()` also returns the integer `destination_index` unless
+#'   `destination_indices = FALSE`. With `output_file` or `spatial_output_file` the results are written to a file and an
+#'   invisible [pst_result_file] descriptor is returned.
+#' @seealso [axial_graph()], [network_reach()], [analysis_radius()]
 #' @export
 #' @examples
 #' g <- axial_graph(rbind(c(0, 0, 3, 0), c(3, 0, 6, 0)))

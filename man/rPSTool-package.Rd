@@ -6,18 +6,19 @@
 \alias{rPSTool-package}
 \title{rPSTool: Space Syntax and Spatial Network Analysis in R}
 \description{
-rPSTool exposes the 'pstalgo' analysis engine of the Place Syntax Tool (PST) to R. The engine is compiled into the package, so no
-separate PST, Python or QGIS installation is needed. rPSTool wraps the pinned engine (PST v3.3.2); it does not reimplement or alter
-PST's algorithms, and it is not the PST plugin for QGIS. rPSTool is not affiliated with or endorsed by the PST authors.
+rPSTool brings the analysis engine of the Place Syntax Tool (PST) to R. It builds street-network graphs from line geometry
+and runs PST analyses such as network integration, reach, betweenness and angular choice, returning ordinary R data frames.
+The engine ('pstalgo', PST v3.3.2) is compiled into the package, so no separate PST, Python or QGIS installation is needed.
+rPSTool does not reimplement or alter PST's algorithms, and it is not the PST plugin for QGIS. It is not affiliated with or
+endorsed by the PST authors.
 }
 \details{
-A graph is built once, lives in native memory and is reused by any number of analyses. There are three graph families, and
-analyses accept only the family they were written for.
+A graph is built once and reused by any number of analyses. There are three graph families, and each analysis accepts
+only the family it was written for.
 
 \strong{Axial (crossing-aware line) graphs} are created by \code{\link[=axial_graph]{axial_graph()}} and analysed by \code{\link[=network_integration]{network_integration()}},
 \code{\link[=network_reach]{network_reach()}}, \code{\link[=network_betweenness]{network_betweenness()}}, \code{\link[=od_betweenness]{od_betweenness()}}, \code{\link[=attraction_reach]{attraction_reach()}} and \code{\link[=attraction_distance]{attraction_distance()}}.
-\code{\link[=axial_line_lengths]{axial_line_lengths()}}, \code{\link[=axial_crossing_coords]{axial_crossing_coords()}} and \code{\link[=compare_line_results]{compare_line_results()}} are helpers for working with axial lines and
-their results.
+\code{\link[=axial_line_lengths]{axial_line_lengths()}} and \code{\link[=axial_crossing_coords]{axial_crossing_coords()}} inspect them.
 
 \strong{Endpoint-connected segment graphs} are created by \code{\link[=segment_graph]{segment_graph()}} and analysed by \code{\link[=angular_integration]{angular_integration()}} and
 \code{\link[=angular_choice]{angular_choice()}}.
@@ -25,30 +26,26 @@ their results.
 \strong{Segment-group graphs} are created by \code{\link[=segment_group_graph]{segment_group_graph()}} from a segment graph and a grouping of its segments
 (\code{\link[=segment_grouping]{segment_grouping()}}), and analysed by \code{\link[=segment_group_integration]{segment_group_integration()}}.
 
-Analysis limits are described with \code{\link[=analysis_radius]{analysis_radius()}}. Network preparation is provided by \code{\link[=create_junctions]{create_junctions()}} and
-\code{\link[=create_segment_map]{create_segment_map()}}. Visibility and raster utilities are \code{\link[=isovist_context]{isovist_context()}}, \code{\link[=isovist]{isovist()}}, \code{\link[=raster_data]{raster_data()}},
-\code{\link[=raster_to_polygons]{raster_to_polygons()}} and the explicit release functions \code{\link[=isovist_context_free]{isovist_context_free()}} and \code{\link[=raster_free]{raster_free()}}.
+Distance limits are set with \code{\link[=analysis_radius]{analysis_radius()}}. Network preparation is provided by \code{\link[=create_junctions]{create_junctions()}} and
+\code{\link[=create_segment_map]{create_segment_map()}}. Visibility and raster utilities are \code{\link[=isovist_context]{isovist_context()}}, \code{\link[=isovist]{isovist()}}, \code{\link[=compare_line_results]{compare_line_results()}},
+\code{\link[=raster_data]{raster_data()}} and \code{\link[=raster_to_polygons]{raster_to_polygons()}}, with the release functions \code{\link[=isovist_context_free]{isovist_context_free()}} and \code{\link[=raster_free]{raster_free()}}.
 
 \strong{Colour palettes.} \code{\link[=colour_palettes]{colour_palettes()}} lists the bundled palettes, \code{\link[=colour_palette]{colour_palette()}} returns their colours and
 \code{\link[=colour_map]{colour_map()}} maps values to colours; optional 'ggplot2' scales are \code{\link[=scale_colour_rpst_c]{scale_colour_rpst_c()}}, \code{\link[=scale_fill_rpst_c]{scale_fill_rpst_c()}},
-\code{\link[=scale_colour_rpst_b]{scale_colour_rpst_b()}} and \code{\link[=scale_fill_rpst_b]{scale_fill_rpst_b()}}. The palettes fall into three groups: seven reproduced 'depthmapX' v0.9.1
-colour modes; two white-background adaptations (\code{axmanesque_white} and \code{depthmapx_classic_white}); and Coral Night and Coral Day
-(\code{coral_night}, \code{coral_day}), designed for rPSTool.
+\code{\link[=scale_colour_rpst_b]{scale_colour_rpst_b()}} and \code{\link[=scale_fill_rpst_b]{scale_fill_rpst_b()}}.
 
-\strong{Example data.} \code{\link[=load_example_data]{load_example_data()}} returns the Barnsbury (London) axial map, unlinks and gate observations of Hillier and
-Iida (2005); the layout is described in \link{hillier_iida}.
+\strong{Example data.} \code{\link[=load_example_data]{load_example_data()}} returns the Barnsbury (London) axial map, unlinks and gate observations of Hillier
+and Iida (2005); the layout is described in \link{hillier_iida}.
 
 \strong{Optional packages.} The suggested packages 'sf', 'arrow' (>= 25.0.0) and 'jsonlite' add 'sf' adapters, GeoParquet and
-FlatGeobuf input, and result files (\code{\link[=pst_result_file]{pst_result_file()}}). Result files are written through POSIX calls on Unix-alikes and
-through the Win32 API on Windows. The Windows implementation passed the development test suite on Windows; validation of the
-final release candidate on Windows is still outstanding.
+FlatGeobuf input, and result files (\link{pst_result_file}).
 
-\strong{Vignettes.} \code{vignette("getting-started", package = "rPSTool")} is a first walk-through, and
-\code{vignette("pst-capabilities", package = "rPSTool")} describes what the PST engine offers and how rPSTool relates to the PST plugin for
-QGIS.
+\strong{Vignettes.} \code{vignette("getting-started", package = "rPSTool")} is a worked example with the Barnsbury data, and
+\code{vignette("pst-capabilities", package = "rPSTool")} describes what the PST engine offers and how rPSTool relates to the PST
+plugin for QGIS.
 
-\strong{Citation.} Run \code{citation("rPSTool")} for the suggested references: the rPSTool package and, if your analysis relies on the engine,
-PST itself. Citation is voluntary guidance and separate from the legal notices.
+\strong{Citation.} Run \code{citation("rPSTool")} for the suggested references: the rPSTool package and, if your analysis relies on the
+engine, PST itself. Citation is voluntary guidance and separate from the legal notices.
 }
 \seealso{
 \code{\link[=axial_graph]{axial_graph()}}, \code{\link[=segment_graph]{segment_graph()}}, \code{\link[=analysis_radius]{analysis_radius()}}, \code{\link[=colour_palettes]{colour_palettes()}}, \code{\link[=load_example_data]{load_example_data()}}; the project page

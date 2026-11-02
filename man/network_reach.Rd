@@ -2,7 +2,7 @@
 % Please edit documentation in R/core-analyses.R
 \name{network_reach}
 \alias{network_reach}
-\title{Calculate PST Reach on an axial graph}
+\title{Network Reach of an axial graph}
 \usage{
 network_reach(
   graph,
@@ -14,57 +14,63 @@ network_reach(
 )
 }
 \arguments{
-\item{graph}{A live axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
+\item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{radius}{Independent limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
 
-\item{origins}{NULL (line origins), or an integer/double matrix with at least
-one row and exactly two columns in x, y order. Coordinates must be finite
-and fit PST's world/local coordinate and distance representation. Also
-accepts sf/sfc XY POINT features in exact feature order; empty collections
-remain rejected by native validation.}
+\item{origins}{\code{NULL} (default) to use every line as an origin, or a numeric matrix with at least one
+row and exactly two columns (\code{x}, \code{y}), or an XY POINT \code{sf}/\code{sfc} object whose features are used in
+order. Coordinates must be finite and within PST's coordinate range.}
 
-\item{output_file}{\code{NULL} (default) returns the data frame. A path writes the same table directly to one
-Parquet file from PST's native result arrays and returns an invisible \code{pst_result_file} descriptor, without
-building R result vectors. Requires the optional package \verb{arrow (>= 25.0.0)} (platform notes, including Windows, are in \link{pst_result_file}; validation of the final release candidate on Windows is still outstanding). Columns, order and
-values are those of the data frame (ids and counts int32, results float32 as PST computed them; no missing
-values are introduced). See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md}.}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
-
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-columns, matched to the source features by position (no spatial join). The output format equals the source format
-(GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-replaces it, other result columns are appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a
-file path; \code{overwrite} applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible \link{pst_result_file} descriptor. Only with \code{origins = NULL} (one result per network line). See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
+see \link{pst_result_file}. \code{spatial_output_file} is available only with \code{origins = NULL}.}
 }
 \value{
-Data frame in input line or origin order: line_id or origin_id,
-reached_count (integer),
-reached_length and reached_area (double, widened from native float). With \code{output_file} or \code{spatial_output_file}, the result is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+A data frame with one row per origin, in line order (or in the order of \code{origins}):
+\itemize{
+\item \code{line_id} (or \code{origin_id} for point origins): one-based identifier,
+\item \code{reached_count}: integer number of lines reached,
+\item \code{reached_length}: total length reached, and
+\item \code{reached_area}: area covered (see Details).
+}
+
+Lengths and areas are doubles widened from PST's single precision. With \code{output_file} or
+\code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file} descriptor is
+returned.
 }
 \description{
-Calls PSTAReach on every input line or supplied point origin. Line-origin
-counts include the origin and length
-includes whole reached lines. Area is the convex hull of reached endpoints,
-except straight-only radius mode, where PST returns pi times radius squared.
-Length/area follow coordinate units; no rescaling occurs. Straight-only point
-Reach includes line midpoints strictly inside the radius; line-origin Reach
-uses an inclusive boundary. Other point modes use PST's closest-line/BFS
-traversal and include the point in the area hull. The graph is unchanged.
-The call is synchronous and creates no workers; point input is not retained.
+Counts, for every line (or for supplied points), how many lines can be reached within a radius, and
+reports the total length and the area they cover. Use it to measure how much of the network lies within a
+given walking distance, number of direction changes or straight-line distance.
 }
 \details{
-Optional sf/sfc inputs require XY geometry and compatible CRS metadata with
-the graph when retained, including known versus unknown CRS. Known
-geographic CRS is rejected; transform explicitly. Matrix-only graphs have no
-CRS to compare: the numerical frame remains the caller's responsibility. No
-reprojection, unit conversion or attribute interpretation occurs; inputs are
-not retained.
+\strong{What is reported.} For a line origin, \code{reached_count} includes the origin line and \code{reached_length} is
+the full length of every reached line. \code{reached_area} is the area of the convex hull of the reached line
+endpoints, except when only a straight radius is set, where PST returns pi times the radius squared.
+Lengths and areas are in the units of the input coordinates; no rescaling takes place.
+
+\strong{Point origins.} With \code{origins}, results are calculated for the supplied points instead of the lines. With a
+straight-only radius a line counts as reached when its midpoint lies strictly inside the radius, whereas for line origins the
+boundary is inclusive. For every other radius PST finds the closest line to the point and traverses
+the network from there, and the point itself is included in the area hull. Points are not retained.
+
+\strong{Coordinate reference systems.} \code{sf} points need XY geometry and a CRS compatible with the graph's
+(known versus unknown included). A known geographic CRS is rejected; transform it explicitly. A matrix
+graph has no CRS to compare, so the numerical frame is your responsibility. Nothing is reprojected or
+converted.
 }
+\section{Limitations}{
+
+Combining a walking, angular or axmeter limit with another independently compared limit (for
+example \code{walking} with \code{axmeter}) and no \code{steps} limit can make PST's search very slow or exhaust memory on dense
+networks. Results are not affected. Adding a \code{steps} limit avoids the problem.
+}
+
 \examples{
 g <- axial_graph(rbind(c(0, 0, 3, 0), c(3, 0, 6, 0)))
 network_reach(g, analysis_radius(steps = 1))
 network_reach(g, origins = rbind(c(1, 0), c(5, 1)))
+}
+\seealso{
+\code{\link[=network_integration]{network_integration()}}, \code{\link[=network_betweenness]{network_betweenness()}}, \code{\link[=analysis_radius]{analysis_radius()}}
 }

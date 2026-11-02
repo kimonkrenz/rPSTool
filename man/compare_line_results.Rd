@@ -2,7 +2,7 @@
 % Please edit documentation in R/raster.R
 \name{compare_line_results}
 \alias{compare_line_results}
-\title{Compare line results using PST's native raster}
+\title{Compare two sets of line results on a raster}
 \usage{
 compare_line_results(
   x,
@@ -16,60 +16,43 @@ compare_line_results(
 )
 }
 \arguments{
-\item{x}{Numeric matrix with rows \verb{x1, y1, x2, y2}, or an XY LINESTRING sf/sfc
-with exactly two finite vertices per feature (one feature = one row, in
-feature order and endpoint direction; longer lines, MULTILINESTRING, empty
-features, nonfinite coordinates and Z/M are rejected, never reduced to
-endpoints).}
+\item{x}{A numeric matrix with rows \verb{x1, y1, x2, y2}, or an XY LINESTRING \code{sf}/\code{sfc} object with exactly two finite vertices
+per feature (one feature per row, in feature order and endpoint direction). Longer lines, MULTILINESTRING, empty features,
+non-finite coordinates and Z/M are rejected, not reduced to their endpoints.}
 
-\item{values1, values2}{Numeric values for the first and second line layers
-(one value per row of the respective layer). With \code{y = NULL}, both vectors
-address rows of \code{x}.}
+\item{values1, values2}{Numeric values for the first and second layer (one per row). With \code{y = NULL}, both vectors address
+the rows of \code{x}. Values are never read from \code{sf} attributes.}
 
-\item{y}{Optional second line layer in the same matrix or sf/sfc form.
-Values are never read from sf attributes. Known geographic CRS is rejected;
-sf inputs must have compatible CRS (known versus unknown included); a
-matrix is assumed to share the numerical frame and is never assigned a CRS.}
+\item{y}{Optional second line layer in the same form as \code{x}. A known geographic CRS is rejected, \code{sf} inputs must have
+compatible CRS (known versus unknown included), and a matrix is assumed to share the numerical frame.}
 
-\item{mode}{\code{"normalized"} or \code{"relative_percent"} (native normalized or
-relative-percent comparison).}
+\item{mode}{\code{"normalized"} or \code{"relative_percent"}.}
 
-\item{blur_radius}{Nonnegative Gaussian standard deviation in coordinate
-units (default 1).}
+\item{blur_radius}{Non-negative Gaussian standard deviation in coordinate units (default 1).}
 
-\item{resolution}{Positive pixel size in coordinate units. The default,
-\code{resolution = blur_radius}, is only usable when \code{blur_radius} is positive:
-with \code{blur_radius = 0} the default resolves to 0 and the call fails with
-the error "resolution is outside its finite native float bounds.", so
-\code{resolution} must then be supplied explicitly (for example
-\code{compare_line_results(x, v1, v2, blur_radius = 0, resolution = 0.5)}).
-A non-positive \code{resolution} and a negative \code{blur_radius} are rejected
-likewise ("blur_radius is outside its finite native float bounds.").}
+\item{resolution}{Positive pixel size in coordinate units. The default is \code{blur_radius}, which is usable only when
+\code{blur_radius} is positive: with \code{blur_radius = 0} the call fails with "resolution is outside its finite native float
+bounds.", so supply \code{resolution} explicitly (for example \verb{blur_radius = 0, resolution = 0.5}). A non-positive
+\code{resolution} or a negative \code{blur_radius} is rejected likewise.}
 
-\item{m}{Finite native lower threshold used in relative-percent comparisons.}
+\item{m}{Finite lower threshold used in \code{"relative_percent"} comparisons.}
 }
 \value{
-A \code{pst_raster} retaining the native comparison owner. When sf takes
-part, only the CRS metadata is kept, as \code{attr(raster, "crs")}; source sf
-objects are not retained. Matrix-only rasters are unchanged.
+A \code{pst_raster} object. When \code{sf} inputs take part, their CRS is kept as \code{attr(raster, "crs")}.
 }
 \description{
-Rasterizes line intensities and applies PST's Gaussian blur to compare two
-line layers (or two value sets on one layer).
+Draws line values onto a raster, blurs them with a Gaussian filter and compares two sets of values, either from two line
+layers or from two value sets on one layer. Use it to see where one set of results is higher or lower than another across
+space. Use \code{\link[=raster_data]{raster_data()}} to read the result and \code{\link[=raster_to_polygons]{raster_to_polygons()}} to turn value ranges into polygons.
 }
 \details{
-PST rasterizes line intensities and applies its Gaussian blur.
-Normalized mode divides the blurred difference by its maximum absolute
-magnitude using floating-point absolute values consistently across toolchains;
-its reported min/max precede normalization. Relative-percent
-mode computes \code{100 * (max(after, m) / max(before, m) - 1)} after blurring
-both layers. Signed values and nonpositive \code{m} retain native semantics.
-A genuinely zero difference denominator, zero blur and relative denominators
-can produce native NaN
-or Inf; these are preserved. Equal nonzero layers can retain float residuals.
-Zero-area raster extents and overflowing native dimensions are rejected.
-PST snaps raster extents to resolution; no input geometry snapping, CRS
-conversion, file I/O or callback occurs.
+Each line is drawn with its value; PST then applies Gaussian blur. In \code{"normalized"} mode the blurred difference is divided
+by its maximum absolute magnitude (the reported minimum and maximum are those before normalisation). In
+\code{"relative_percent"} mode the result is \code{100 * (max(after, m) / max(before, m) - 1)} after blurring both layers. Signed
+values and non-positive \code{m} keep PST's behaviour. A zero difference denominator, zero blur or zero relative denominators can
+produce \code{NaN} or \code{Inf}, which are preserved, and equal non-zero layers can retain floating-point residuals. Raster extents are
+snapped to the resolution. Zero-area extents and dimensions that overflow are rejected. Input geometry is not snapped, and
+there is no CRS conversion.
 }
 \examples{
 x <- matrix(c(0, 0, 2, 2, 0, 2, 2, 0), 2, 4, byrow = TRUE)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/construction.R
 \name{create_segment_map}
 \alias{create_segment_map}
-\title{Construct segment endpoints and unlinks with pinned PST}
+\title{Prepare a street network as segments}
 \usage{
 create_segment_map(
   coords,
@@ -17,87 +17,77 @@ create_segment_map(
 )
 }
 \arguments{
-\item{coords}{Integer or double coordinate matrix with columns \verb{x,y},
-or XY LINESTRING/MULTILINESTRING sf/sfc.}
+\item{coords}{A numeric matrix with columns \verb{x, y}, or an XY LINESTRING/MULTILINESTRING \code{sf}/\code{sfc} object.}
 
-\item{sections}{Numeric vector of signed whole section lengths partitioning
-the coordinate rows. A nonnegative value gives the point count and advances
-the native source ID. A negative value encodes \code{-(point_count + 1)} and
-continues the same source object into the next section. Empty/one-point
-sections are allowed alongside actual edges; at least one edge is required.
-Must be NULL (the default) for sf coords; derived from geometry. Matrix
-coords still require an explicit sections vector.}
+\item{sections}{For matrix \code{coords}, a numeric vector of signed whole section lengths partitioning the coordinate rows.
+A non-negative value gives the number of points and advances the source identifier; a negative value encodes
+\code{-(point_count + 1)} and continues the same source object in the next section. One-point and empty sections are allowed
+alongside actual edges. Must be \code{NULL} (the default) for \code{sf} coords, where it is derived from the geometry.}
 
-\item{network_type}{Either \code{"axial_or_segment"} or \code{"road_center_lines"}.}
+\item{network_type}{\code{"axial_or_segment"} or \code{"road_center_lines"}.}
 
-\item{snap}{Native endpoint snapping distance (default 1).}
+\item{snap}{Endpoint snapping distance (default 1).}
 
-\item{tail}{Native tail-length threshold (default 10). PST only removes a
-tail shorter than this threshold that reaches an intersection.}
+\item{tail}{Tail-length threshold (default 10): PST removes only a tail shorter than this that reaches an intersection.}
 
-\item{deviation}{Native collinear-deviation threshold (default 1), restricted
-to segments from the same native source object. Equality permits a merge.}
+\item{deviation}{Collinear-deviation threshold (default 1), applied to segments from the same source object. Equality
+permits a merge.}
 
-\item{extrude}{Native extension distance for intersection searches (default 0),
-independently controlled from \code{snap}.}
+\item{extrude}{Extension distance for intersection searches (default 0), controlled independently of \code{snap}.}
 
-\item{unlinks}{Optional numeric \verb{x,y} matrix or XY POINT sf/sfc, only in
-axial/segment mode when nonempty.}
+\item{unlinks}{Optional matrix with columns \verb{x, y}, or XY POINT \code{sf}/\code{sfc} object, used only in axial or segment mode.}
 
-\item{output}{\code{"native"} (default) or \code{"sf"} (requires optional sf).}
+\item{output}{\code{"native"} (default) or \code{"sf"} (requires 'sf').}
 }
 \value{
-A list with \code{segments} (double \verb{x1,y1,x2,y2} matrix), \code{source_id}
-(one-based integer native source IDs), and \code{unlinks} (double \verb{x,y} matrix).
-IDs may repeat or skip values; they associate outputs with native input
-objects and are not persistent external identifiers. With \code{output="sf"},
-the same three-component list contains \code{segments} as two-vertex XY
-LINESTRING sf with a \code{source_id} column, the unchanged \code{source_id} vector,
-and \code{unlinks} as XY POINT sf without additional columns. Geometry comes
-solely from copied native output, with CRS only from supplied sf metadata
-(unknown for matrix-only calls). Empty outputs have zero features.
+A list with
+\itemize{
+\item \code{segments}: a numeric matrix of \verb{x1, y1, x2, y2},
+\item \code{source_id}: one-based integer identifiers of the input object each segment came from, which can repeat or skip
+values and are not persistent external identifiers, and
+\item \code{unlinks}: a numeric matrix of \verb{x, y}.
+}
+
+With \code{output = "sf"}, \code{segments} is a two-vertex LINESTRING \code{sf} object with a \code{source_id} column, and \code{unlinks} is
+a POINT \code{sf} object; the CRS comes only from supplied \code{sf} metadata (unknown for matrix input), and empty outputs
+have zero features.
 }
 \description{
-This explicit utility calls \code{PSTACreateSegmentMap}; it does not create a graph.
-Coordinates are planar, in the units used by the native thresholds. PST finds
-cuts, snaps, removes duplicate/zero segments, trims tails and reduces detail.
-Axial/segment mode splits at cuts. Road-center mode emits cut coordinates as
-unlinks (including native duplicates) and does not split at those cuts.
-Input unlinks use PST's strict 100-unit cut-matching radius in axial mode.
-Native output order, endpoint direction and source associations are preserved.
-Thresholds must be finite nonnegative native floats, with squared values
-representable where PST squares them; inputs must fit native coordinate,
-distance and index bounds.
+Turns a street-centre-line network into the segments (and, for axial maps, unlinks) used by the analyses. PST finds
+where lines cut each other, snaps nearby endpoints, removes duplicate and zero-length segments, trims short tails
+and reduces detail. Use it to prepare a drawn network before calling \code{\link[=segment_graph]{segment_graph()}} or \code{\link[=axial_graph]{axial_graph()}}. It does not create a graph.
 }
 \details{
-A verified build-copy guard raises an R error whenever PST's detail reduction
-would merge a chain of segments back onto its own starting point. This is
-deliberately conservative. It includes closed rings with no junction, which
-crash unmodified PST, and also a loop attached at a single junction of degree
-three or more (for example a cul-de-sac loop whose detail-reduction threshold
-is large relative to its vertex spacing), which unmodified PST completes as a degenerate
-zero-length self-loop. rPSTool rejects both rather than publish a zero-length
-segment. The guard can therefore reject inputs that unmodified PST would
-process; it never alters a result. For every input rPSTool accepts, the output
-is that of the unmodified PST computation. Zero deviation does not guarantee
-that a cycle is accepted.
-Native result arrays are copied before freeing their owner; inputs are not
-retained and no native handle escapes. The output can be passed explicitly
-to \code{segment_graph()} or \code{axial_graph()} as appropriate.
+\strong{Network type.} In \code{"axial_or_segment"} mode lines are split at cuts. In \code{"road_center_lines"} mode the cut
+coordinates are returned as unlinks (including PST's duplicates) and lines are not split at those cuts. Supplied
+\code{unlinks} apply only in axial or segment mode and are matched to cuts within a strict radius of 100 coordinate units.
+Output order, endpoint direction and source associations are preserved.
 
-Optional sf/sfc coords accept XY LINESTRING and MULTILINESTRING features.
-Each feature is one native source object. Every vertex and part stays in
-order; earlier multipart sections encode \code{-(n + 1)}, and the final section
-encodes \code{n}. No connecting edge is added between parts. Empty features
-advance the source ID with a zero section; singleton and empty parts are
-retained. At least one actual edge remains required. Collections, other
-families and Z/M are rejected. No geometry repair or attribute join occurs.
-CRS rules match \code{\link[=create_junctions]{create_junctions()}}: projected units stay unchanged,
-known geographic CRS is rejected, sf metadata must be compatible, unknown
-CRS and mixed matrix frames remain the caller's responsibility.
+\strong{Thresholds.} \code{snap}, \code{tail}, \code{deviation} and \code{extrude} must be finite, non-negative single-precision values (squared
+values must also fit, where PST squares them). Coordinates are planar and in the units of those thresholds.
+
+\strong{Input.} \code{coords} is a coordinate matrix described by \code{sections}, or an \code{sf}/\code{sfc} object of XY LINESTRING or
+MULTILINESTRING features. Each feature is one source object. Every vertex and part is kept in order and no connecting edge
+is added between parts. Empty features advance the source identifier, and at least one actual edge is required.
+Collections, other geometry types and Z/M are rejected, and no repair or attribute join occurs. CRS rules match
+\code{\link[=create_junctions]{create_junctions()}}.
 }
+\section{Limitations}{
+
+A safeguard rejects with an error any input where PST's detail reduction would merge a chain of segments back onto its
+own starting point. This includes closed rings with no junction, which crash unmodified PST, and loops attached at a single
+junction of degree three or more (for example a cul-de-sac loop whose \code{deviation} is large relative to its vertex
+spacing), which unmodified PST completes as a degenerate zero-length self-loop. The safeguard can therefore reject inputs
+that unmodified PST would process, but it never changes a result: for every accepted input the output is that of the
+unmodified PST computation. Consequently an input containing a cycle is not guaranteed to be accepted; a smaller
+\code{deviation} threshold, or breaking the cycle, may avoid the error.
+}
+
 \examples{
 m <- create_segment_map(rbind(c(0, 0), c(10, 0), c(20, 0)), 3,
   snap = 0, tail = 0)
 m$segments
+}
+\seealso{
+\code{\link[=segment_graph]{segment_graph()}}, \code{\link[=axial_graph]{axial_graph()}}, \code{\link[=create_junctions]{create_junctions()}}
 }

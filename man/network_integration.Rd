@@ -2,7 +2,7 @@
 % Please edit documentation in R/integration.R
 \name{network_integration}
 \alias{network_integration}
-\title{Calculate PST Network Integration on an axial graph}
+\title{Network Integration of an axial graph}
 \usage{
 network_integration(
   graph,
@@ -16,84 +16,71 @@ network_integration(
 )
 }
 \arguments{
-\item{graph}{A live axial \code{pst_graph} created by \code{\link[=axial_graph]{axial_graph()}}.}
+\item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{steps}{\code{NULL} for unrestricted radius, or one non-negative whole number
-no greater than \code{2147483647}, the pinned native signed step-limit maximum.}
+\item{steps}{\code{NULL} (default, unrestricted) or one non-negative whole number no greater than
+2147483647.}
 
-\item{radius}{Optional \code{\link[=analysis_radius]{analysis_radius()}} object that sets only \code{steps}; any
-other limit is an error. Supply either radius or a non-NULL steps argument.}
+\item{radius}{Optional \code{\link[=analysis_radius]{analysis_radius()}} object that sets only \code{steps}. Supply either \code{radius} or a
+non-\code{NULL} \code{steps}.}
 
-\item{junctions}{Logical scalar. If TRUE, return a list containing \code{lines}
-(the usual result) and \code{junctions} (a data frame with one-based \code{junction_id},
-world \verb{x, y} coordinates and native \code{integration} scores).}
+\item{junctions}{\code{TRUE} or \code{FALSE} (default). If \code{TRUE}, also return junction scores (see Value).}
 
-\item{junction_output}{\code{"native"} (default) or \code{"sf"}; appended argument that
-applies only to the junction component and requires \code{junctions = TRUE} and
-the optional sf package. With \code{"sf"}, \code{junctions} is POINT sf with columns
-\code{junction_id} and \code{integration} plus geometry made solely from the returned
-native \verb{x, y} (the \code{x}/\code{y} columns are then carried by the geometry). Native
-order is kept, CRS is the graph's retained sf CRS (unknown if none), and a
-zero-junction result has zero features. \code{lines} stays an ordinary data
-frame; no line geometry is reconstructed and no extra native call is made.}
+\item{junction_output}{\code{"native"} (default) or \code{"sf"}. Applies only to the junction table and requires
+\code{junctions = TRUE} and the suggested package 'sf'. With \code{"sf"} the junctions are POINT features with
+\code{junction_id} and \code{integration} columns, in PST's order and with the graph's CRS.}
 
-\item{output_file}{\code{NULL} (default) returns the data frame. A path writes the line results directly to one
-Parquet file from PST's native result arrays and returns an invisible \code{pst_result_file} descriptor, without
-building R result vectors; it requires \code{junctions = FALSE} and the optional package \verb{arrow (>= 25.0.0)}.
-Columns, order and values are those of the data frame (\code{line_id} and \code{node_count} int32, \code{integration} and
-\code{total_depth} float32; reading them back in R gives the identical doubles). Windows: see \link{pst_result_file}.}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
-
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-columns, matched to the source features by position (no spatial join). The output format equals the source format
-(GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-replaces it, other result columns are appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a
-file path; \code{overwrite} applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible \link{pst_result_file} descriptor. Only with \code{junctions = FALSE}. See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning
+them; see \link{pst_result_file}. \code{output_file} and \code{spatial_output_file} require \code{junctions = FALSE}.}
 }
 \value{
-With \code{junctions = FALSE}, a data frame with one row per input line,
-in the original line-row order: \code{line_id} (one-based integer row index), \code{integration} (PST's score),
-\code{node_count} (integer reached-line count, including the origin), and
-\code{total_depth} (PST's sum of topological steps to reached lines). With \code{junctions = TRUE}, a list containing
-\code{lines} (that data frame) and \code{junctions} (a data frame with one-based integer \code{junction_id}, world double
-\verb{x, y} and native double \code{integration}; a POINT sf object if \code{junction_output = "sf"}). Zero crossings
-produce a zero-row junction data frame. With \code{output_file} or \code{spatial_output_file}, the line results is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+With \code{junctions = FALSE}, a data frame with one row per input line, in the order of the lines
+supplied to \code{\link[=axial_graph]{axial_graph()}}:
+\itemize{
+\item \code{line_id}: one-based row index of the line,
+\item \code{integration}: PST's integration score,
+\item \code{node_count}: integer number of lines reached, including the line itself,
+\item \code{total_depth}: the sum of the topological steps to the reached lines.
+}
+
+With \code{junctions = TRUE}, a list with \code{lines} (that data frame) and \code{junctions}, a data frame with
+one-based \code{junction_id}, world coordinates \code{x} and \code{y} and \code{integration} (a POINT \code{sf} object if
+\code{junction_output = "sf"}). A graph without crossings gives a zero-row junction table. With \code{output_file}
+or \code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file}
+descriptor is returned.
 }
 \description{
-Calls PST v3.3.2 \code{PSTANetworkIntegration} on the axial graph owned by
-\code{\link[=axial_graph]{axial_graph()}}. PST computes each line's integration score, reached-line
-count (including the origin line), and total topological depth. No scores
-or normalisation are computed in R. The graph remains alive and reusable.
+Calculates Network Integration for every line of an axial graph: how accessible each line is from every
+other line, measured by topological depth (the number of direction changes). Use it for classic
+axial-map integration analysis, optionally within a limited number of steps.
 }
 \details{
-\code{steps = NULL} leaves the radius unrestricted. A step limit sets only PST's
-topological step radius; it does not set a walking, straight, angular or
-axmeter radius. Changing between two lines counts as one step, including
-at collinear endpoint joins. A limit of zero reaches only the origin line.
-The radius argument accepts a \code{\link[=analysis_radius]{analysis_radius()}} object that sets only \code{steps}.
-With \code{junctions = TRUE}, PST also returns native junction coordinates and
-scores. PST accumulates incident line scores divided by native
-pairwise crossing multiplicity into a fresh zeroed buffer on each call, so
-repeated calls produce independent results. This is not a conventional
-distinct-line mean: two lines both scoring -1 yield a junction score of -2.
-Coincident crossings and unlink ordering retain pinned PST behaviour. rPSTool
-does not calculate junction scores; \code{NaN}/\code{Inf} are preserved.
+\strong{Definition.} For each line PST counts the lines it reaches (including the line itself) and sums their
+topological depths, then computes an integration score from these two quantities. Changing between two lines counts as one step,
+including at collinear endpoint joins. The scores are computed by PST; rPSTool does not alter or
+normalise them.
 
-PST returns \code{-1} when fewer than two lines are reached. Its integration
-formula can return \code{NaN} or \code{Inf} for small or zero-relative-asymmetry
-neighbourhoods. These values are returned unchanged, not replaced with
-missing values or recalculated. PST's float outputs are widened to R doubles.
+\strong{Radius.} \code{steps = NULL} leaves the radius unrestricted. A step limit restricts only the topological
+radius: a limit of zero reaches only the line itself. Supply the limit with \code{steps} or with
+\code{radius = analysis_radius(steps = ...)}, but not both. Only a steps radius (or none) is accepted, which
+matches the Network Integration offered by the official PST for QGIS plugin; walking, straight, angular
+and axmeter limits, alone or combined with steps, are rejected before any calculation. For those metrics
+use \code{\link[=angular_integration]{angular_integration()}} on a segment graph or \code{\link[=network_reach]{network_reach()}}.
 
-Only a topological step radius (or no radius) is accepted. The official PST
-v3.3.2 Python/QGIS Network Integration offers only steps (the wizard shows only
-a step radius and the Python execution code builds a steps-only radius), so
-straight, walking, angular and axmeter limits, alone or mixed with steps, are
-rejected before any native calculation. The native engine would accept them,
-but they are outside the supported interface; for those metrics use
-\code{\link[=angular_integration]{angular_integration()}} on a segment graph or \code{\link[=network_reach]{network_reach()}}.
+\strong{Special values.} PST returns \code{-1} when fewer than two lines are reached. For very small or
+symmetric neighbourhoods the formula can give \code{NaN} or \code{Inf}. These values are returned unchanged and
+are not replaced by \code{NA}.
+
+\strong{Junctions.} With \code{junctions = TRUE}, PST also returns a score for every crossing. Each line's score is divided by the
+number of crossings between the same pair of lines and accumulated at the crossing, so this is not the
+mean of the distinct lines meeting there: two lines that both score -1 give a junction score of -2.
+Coincident crossings and unlink ordering follow PST.
 }
+\section{Limitations}{
+
+Only steps radii are accepted (see Details).
+}
+
 \examples{
 lines <- cbind(x1 = c(0, 3, 6, 9, 12), y1 = 0,
                x2 = c(3, 6, 9, 12, 15), y2 = 0)
@@ -101,4 +88,10 @@ g <- axial_graph(lines)
 network_integration(g)
 network_integration(g, steps = 2)
 network_integration(g, junctions = TRUE)
+}
+\references{
+Hillier, B. and Hanson, J. (1984). \emph{The Social Logic of Space}. Cambridge University Press.
+}
+\seealso{
+\code{\link[=angular_integration]{angular_integration()}} for segment graphs, \code{\link[=network_reach]{network_reach()}}, \code{\link[=analysis_radius]{analysis_radius()}}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/isovist.R
 \name{isovist_context}
 \alias{isovist_context}
-\title{Create a reusable native PST isovist context}
+\title{Create an isovist context}
 \usage{
 isovist_context(
   obstacles = list(),
@@ -11,46 +11,39 @@ isovist_context(
 )
 }
 \arguments{
-\item{obstacles}{List of groups, each a list of integer/double two-column
-\verb{x,y} polygon vertex matrices, or an XY POLYGON sf/sfc layer (one ring per
-feature; holes, empty polygons and MULTIPOLYGON rejected; only the structural
-closing coordinate is removed; winding never changed). Each polygon must
-have at least one vertex.}
+\item{obstacles}{A list of groups. Each group is a list of two-column numeric matrices (\code{x}, \code{y}), one polygon per
+matrix with at least one vertex, or an XY POLYGON \code{sf}/\code{sfc} layer.}
 
-\item{attraction_points}{List of groups, each an integer/double two-column
-\verb{x,y} point matrix (possibly zero rows) or an XY POINT sf/sfc layer.}
+\item{attraction_points}{A list of groups, each a two-column numeric point matrix (possibly with zero rows) or an XY
+POINT \code{sf}/\code{sfc} layer.}
 
-\item{attraction_polygons}{Same grouped polygon representation as \code{obstacles}.}
+\item{attraction_polygons}{Attraction polygons, in the same grouped form as \code{obstacles}.}
 }
 \value{
-A \code{pst_isovist_context} with an exact-tagged native \code{ptr}. Copying
-shares ownership; collection of the last owner frees the context. Inputs
-are not retained.
+An object of class \code{pst_isovist_context}.
 }
 \description{
-Creates reusable native state with pinned PST v3.3.2 (commit
-\verb{63df80a2cf3dd289be95ea3d91667c3490719b75}). Coordinates are finite, planar
-and unmodified, and must fit native local-float and distance bounds. Polygon
-vertices retain supplied order and winding; PST expects Cartesian clockwise
-rings. No closing, snapping, deduplication or polygon repair is performed.
-Empty contexts and empty groups are allowed. Context geometry is copied by
-PST and input R matrices are not retained.
+Creates a reusable scene for isovist analysis: obstacles (polygons) and, optionally, groups of attraction points
+and attraction polygons whose visibility you want to record. Pass the context to \code{\link[=isovist]{isovist()}} for each viewpoint.
 }
 \details{
-Optional sf/sfc layers may replace a group. A polygon group is an XY POLYGON
-layer whose features keep their order; each feature must have exactly one
-ring (holes, empty polygons, MULTIPOLYGON, Z/M are rejected). Only the
-structural closing coordinate of each ring is removed; every other vertex and
-the winding are preserved. A point group is an XY POINT layer. Geographic CRS
-and mismatched layer CRS are rejected and nothing is reprojected; matrix
-groups contribute no metadata. When sf participates, compatible CRS metadata
-is kept only as the context \code{"crs"} attribute.
+Coordinates must be finite, planar and within PST's single-precision range. Polygon vertices keep their order and
+winding; PST expects clockwise rings in Cartesian coordinates. No closing, snapping, deduplication or repair is
+performed. Empty contexts and empty groups are allowed. Geometry is copied, so the R objects are not retained.
 
-At most 256 combined groups and 2^24 objects per group are supported by
-native visibility packing. Native pointers cannot be serialized or
-transferred between R processes; reconstruct from geometry. Use
-\code{\link[=isovist_context_free]{isovist_context_free()}} for explicit release.
+With the suggested package 'sf', a group can instead be an XY POLYGON layer (one ring per feature, in order) or, for
+attraction points, an XY POINT layer. Holes, empty polygons, MULTIPOLYGON and Z/M are rejected, and only each ring's closing
+coordinate is removed. A known geographic CRS and mismatched layer CRS are rejected, and nothing is reprojected. When 'sf'
+inputs are used, compatible CRS metadata is kept as the context's \code{"crs"} attribute.
+
+The context is held in native memory. It cannot be saved or sent to another R process; rebuild it from the geometry. Use
+\code{\link[=isovist_context_free]{isovist_context_free()}} to release it explicitly.
 }
+\section{Limitations}{
+
+At most 256 groups in total and 2^24 objects per group are supported.
+}
+
 \examples{
 ctx <- isovist_context()
 isovist(ctx, c(0, 0), 10)

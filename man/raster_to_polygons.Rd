@@ -2,44 +2,31 @@
 % Please edit documentation in R/raster.R
 \name{raster_to_polygons}
 \alias{raster_to_polygons}
-\title{Convert PST raster ranges to copied polygon rings}
+\title{Convert raster value ranges to polygons}
 \usage{
 raster_to_polygons(raster, ranges, output = c("native", "sf"))
 }
 \arguments{
-\item{raster}{A live \code{pst_raster}.}
+\item{raster}{A raster created by \code{\link[=compare_line_results]{compare_line_results()}}.}
 
-\item{ranges}{Numeric two-column matrix with native float lower and upper
-limits. Membership is lower-inclusive and upper-exclusive. Infinite
-limits are supported; reversed or equal limits yield native empty ranges.}
+\item{ranges}{A two-column numeric matrix of lower and upper limits, one range per row. Membership is lower-inclusive and
+upper-exclusive. Infinite limits are allowed, and reversed or equal limits give empty ranges.}
 
-\item{output}{\code{"native"} (default) or \code{"sf"} (requires sf).}
+\item{output}{\code{"native"} (default) or \code{"sf"} (requires 'sf').}
 }
 \value{
-With \code{"native"}, a list in range-row order, containing polygons, each
-containing two-column coordinate matrices in native ring order (outer ring,
-holes). Empty ranges contain empty lists. Rings are not closed by adding a
-point. With \code{"sf"}, an ordinary list in range-row order whose elements are
-\code{sfc_POLYGON} objects, one POLYGON per native polygon in native order, with
-the native outer ring first and holes after it in native order; an empty
-range is a zero-feature \code{sfc_POLYGON} and zero ranges give an empty list.
-CRS is the raster's retained CRS (unknown if none). Every native coordinate
-is kept in order and the first coordinate is appended only when a ring is
-not already closed. Rings with fewer than three rows, nonfinite coordinates
-or an already-closed ring with fewer than four rows cannot be represented:
-the call errors naming the range, polygon and ring, with no partial or
-repaired result. Native output remains available. No validity, area or
-orientation policy is applied.
+With \code{"native"}, a list with one element per range, holding polygons, each a list of two-column coordinate
+matrices in PST's ring order (outer ring first, then holes). Empty ranges give empty lists. Rings are not closed by adding
+a point. With \code{"sf"}, a list with one \code{sfc_POLYGON} per range, one POLYGON per native polygon (outer ring first, holes
+after it), with the raster's CRS (unknown if none). An empty range gives a zero-feature \code{sfc_POLYGON}, and zero ranges give an
+empty list. The first coordinate is appended only when a ring is not already closed. A ring that cannot be represented (fewer
+than three rows, non-finite coordinates, or an already closed ring with fewer than four rows) is an error that names the
+range, polygon and ring; no partial or repaired result is returned.
 }
 \description{
-Copies geometry produced by the exported PST raster conversion.
-}
-\details{
-PST interpolates boundaries using an out-of-grid value of zero.
-Selecting zero at the grid boundary can produce nonfinite vertices; these
-are copied faithfully. No ring repair, orientation change
-or reordering occurs. The transient polygon owner is freed after copying;
-returned geometry has an independent lifetime.
+Extracts the outlines of the areas of a comparison raster whose values fall within given ranges. PST interpolates the
+boundaries using a value of zero outside the grid, so selecting zero at the grid boundary can produce non-finite vertices, which
+are copied faithfully. No ring repair, orientation change or reordering occurs.
 }
 \examples{
 x <- matrix(c(0, 0, 2, 2, 0, 2, 2, 0), 2, 4, byrow = TRUE)
@@ -49,5 +36,5 @@ length(polygons)
 raster_free(r)
 }
 \seealso{
-\code{\link[=compare_line_results]{compare_line_results()}}
+\code{\link[=compare_line_results]{compare_line_results()}}, \code{\link[=raster_data]{raster_data()}}
 }

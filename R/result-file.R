@@ -173,43 +173,52 @@
             class = "pst_result_file")
 }
 
-#' Descriptor of a persisted analysis result
+#' Writing analysis results to files
 #'
-#' Returned (invisibly) by analysis functions called with `output_file`. It is a list with the absolute
-#' `path` of the Parquet file that was written, the number of `rows`, the `columns` in file order and
-#' the `format` (`"parquet"`). The results themselves are not held in R.
+#' The analysis functions can write their results to a file instead of returning a data frame, by setting `output_file`
+#' (a Parquet table) or `spatial_output_file` (a new spatial dataset). They then return, invisibly, a descriptor of the
+#' file. Use this for results too large to hold comfortably in R or to hand over to other software.
 #'
-#' The file stores the same columns, in the same order and native graph order, as the data frame the function returns
-#' without `output_file`. PST's native single-precision values are stored as float32 (reading them back in R
-#' gives exactly the doubles the data frame holds), counts and the one-based positional id as int32. Metadata
-#' (`rpst:*` keys) records the rPSTool and PST versions and commit, the function and its parameters, the graph type
-#' and size, the CRS and the identifier convention. Files are written under a temporary name and published only once
-#' complete: with `overwrite = FALSE` an existing destination is never replaced, with `overwrite = TRUE` it is
-#' replaced by a single rename and is untouched if anything fails. No crash-durability guarantee is made. Result files
-#' are written through POSIX calls on Unix-alikes and through the Win32 API on Windows. The Windows implementation passed
-#' the development test suite on Windows; validation of the final release candidate on Windows is still outstanding. On
-#' Windows a replacement fails, leaving the old file intact, while another process holds the destination open without
-#' sharing it for deletion.
+#' @details
+#' **`output_file`.** Writes the same columns, in the same order and graph order, as the data frame the function would return.
+#' PST's single-precision values are stored as float32, which reads back in R as exactly the doubles the data frame holds;
+#' counts and the one-based positional identifier are int32. The file's metadata (`rpst:*` keys) records the rPSTool and PST
+#' versions and commit, the function and its parameters, the graph type and size, the CRS and the identifier convention. It
+#' needs the suggested package 'arrow' (>= 25.0.0).
 #'
-#' With `spatial_output_file` the descriptor additionally has `spatial = TRUE`, the `source` network path, the
-#' `geometry_column` (GeoParquet), and the result columns that `replaced` a source column or were `appended`;
-#' `columns` then lists the non-geometry columns of the new dataset in file order and `format` is
-#' `"flatgeobuf"` or `"geoparquet"` (always the source format). See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
+#' **`spatial_output_file`.** Writes a new spatial dataset containing the geometry and attributes of the file the graph was built
+#' from, plus the result columns, matched to the source features by position (no spatial join). The format is always that of the
+#' source (GeoParquet to GeoParquet, FlatGeobuf to FlatGeobuf), and the CRS and geometry are carried over unchanged. A result
+#' column named like a source column replaces it; other result columns are appended. The destination must end in `.parquet`
+#' (GeoParquet source) or `.fgb` (FlatGeobuf source), in any letter case. It is mutually exclusive with `output_file`, needs a
+#' graph built from a file path, and some analyses restrict it to one result per network line (see each function). The source file
+#' must not be modified or reordered after the graph is built. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
+#'
+#' **`overwrite`.** With `overwrite = FALSE` (default) an existing destination is never replaced; with `TRUE` it is replaced. Files
+#' are written under a temporary name and published only when complete, so replacement is a single rename and the old file is
+#' untouched if anything fails. No guarantee of durability after a crash is made. `overwrite` applies to the output file only, never to the source.
+#'
+#' **Descriptor.** The descriptor is a list with the absolute `path`, the number of `rows`, the `columns` in file order and the
+#' `format` (`"parquet"`). For `spatial_output_file` it additionally has `spatial = TRUE`, the `source` network path, the
+#' `geometry_column` (GeoParquet), and the result columns that `replaced` a source column or were `appended`. `columns` then
+#' lists the non-geometry columns of the new dataset and `format` is `"flatgeobuf"` or `"geoparquet"`. The results themselves are
+#' not held in R. Details of the file layout: <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md>.
+#'
+#' @section Limitations:
+#' On Windows, replacing an existing file fails, leaving the old file intact, while another process holds the destination open
+#' without allowing it to be deleted. Result-file writing uses the Win32 API on Windows and POSIX calls elsewhere.
 #'
 #' @name pst_result_file
 #' @rdname pst_result_file
 #' @aliases pst_result_file
 #' @param x A `pst_result_file`.
 #' @param ... Unused.
-#' @return `x`, invisibly. The analysis functions return a `pst_result_file` descriptor (invisibly) when called
-#'   with `output_file` or `spatial_output_file`; this method prints one line with its path, row count,
-#'   columns and format.
+#' @return `x`, invisibly. The `print()` method shows one line with the path, row count, columns and format.
 #' @export
 #' @examples
 #' # Result files need the suggested package 'arrow' (>= 25.0.0).
-#' # The example is restricted to Unix-alikes because validation of the final
-#' # release candidate on Windows is still outstanding.
-#' if (.Platform$OS.type == "unix" && requireNamespace("arrow", quietly = TRUE) &&
+#' if (requireNamespace("arrow", quietly = TRUE) &&
 #'     utils::packageVersion("arrow") >= "25.0.0") {
 #'   g <- segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))
 #'   f <- angular_choice(g, output_file = tempfile(fileext = ".parquet"))

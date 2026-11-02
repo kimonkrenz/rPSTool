@@ -1,48 +1,33 @@
-#' Compare line results using PST's native raster
+#' Compare two sets of line results on a raster
 #'
-#' Rasterizes line intensities and applies PST's Gaussian blur to compare two
-#' line layers (or two value sets on one layer).
+#' Draws line values onto a raster, blurs them with a Gaussian filter and compares two sets of values, either from two line
+#' layers or from two value sets on one layer. Use it to see where one set of results is higher or lower than another across
+#' space. Use [raster_data()] to read the result and [raster_to_polygons()] to turn value ranges into polygons.
 #'
-#' @param x Numeric matrix with rows `x1, y1, x2, y2`, or an XY LINESTRING sf/sfc
-#'   with exactly two finite vertices per feature (one feature = one row, in
-#'   feature order and endpoint direction; longer lines, MULTILINESTRING, empty
-#'   features, nonfinite coordinates and Z/M are rejected, never reduced to
-#'   endpoints).
-#' @param values1,values2 Numeric values for the first and second line layers
-#'   (one value per row of the respective layer). With `y = NULL`, both vectors
-#'   address rows of `x`.
-#' @param y Optional second line layer in the same matrix or sf/sfc form.
-#'   Values are never read from sf attributes. Known geographic CRS is rejected;
-#'   sf inputs must have compatible CRS (known versus unknown included); a
-#'   matrix is assumed to share the numerical frame and is never assigned a CRS.
-#' @param mode `"normalized"` or `"relative_percent"` (native normalized or
-#'   relative-percent comparison).
-#' @param blur_radius Nonnegative Gaussian standard deviation in coordinate
-#'   units (default 1).
-#' @param resolution Positive pixel size in coordinate units. The default,
-#'   `resolution = blur_radius`, is only usable when `blur_radius` is positive:
-#'   with `blur_radius = 0` the default resolves to 0 and the call fails with
-#'   the error "resolution is outside its finite native float bounds.", so
-#'   `resolution` must then be supplied explicitly (for example
-#'   `compare_line_results(x, v1, v2, blur_radius = 0, resolution = 0.5)`).
-#'   A non-positive `resolution` and a negative `blur_radius` are rejected
-#'   likewise ("blur_radius is outside its finite native float bounds.").
-#' @param m Finite native lower threshold used in relative-percent comparisons.
-#' @return A `pst_raster` retaining the native comparison owner. When sf takes
-#'   part, only the CRS metadata is kept, as `attr(raster, "crs")`; source sf
-#'   objects are not retained. Matrix-only rasters are unchanged.
-#' @details PST rasterizes line intensities and applies its Gaussian blur.
-#'   Normalized mode divides the blurred difference by its maximum absolute
-#'   magnitude using floating-point absolute values consistently across toolchains;
-#'   its reported min/max precede normalization. Relative-percent
-#'   mode computes `100 * (max(after, m) / max(before, m) - 1)` after blurring
-#'   both layers. Signed values and nonpositive `m` retain native semantics.
-#'   A genuinely zero difference denominator, zero blur and relative denominators
-#'   can produce native NaN
-#'   or Inf; these are preserved. Equal nonzero layers can retain float residuals.
-#'   Zero-area raster extents and overflowing native dimensions are rejected.
-#'   PST snaps raster extents to resolution; no input geometry snapping, CRS
-#'   conversion, file I/O or callback occurs.
+#' @details
+#' Each line is drawn with its value; PST then applies Gaussian blur. In `"normalized"` mode the blurred difference is divided
+#' by its maximum absolute magnitude (the reported minimum and maximum are those before normalisation). In
+#' `"relative_percent"` mode the result is `100 * (max(after, m) / max(before, m) - 1)` after blurring both layers. Signed
+#' values and non-positive `m` keep PST's behaviour. A zero difference denominator, zero blur or zero relative denominators can
+#' produce `NaN` or `Inf`, which are preserved, and equal non-zero layers can retain floating-point residuals. Raster extents are
+#' snapped to the resolution. Zero-area extents and dimensions that overflow are rejected. Input geometry is not snapped, and
+#' there is no CRS conversion.
+#'
+#' @param x A numeric matrix with rows `x1, y1, x2, y2`, or an XY LINESTRING `sf`/`sfc` object with exactly two finite vertices
+#'   per feature (one feature per row, in feature order and endpoint direction). Longer lines, MULTILINESTRING, empty features,
+#'   non-finite coordinates and Z/M are rejected, not reduced to their endpoints.
+#' @param values1,values2 Numeric values for the first and second layer (one per row). With `y = NULL`, both vectors address
+#'   the rows of `x`. Values are never read from `sf` attributes.
+#' @param y Optional second line layer in the same form as `x`. A known geographic CRS is rejected, `sf` inputs must have
+#'   compatible CRS (known versus unknown included), and a matrix is assumed to share the numerical frame.
+#' @param mode `"normalized"` or `"relative_percent"`.
+#' @param blur_radius Non-negative Gaussian standard deviation in coordinate units (default 1).
+#' @param resolution Positive pixel size in coordinate units. The default is `blur_radius`, which is usable only when
+#'   `blur_radius` is positive: with `blur_radius = 0` the call fails with "resolution is outside its finite native float
+#'   bounds.", so supply `resolution` explicitly (for example `blur_radius = 0, resolution = 0.5`). A non-positive
+#'   `resolution` or a negative `blur_radius` is rejected likewise.
+#' @param m Finite lower threshold used in `"relative_percent"` comparisons.
+#' @return A `pst_raster` object. When `sf` inputs take part, their CRS is kept as `attr(raster, "crs")`.
 #' @seealso [raster_data()], [raster_to_polygons()], [raster_free()]
 #' @export
 #' @examples
@@ -77,25 +62,21 @@ compare_line_results <- function(x, values1, values2, y = NULL,
   raster$ptr
 }
 
-#' Copy native raster data into R
+#' Read the values of a comparison raster
 #'
-#' Copies native raster storage into R using its native pitch and format.
+#' Copies the pixel values and extent of a raster created by [compare_line_results()] into ordinary R objects. The copy
+#' remains usable after the raster is released. `NaN` and `Inf` are kept as PST wrote them.
 #'
-#' @param raster A live `pst_raster` from [compare_line_results()].
-#' @return A list with `bbox` (named numeric `xmin, ymin, xmax, ymax`),
-#'   `dimensions` (named integer `width, height`), `pitch` (a number: the native
-#'   row stride of the PST raster storage in bytes, at least `width` times the
-#'   bytes per pixel), `format` (a string naming the native pixel type: `"float"`
-#'   for 32-bit floating point, copied into a double matrix, or `"byte"` for
-#'   8-bit unsigned pixels, copied into an integer matrix; comparison rasters
-#'   currently have format `"float"`), native comparison `min` and `max` (numbers;
-#'   in normalized mode they precede normalization), and a `values` matrix with
-#'   `height` rows and `width` columns. Rows run from maximum y toward minimum y;
-#'   columns run from minimum x toward maximum x. Pixel centers are half a pixel
-#'   inside the extent. Data are copied by native pitch and format, so `pitch`
-#'   is informational: it is not needed to index `values`.
-#' @details The returned data remain usable after the raster is released.
-#'   NaN and Inf remain native values, without a missing-value policy.
+#' @param raster A raster created by [compare_line_results()].
+#' @return A list with
+#'   * `bbox`: named numeric `xmin, ymin, xmax, ymax`,
+#'   * `dimensions`: named integer `width, height`,
+#'   * `pitch`: the row stride of PST's raster storage in bytes (informational; it is not needed to index `values`),
+#'   * `format`: the pixel type, `"float"` (copied into a double matrix) or `"byte"` (copied into an integer matrix);
+#'     comparison rasters currently have format `"float"`,
+#'   * `min` and `max`: PST's comparison minimum and maximum (before normalisation in normalised mode), and
+#'   * `values`: a matrix with `height` rows and `width` columns. Rows run from maximum y towards minimum y and columns from
+#'     minimum x towards maximum x. Pixel centres are half a pixel inside the extent.
 #' @seealso [compare_line_results()]
 #' @export
 #' @examples
@@ -114,35 +95,24 @@ raster_data <- function(raster) {
   result
 }
 
-#' Convert PST raster ranges to copied polygon rings
+#' Convert raster value ranges to polygons
 #'
-#' Copies geometry produced by the exported PST raster conversion.
+#' Extracts the outlines of the areas of a comparison raster whose values fall within given ranges. PST interpolates the
+#' boundaries using a value of zero outside the grid, so selecting zero at the grid boundary can produce non-finite vertices, which
+#' are copied faithfully. No ring repair, orientation change or reordering occurs.
 #'
-#' @param raster A live `pst_raster`.
-#' @param ranges Numeric two-column matrix with native float lower and upper
-#'   limits. Membership is lower-inclusive and upper-exclusive. Infinite
-#'   limits are supported; reversed or equal limits yield native empty ranges.
-#' @param output `"native"` (default) or `"sf"` (requires sf).
-#' @return With `"native"`, a list in range-row order, containing polygons, each
-#'   containing two-column coordinate matrices in native ring order (outer ring,
-#'   holes). Empty ranges contain empty lists. Rings are not closed by adding a
-#'   point. With `"sf"`, an ordinary list in range-row order whose elements are
-#'   `sfc_POLYGON` objects, one POLYGON per native polygon in native order, with
-#'   the native outer ring first and holes after it in native order; an empty
-#'   range is a zero-feature `sfc_POLYGON` and zero ranges give an empty list.
-#'   CRS is the raster's retained CRS (unknown if none). Every native coordinate
-#'   is kept in order and the first coordinate is appended only when a ring is
-#'   not already closed. Rings with fewer than three rows, nonfinite coordinates
-#'   or an already-closed ring with fewer than four rows cannot be represented:
-#'   the call errors naming the range, polygon and ring, with no partial or
-#'   repaired result. Native output remains available. No validity, area or
-#'   orientation policy is applied.
-#' @details PST interpolates boundaries using an out-of-grid value of zero.
-#'   Selecting zero at the grid boundary can produce nonfinite vertices; these
-#'   are copied faithfully. No ring repair, orientation change
-#'   or reordering occurs. The transient polygon owner is freed after copying;
-#'   returned geometry has an independent lifetime.
-#' @seealso [compare_line_results()]
+#' @param raster A raster created by [compare_line_results()].
+#' @param ranges A two-column numeric matrix of lower and upper limits, one range per row. Membership is lower-inclusive and
+#'   upper-exclusive. Infinite limits are allowed, and reversed or equal limits give empty ranges.
+#' @param output `"native"` (default) or `"sf"` (requires 'sf').
+#' @return With `"native"`, a list with one element per range, holding polygons, each a list of two-column coordinate
+#'   matrices in PST's ring order (outer ring first, then holes). Empty ranges give empty lists. Rings are not closed by adding
+#'   a point. With `"sf"`, a list with one `sfc_POLYGON` per range, one POLYGON per native polygon (outer ring first, holes
+#'   after it), with the raster's CRS (unknown if none). An empty range gives a zero-feature `sfc_POLYGON`, and zero ranges give an
+#'   empty list. The first coordinate is appended only when a ring is not already closed. A ring that cannot be represented (fewer
+#'   than three rows, non-finite coordinates, or an already closed ring with fewer than four rows) is an error that names the
+#'   range, polygon and ring; no partial or repaired result is returned.
+#' @seealso [compare_line_results()], [raster_data()]
 #' @export
 #' @examples
 #' x <- matrix(c(0, 0, 2, 2, 0, 2, 2, 0), 2, 4, byrow = TRUE)
@@ -158,16 +128,15 @@ raster_to_polygons <- function(raster, ranges, output = c("native", "sf")) {
   .pst_sf_raster_polygons(polygons, attr(raster, "crs", exact = TRUE))
 }
 
-#' Release a native comparison raster
+#' Release a comparison raster
 #'
-#' Releases the comparison owner and its dependent raster.
+#' Releases the memory held by a raster created by [compare_line_results()]. Releasing is optional, since a raster is also
+#' released when it is no longer in use, and repeating it is safe. After release the raster (and every copy of it) can no longer
+#' be used, but data already copied with [raster_data()] or [raster_to_polygons()] is unaffected. A raster cannot be saved and
+#' restored; recreate it instead.
 #'
-#' @param raster A `pst_raster`.
+#' @param raster A raster created by [compare_line_results()].
 #' @return `NULL`, invisibly.
-#' @details Release is idempotent and invalidates all aliases. Garbage
-#'   collection also releases the comparison owner. Saved/deserialized native
-#'   pointers must be reconstructed; copied raster data and polygons are ordinary
-#'   R values with independent lifetimes.
 #' @seealso [compare_line_results()]
 #' @export
 #' @examples

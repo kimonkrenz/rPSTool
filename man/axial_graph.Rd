@@ -3,7 +3,7 @@
 \name{axial_graph}
 \alias{axial_graph}
 \alias{print.pst_graph}
-\title{Construct an in-memory PST axial graph from two-point lines}
+\title{Build an axial graph from lines}
 \usage{
 axial_graph(
   x,
@@ -17,113 +17,94 @@ axial_graph(
 \method{print}{pst_graph}(x, ...)
 }
 \arguments{
-\item{x}{An integer or double matrix with at least one row: four columns \verb{x1, y1, x2, y2}, or
-two columns \verb{x, y} when \code{line_indices} is supplied; or one character path to a
+\item{x}{An integer or double matrix with at least one row: four columns \verb{x1, y1, x2, y2}, or two
+columns \verb{x, y} when \code{line_indices} is supplied; an \code{sf}/\code{sfc} object (see Details); or one path to a
 GeoParquet or FlatGeobuf file of two-vertex LineStrings.}
 
-\item{line_indices}{Optional numeric two-column matrix of whole one-based
-indices into \code{x}. Each row defines a line; unused coordinates still affect
-PST's world origin. Rows and endpoint direction are preserved.}
+\item{line_indices}{Optional two-column numeric matrix of whole, one-based indices into the rows of \code{x}.
+Each row defines one line.}
 
-\item{unlinks}{Optional numeric two-column coordinate matrix. Each unlink
-removes the nearest eligible pairwise crossing; PST applies no tolerance.
-Eligibility requires the first line of the pair to cross in its interior.}
+\item{unlinks}{Optional two-column numeric matrix of \verb{x, y} coordinates (or XY POINT features) that
+remove the nearest eligible crossing.}
 
-\item{points}{Optional numeric two-column matrix of graph points, or polygon
-corners when \code{points_per_polygon} is supplied. PST retains native nearest-
-line assignments. Polygon rings close automatically; do not repeat their
-first corner. NaN/NaN rows separate rings within a polygon (NA is invalid).}
+\item{points}{Optional two-column numeric matrix of points to add to the graph, or of polygon corners
+when \code{points_per_polygon} is supplied.}
 
-\item{points_per_polygon}{Optional numeric vector of non-negative whole
-corner-row counts, including separator rows, summing to \code{nrow(points)}.
-Each polygon produces one native point group; zero counts retain empty groups.}
+\item{points_per_polygon}{Optional vector of non-negative whole numbers: the number of corner rows (including
+separator rows) of each polygon, summing to \code{nrow(points)}. A zero keeps an empty group.}
 
-\item{polygon_point_interval}{Positive finite native-float sampling interval,
-required with polygons. PST generates points along the closed ring edges.
-Optional coordinate matrices may have zero rows. All construction inputs are
-copied by PST and are not retained by the R wrapper.}
+\item{polygon_point_interval}{Positive, finite sampling interval in coordinate units. Required with
+polygons.}
 
 \item{...}{Unused additional arguments. For printing, \code{x} is a \code{pst_graph} object.}
 }
 \value{
-An S3 \code{pst_graph} list containing \code{ptr} (an owned external pointer),
-\code{type} (\code{"axial"}), \code{n_lines}, \code{n_crossings}, \code{n_points}, \code{n_point_groups}
-(counts read from PST), and \code{pst_version} (\code{"3.3.2"}). Treat these fields as
-read-only. Geometry is held by PST rather than the R list. Printing
-(\code{print.pst_graph()}) returns the object invisibly.
+An object of class \code{pst_graph}: a list with \code{type} (\code{"axial"}), \code{n_lines}, \code{n_crossings},
+\code{n_points}, \code{n_point_groups} (counts read from PST) and \code{pst_version}, plus the native handle \code{ptr}.
+Treat these fields as read-only. \code{print()} shows a summary and returns the object invisibly.
 }
 \description{
-Calls the pinned PST v3.3.2 \code{PSTACreateGraph} routine. Indexed endpoints,
-unlinks, retained points and polygon-generated point groups use the same
-native builder. Each matrix row is
-one line in the default four-column \verb{x1, y1, x2, y2} interface. With
-indexed coordinates, rows of \code{line_indices} define lines. Column names are
-optional and do not change that order. Lines are passed unchanged to PST's
-axial graph builder, which finds their crossings; they are not automatically
-split into a separate PST segment graph.
+Creates an axial graph, the representation PST uses for axial-line and crossing-based analyses
+(\code{\link[=network_integration]{network_integration()}}, \code{\link[=network_reach]{network_reach()}}, \code{\link[=network_betweenness]{network_betweenness()}}, \code{\link[=od_betweenness]{od_betweenness()}},
+\code{\link[=attraction_reach]{attraction_reach()}} and \code{\link[=attraction_distance]{attraction_distance()}}). The graph is built once and can be reused by any
+number of analyses. PST finds the crossings between the lines; the lines are not split into segments (use
+\code{\link[=create_segment_map]{create_segment_map()}} and \code{\link[=segment_graph]{segment_graph()}} for segment-based analyses).
 }
 \details{
-Coordinates must be finite (except NaN/NaN polygon ring separators), and
-their extent must fit PST's native local float and squared-distance
-representation. PST centres double coordinates and stores local coordinates
-as floats; lengths and positions reflect that rounding, and rPSTool preserves
-that behaviour. Sampling intervals must fit native float storage, and a
-conservative perimeter/interval bound must fit signed native point counts.
-No snapping, reprojection, filtering, reordering or unit conversion is
-performed.
+\strong{Lines.} Each row of a four-column matrix is one line: \verb{x1, y1, x2, y2}. Column names are optional and
+do not change that order. Alternatively, supply a two-column matrix of coordinates (\verb{x, y}) and a
+\code{line_indices} matrix whose rows give the one-based coordinate rows of each line's endpoints. Unused
+coordinates still affect PST's world origin. Rows and endpoint direction are preserved, and nothing is
+snapped, reprojected, filtered, reordered or converted between units.
 
-PST samples each closed polygon ring beginning at its first corner, carries
-spacing across edges and adjusts the closing gap. Ring order and empty groups
-are preserved. Polygon corner counts include separator rows. \code{n_points} counts
-generated samples rather than supplied corners. \code{n_point_groups} uses the
-native graph getter because the pinned exported info routine always reports
-zero.
-This matrix interface has no CRS metadata: supply suitable planar coordinates
-in the units intended for subsequent analyses.
+\strong{Coordinates.} Coordinates must be finite (except \code{NaN}/\code{NaN} polygon-ring separators) and their extent
+must fit PST's single-precision local coordinates. PST centres the coordinates and stores them as
+single-precision values, so lengths and positions reflect that rounding. Supply planar coordinates in the
+units you intend to use for radii. A matrix carries no coordinate reference system.
 
-With optional package \code{sf} installed, \code{x} also accepts \code{sf}/\code{sfc} XY
-LINESTRING features with exactly two vertices, or POINT features when using
-\code{line_indices}. \code{unlinks} accepts XY POINT features. \code{points} accepts XY POINT
-or POLYGON features; polygon counts are derived (leave \code{points_per_polygon}
-NULL) and \code{polygon_point_interval} is still required. Polygon rings retain
-order and winding; only their final repeated closing coordinate is removed,
-and NaN/NaN separates rings. Each POLYGON feature is one native group sampling
-all its ring boundaries, including holes. Empty POLYGON features retain empty
-groups. MULTIPOLYGON, multipart lines/points, collections, empty POINT/LINESTRING
-features and Z/M are rejected. No input attributes are interpreted or retained.
+\strong{Unlinks.} Each row of \code{unlinks} is a point that removes the nearest eligible crossing; PST applies no
+tolerance. A crossing is eligible only if the first line of the pair crosses in its interior.
 
-File input. \code{x} may instead be one character path to a GeoParquet (1.0/1.1,
-WKB) or FlatGeobuf (major version 3) file; the format is identified from the file
-content, not its extension, with the file contract documented for
-\code{\link[=segment_graph]{segment_graph()}}: every feature is one non-null XY LineString with
-exactly two finite vertices, geographic CRS is rejected, and nothing is split,
-snapped, reprojected or repaired. \code{line_indices} must be NULL with a path;
-\code{unlinks}, \code{points}, \code{points_per_polygon} and
-\code{polygon_point_interval} keep their matrix or sf forms. Lines are used in the
-file's physical order, which fixes line numbering, crossing order and which line of
-a pair is first for unlink eligibility; a spatially indexed FlatGeobuf is stored in
-Hilbert order, not the writer's order. The file's CRS becomes the graph's
-\code{crs} attribute, and sf \code{unlinks}/\code{points} must have compatible CRS
-(unknown cannot be mixed with known; matrices carry no CRS). The file is read in
-one pass into a transient native coordinate array and then discarded; no sf object
-or R coordinate matrix is built, but PST's own graph storage still dominates memory.
+\strong{Points and polygons.} \code{points} adds points to the graph, which are assigned to their nearest line and
+are used by the attraction analyses and by \code{\link[=od_betweenness]{od_betweenness()}}. With \code{points_per_polygon}, \code{points} holds
+polygon corners instead. \code{points_per_polygon} gives the number of corner rows of each polygon,
+including separator rows. \code{NaN}/\code{NaN} rows separate rings within one polygon, and each ring closes
+automatically, so do not repeat its first corner. PST samples every closed ring at
+\code{polygon_point_interval}, starting at the first corner, carrying the spacing across edges and adjusting
+the closing gap. Each polygon becomes one point group. Ring order and empty groups are preserved, and
+\code{n_points} counts the generated samples, not the corners.
 
-Known geographic CRS is rejected: transform explicitly before calling PST.
-Multiple sf inputs must have compatible CRS, including missing CRS (unknown
-cannot be mixed with known). Unknown CRS is allowed on user responsibility.
-Mixed matrix/sf coordinates must already share the same coordinate frame;
-matrices are not assigned a CRS or converted. Projected units are unchanged.
-Only sf CRS metadata is retained as the graph's \code{crs} attribute; geometry and
-input objects are not retained. Matrix-only calls keep their existing contract.
+\strong{\code{sf} input.} With the suggested package 'sf', \code{x} may be an \code{sf} or \code{sfc} object of XY LINESTRING
+features with exactly two vertices (or POINT features when \code{line_indices} is used). \code{unlinks} accepts XY
+POINT features and \code{points} accepts XY POINT or POLYGON features. For polygons the corner counts are
+derived (leave \code{points_per_polygon} as \code{NULL}), while \code{polygon_point_interval} is still required. Polygon
+rings keep their order and winding and only the repeated closing coordinate is removed; holes are sampled
+along with the outer ring. Attributes are ignored.
 
-The graph lives on the native heap until its external pointer becomes
-unreachable and R finalises it with \code{PSTAFreeGraph}. Copying the R object
-shares ownership of the same pointer. Native graphs cannot be persisted
-with \code{saveRDS()} or sent to another R process: reconstruct from coordinates
-after reading or transferring data. Inputs are not retained. The finalizer
-calls \code{PSTAFreeGraph} once after the last external-pointer reference
-disappears. Inspection and analysis results own independent R storage.
+\strong{File input.} \code{x} may instead be one path to a GeoParquet (1.0 or 1.1, WKB) or FlatGeobuf (major
+version 3) file whose features are all two-vertex XY LineStrings; the format is recognised from the file
+content, not its extension. See \code{\link[=segment_graph]{segment_graph()}} for the file contract. \code{line_indices} must be \code{NULL}
+with a path. Lines are used in the file's physical order, which fixes line numbering and crossing order
+(a spatially indexed FlatGeobuf is stored in Hilbert order rather than the writer's order). The file's
+coordinate reference system becomes the graph's \code{crs} attribute. The file is read in one pass without
+building an \code{sf} object or an R coordinate matrix.
+
+\strong{Coordinate reference systems.} A known geographic CRS is rejected: transform to a projected CRS
+yourself. When several \code{sf} inputs are supplied their CRS must be compatible, and an unknown CRS cannot be
+mixed with a known one. An unknown CRS is allowed on your responsibility, and mixed matrix and \code{sf}
+inputs must already share the same coordinate frame. Only the CRS is retained, as the graph's \code{crs}
+attribute.
+
+\strong{Using the graph.} The graph is held in native memory and is released automatically once no R object
+refers to it. It cannot be saved with \code{saveRDS()} or sent to another R process; rebuild it from the
+coordinates instead. Inputs are not retained.
 }
+\section{Limitations}{
+
+MULTIPOLYGON, multipart lines or points, geometry collections, empty POINT or LINESTRING features and Z/M
+coordinates are rejected. Native graphs cannot be serialised (see Details).
+}
+
 \examples{
 lines <- rbind(c(0, 0, 2, 0), c(1, -1, 1, 1))
 g <- axial_graph(lines)
@@ -136,4 +117,8 @@ corners <- rbind(c(0, 1), c(2, 1), c(2, 2), c(0, 2))
 polygon_graph <- axial_graph(lines, points = corners, points_per_polygon = 4L,
                              polygon_point_interval = 1)
 polygon_graph$n_point_groups
+}
+\seealso{
+\code{\link[=segment_graph]{segment_graph()}} for segment-based analyses, \code{\link[=axial_line_lengths]{axial_line_lengths()}} and \code{\link[=axial_crossing_coords]{axial_crossing_coords()}}
+to inspect the graph, \code{\link[=load_example_data]{load_example_data()}} for an example network.
 }

@@ -1,43 +1,47 @@
-#' Calculate PST Reach on an axial graph
+#' Network Reach of an axial graph
 #'
-#' Calls PSTAReach on every input line or supplied point origin. Line-origin
-#' counts include the origin and length
-#' includes whole reached lines. Area is the convex hull of reached endpoints,
-#' except straight-only radius mode, where PST returns pi times radius squared.
-#' Length/area follow coordinate units; no rescaling occurs. Straight-only point
-#' Reach includes line midpoints strictly inside the radius; line-origin Reach
-#' uses an inclusive boundary. Other point modes use PST's closest-line/BFS
-#' traversal and include the point in the area hull. The graph is unchanged.
-#' The call is synchronous and creates no workers; point input is not retained.
+#' Counts, for every line (or for supplied points), how many lines can be reached within a radius, and
+#' reports the total length and the area they cover. Use it to measure how much of the network lies within a
+#' given walking distance, number of direction changes or straight-line distance.
 #'
-#' Optional sf/sfc inputs require XY geometry and compatible CRS metadata with
-#' the graph when retained, including known versus unknown CRS. Known
-#' geographic CRS is rejected; transform explicitly. Matrix-only graphs have no
-#' CRS to compare: the numerical frame remains the caller's responsibility. No
-#' reprojection, unit conversion or attribute interpretation occurs; inputs are
-#' not retained.
-#' @param graph A live axial graph created by [axial_graph()].
-#' @param radius Independent limits created by [analysis_radius()].
-#' @param origins NULL (line origins), or an integer/double matrix with at least
-#'   one row and exactly two columns in x, y order. Coordinates must be finite
-#'   and fit PST's world/local coordinate and distance representation. Also
-#'   accepts sf/sfc XY POINT features in exact feature order; empty collections
-#'   remain rejected by native validation.
-#' @param output_file `NULL` (default) returns the data frame. A path writes the same table directly to one
-#'   Parquet file from PST's native result arrays and returns an invisible `pst_result_file` descriptor, without
-#'   building R result vectors. Requires the optional package `arrow (>= 25.0.0)` (platform notes, including Windows, are in [pst_result_file]; validation of the final release candidate on Windows is still outstanding). Columns, order and
-#'   values are those of the data frame (ids and counts int32, results float32 as PST computed them; no missing
-#'   values are introduced). See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md>.
-#' @param overwrite `TRUE` or `FALSE` (default). With `output_file` or `spatial_output_file`, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see [pst_result_file] for the platform differences, notably on Windows.
-#' @param spatial_output_file `NULL` (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-#'   is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-#'   columns, matched to the source features by position (no spatial join). The output format equals the source format
-#'   (GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-#'   replaces it, other result columns are appended. The destination must end in `.fgb` (FlatGeobuf source) or `.parquet` (GeoParquet source), in any letter case. Mutually exclusive with `output_file`; needs a graph built from a
-#'   file path; `overwrite` applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible [pst_result_file] descriptor. Only with `origins = NULL` (one result per network line). See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
-#' @return Data frame in input line or origin order: line_id or origin_id,
-#'   reached_count (integer),
-#'   reached_length and reached_area (double, widened from native float). With `output_file` or `spatial_output_file`, the result is written to a file instead and an invisible `pst_result_file` descriptor (`path`, `rows`, `columns`, `format`) is returned; see [pst_result_file].
+#' @details
+#' **What is reported.** For a line origin, `reached_count` includes the origin line and `reached_length` is
+#' the full length of every reached line. `reached_area` is the area of the convex hull of the reached line
+#' endpoints, except when only a straight radius is set, where PST returns pi times the radius squared.
+#' Lengths and areas are in the units of the input coordinates; no rescaling takes place.
+#'
+#' **Point origins.** With `origins`, results are calculated for the supplied points instead of the lines. With a
+#' straight-only radius a line counts as reached when its midpoint lies strictly inside the radius, whereas for line origins the
+#' boundary is inclusive. For every other radius PST finds the closest line to the point and traverses
+#' the network from there, and the point itself is included in the area hull. Points are not retained.
+#'
+#' **Coordinate reference systems.** `sf` points need XY geometry and a CRS compatible with the graph's
+#' (known versus unknown included). A known geographic CRS is rejected; transform it explicitly. A matrix
+#' graph has no CRS to compare, so the numerical frame is your responsibility. Nothing is reprojected or
+#' converted.
+#'
+#' @section Limitations:
+#' Combining a walking, angular or axmeter limit with another independently compared limit (for
+#' example `walking` with `axmeter`) and no `steps` limit can make PST's search very slow or exhaust memory on dense
+#' networks. Results are not affected. Adding a `steps` limit avoids the problem.
+#'
+#' @param graph An axial graph created by [axial_graph()].
+#' @param radius Distance limits created by [analysis_radius()].
+#' @param origins `NULL` (default) to use every line as an origin, or a numeric matrix with at least one
+#'   row and exactly two columns (`x`, `y`), or an XY POINT `sf`/`sfc` object whose features are used in
+#'   order. Coordinates must be finite and within PST's coordinate range.
+#' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
+#'   see [pst_result_file]. `spatial_output_file` is available only with `origins = NULL`.
+#' @return A data frame with one row per origin, in line order (or in the order of `origins`):
+#'   * `line_id` (or `origin_id` for point origins): one-based identifier,
+#'   * `reached_count`: integer number of lines reached,
+#'   * `reached_length`: total length reached, and
+#'   * `reached_area`: area covered (see Details).
+#'
+#'   Lengths and areas are doubles widened from PST's single precision. With `output_file` or
+#'   `spatial_output_file` the results are written to a file and an invisible [pst_result_file] descriptor is
+#'   returned.
+#' @seealso [network_integration()], [network_betweenness()], [analysis_radius()]
 #' @export
 #' @examples
 #' g <- axial_graph(rbind(c(0, 0, 3, 0), c(3, 0, 6, 0)))
@@ -67,68 +71,57 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
   result
 }
 
-#' Calculate PST Segment Betweenness on an axial graph
+#' Segment Betweenness of an axial graph
 #'
-#' Calls PSTASegmentBetweenness using its required HPSTAGraph. Supported
-#' distances are walking, steps, angular and axmeter. Straight and weights are
-#' not supported distance modes. Optional weights are passed to PST as native
-#' floats, including zero and negative values. With attraction points, PST
-#' assigns each to its closest line and accumulates weights there; omitted
-#' attraction weights mean unit weights. Weighted scores include PST's endpoint
-#' and self contributions, so unit weights need not equal unweighted scores.
-#' Written counts include the origin. Angular depths use syntax angle units (90 degrees
-#' is one unit); other depths use the selected native distance.
+#' Counts how often each line lies on the shortest routes between other lines, optionally weighting the
+#' routes by line or attraction weights. Use it to identify through-movement potential in an axial map.
 #'
-#' Raw scores are retained. Optional normalization calls PST's exported
-#' Standard, Betweenness (Freeman), or BetweennessSyntax routines directly.
-#' PST skips origins with nonpositive effective line weight, leaving count and
-#' depth unwritten. rPSTool reports these as NA, with NA Freeman/syntax normalization
-#' for those rows. Standard normalization still uses all genuine raw scores.
-#' Optional sf/sfc attraction points are converted only to the same two-column
-#' matrix before the unchanged native call. Empty, nonfinite, multipart, mixed
-#' and Z/M geometry is rejected. Attributes are ignored: `weights` remains the
-#' only source of weights and must contain one value per supplied point. A
-#' known geographic CRS is rejected; sf CRS metadata must match any CRS retained
-#' by the graph (known versus unknown included). Matrix points and matrix-only
-#' graphs involve no metadata, so the numerical frame remains the user's
-#' responsibility. Nothing is reprojected and the sf object is not retained.
+#' @details
+#' **Distance.** Routes are chosen by one of four distances: `"steps"` (default), `"walking"`, `"angular"` or
+#' `"axmeter"`. Straight-line distance is not available. Angular depths are in syntax angle units (90 degrees
+#' is one unit); other depths use the selected distance.
 #'
-#' PST creates workers and waits before returning; workers never call R.
-#' RPST_NUM_THREADS sets a positive integer worker cap; otherwise PST uses hardware
-#' concurrency. An active _R_CHECK_LIMIT_CORES_ (any non-empty value other than false, case-insensitive,
-#' e.g. true/TRUE/warn) limits workers to two even above a larger RPST_NUM_THREADS. Invalid explicit caps fail before workers start.
+#' **Weights.** `weights` are passed to PST as single-precision values, including zero and negative values.
+#' Without `attraction_points`, supply one weight per line. With attraction points, PST assigns each point to
+#' its closest line and accumulates the weights there; supply one weight per point (omitted weights mean unit
+#' weights). Weighted scores include PST's endpoint and self contributions, so unit weights need not equal
+#' the unweighted scores. `node_count` includes the origin.
 #'
-#' @param graph A live axial graph created by [axial_graph()].
-#' @param radius Independent limits created by [analysis_radius()].
-#' @param distance Exact name: "steps" (default), "walking", "angular", "axmeter".
-#' @param normalization Exact name: "none", "standard", "freeman", "syntax".
-#' @param weights NULL, or finite integer/double weights fitting native float
-#'   storage (nonzero values must not underflow to zero). Supply exactly one per
-#'   graph line without attractions, or one per supplied attraction point.
-#' @param attraction_points NULL, or a finite integer/double matrix with at least
-#'   one row and exactly two columns in x, y order, fitting PST's world/local
-#'   coordinate and distance representation, or an XY POINT sf/sfc whose features
-#'   are used in exact order (see below). PST performs closest-line assignment.
-#' @param output_file `NULL` (default) returns the data frame. A path writes the same table directly to one Parquet
-#'   file from PST's native result arrays and returns an invisible `pst_result_file` descriptor, without building R
-#'   result vectors. Requires the optional package `arrow (>= 25.0.0)` (platform notes, including Windows, are in [pst_result_file]; validation of the final release candidate on Windows is still outstanding). Columns, order and values are those
-#'   of the data frame (`line_id` and `node_count` int32, the rest float32). The values that are `NA` in the data frame
-#'   (diagnostics PST did not write for skipped weighted origins) are Arrow nulls in `node_count`, `total_depth` and,
-#'   for `"freeman"`/`"syntax"`, `normalized`; these columns are declared nullable for every call of that kind. The raw
-#'   `betweenness` and the `"standard"` normalisation are never null, and a written `NaN` or infinity is an ordinary
-#'   value, not a null. See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/result-files.md>.
-#' @param overwrite `TRUE` or `FALSE` (default). With `output_file` or `spatial_output_file`, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see [pst_result_file] for the platform differences, notably on Windows.
-#' @param spatial_output_file `NULL` (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-#'   is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-#'   columns, matched to the source features by position (no spatial join). The output format equals the source format
-#'   (GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-#'   replaces it, other result columns are appended. The destination must end in `.fgb` (FlatGeobuf source) or `.parquet` (GeoParquet source), in any letter case. Mutually exclusive with `output_file`; needs a graph built from a
-#'   file path; `overwrite` applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible [pst_result_file] descriptor. See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
-#' @return Data frame in input line order: `line_id`, raw `betweenness`, integer
-#'   `node_count`, `total_depth`; `normalized` is appended when requested. Raw `betweenness` and
-#'   `"standard"` normalization are never `NA`. `node_count` and `total_depth` are `NA` for origins that PST skipped in
-#'   weighted calls (nonpositive effective line weight; it writes neither value), and `normalized` is `NA` for those rows when
-#'   `normalization` is `"freeman"` or `"syntax"`. Native `NaN`/`Inf` values are returned unchanged. With `output_file` or `spatial_output_file`, the result is written to a file instead and an invisible `pst_result_file` descriptor (`path`, `rows`, `columns`, `format`) is returned; see [pst_result_file].
+#' **Normalisation.** The raw score `betweenness` is always returned. `normalization` adds PST's
+#' `"standard"`, `"freeman"` (Freeman betweenness) or `"syntax"` normalisation as the column
+#' `normalized`.
+#'
+#' **Skipped origins.** PST skips origins whose effective line weight is not positive and writes neither their
+#' `node_count` nor their `total_depth`. rPSTool reports these as `NA`, with `NA` Freeman or syntax
+#' normalised values for those rows. Standard normalisation still uses all genuine raw scores.
+#'
+#' **Attraction points.** Points may be a matrix or an XY POINT `sf`/`sfc` object (features used in order). Empty, non-finite,
+#' multipart, mixed and Z/M geometry is rejected. Attributes are ignored: `weights` is the only source of
+#' weights. A known geographic CRS is rejected, and `sf` CRS metadata must match the graph's (known versus
+#' unknown included). Nothing is reprojected.
+#'
+#' **Threads.** PST uses several worker threads. Set the environment variable `RPST_NUM_THREADS` to a
+#' positive integer to cap their number. When R's `_R_CHECK_LIMIT_CORES_` is set (to any non-empty value other
+#' than `false`), at most two are used. Invalid explicit caps are rejected before any work starts.
+#'
+#' @param graph An axial graph created by [axial_graph()].
+#' @param radius Distance limits created by [analysis_radius()].
+#' @param distance `"steps"` (default), `"walking"`, `"angular"` or `"axmeter"`.
+#' @param normalization `"none"`, `"standard"`, `"freeman"` or `"syntax"`.
+#' @param weights `NULL`, or finite numeric weights that fit single precision (non-zero values must not
+#'   underflow to zero). Supply one per line, or one per attraction point when `attraction_points` is given.
+#' @param attraction_points `NULL`, or a finite numeric matrix with at least one row and exactly two columns
+#'   (`x`, `y`), or an XY POINT `sf`/`sfc` object.
+#' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
+#'   see [pst_result_file]. In a result file, the `NA` values described below are stored as nulls.
+#' @return A data frame in line order with `line_id`, the raw `betweenness`, integer `node_count` and
+#'   `total_depth`, plus `normalized` when requested. Raw `betweenness` and `"standard"` normalisation are never `NA`.
+#'   `node_count` and `total_depth` are `NA` for origins PST skipped in weighted calls, and `normalized`
+#'   is `NA` for those rows with `"freeman"` or `"syntax"`. `NaN` and `Inf` values written by PST are returned
+#'   unchanged. With `output_file` or `spatial_output_file` the results are written to a file and an invisible
+#'   [pst_result_file] descriptor is returned (`line_id` and `node_count` are stored as int32, the other
+#'   columns as float32).
+#' @seealso [angular_choice()] for segment graphs, [od_betweenness()], [analysis_radius()]
 #' @export
 #' @examples
 #' g <- axial_graph(cbind(0:4, 0, 1:5, 0))
@@ -167,76 +160,88 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
   result
 }
 
-#' Calculate PST Angular Choice on a segment graph
+#' Angular Choice of a segment graph
 #'
-#' Calls PSTAAngularChoice with upstream defaults: no length weighting,
-#' threshold zero and precision one degree. Length weighting uses PST's own
-#' origin/destination contributions. Turns strictly below angle_threshold become
-#' zero; rounded angle_precision units determine queue costs, while depths and
-#' angular limits use unrounded thresholded angles. Negative thresholds have no
-#' effect; thresholds above 180 zero all turns. Counts include the
-#' origin and depths use syntax angle units (90 degrees is one unit).
-#' Axmeter radii are rejected. The shared angular engine rejects graphs with
-#' more than 32 endpoint incidences at a coordinate, as does Angular Integration.
+#' Calculates Angular Choice (angular betweenness) for every segment of a segment graph: how often each
+#' segment lies on the angularly shortest routes between other segments. Use it to identify the segments that
+#' carry through-movement in a street network, optionally within a radius and with different normalisations.
 #'
-#' Optional normalization calls PST's exported Standard, AngularChoice (Turner),
-#' or AngularChoiceSyntax (NACH) routines. Syntax normalization reads the run's
-#' total depth: with `weigh_by_length = TRUE` the length-weighted total depth
-#' (`total_depth_weight`, as the original PST for QGIS plugin passes to the
-#' exported routine), otherwise `total_depth`. Raw choice is always retained.
-#' The call waits for internal workers; no workers call R. Worker caps follow
-#' [network_betweenness()]. Results own independent R storage and graphs are reusable.
+#' @details
+#' **Definition.** Routes are the shortest paths in angular cost. Turns smaller than `angle_threshold`
+#' degrees count as zero, and turn costs are rounded to `angle_precision` degree units when PST chooses
+#' between paths. Reported depths and angular radii use the unrounded, thresholded angles, in syntax angle
+#' units (90 degrees is one unit). A negative threshold has no effect and a threshold above 180 zeroes every
+#' turn. `node_count` includes the origin. Length weighting (`weigh_by_length = TRUE`) uses PST's own
+#' origin and destination contributions. Axmeter radii are rejected, and so are graphs with more than 32
+#' endpoint incidences at one coordinate (as for [angular_integration()]).
 #'
-#' **Known limitation (inherited from PST): very deep chains of shortest-path steps.** PST collects choice scores with a
-#' recursive traversal (`CollectScores`) of the shortest-path steps recorded from each origin, on a worker thread with the
-#' operating system's default thread stack, and has no depth bound. The recursion depth is bounded by the longest chain of
-#' consecutive shortest-path steps (in PST's discretised angular cost, equal-cost ties included) that is reachable within the
-#' radius, not by the number of segments in the network. A very long, nearly straight sequence of short segments analysed with
-#' an unrestricted or large radius can exhaust the worker-thread stack and terminate the R process (confirmed for an
-#' unrestricted 8,000-segment chain on macOS ARM64; Linux with an 8 MB stack survives tens of thousands of segments; it has only been
-#' reproduced on synthetic chains and no realistic network is known to reach such depths). The
-#' usable depth depends on the platform, compiler and flags. A `steps` radius bounds the depth by its value; `walking` and
-#' `straight` radii bound it by the segments that fit inside them; an `angular` radius does not bound straight runs. Angular
-#' Integration shares part of this recursion (`ClearProcessedFlags`) with a larger tolerance. rPSTool does not change PST's
-#' traversal; see <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md>.
+#' **Normalisation.** The raw choice score is always returned. `normalization` adds PST's `"standard"`,
+#' `"turner"` (Angular Choice) or `"syntax"` (normalised angular choice, NACH) normalisation. Syntax normalisation uses the run's total depth:
+#' the length-weighted total depth when `weigh_by_length = TRUE` (as the PST for QGIS plugin does), otherwise
+#' `total_depth`.
 #'
-#' **Multi-radius and multi-normalisation.** A call with one radius and one normalisation behaves, and is named,
-#' exactly as before. If `radius` varies one field (for example `analysis_radius(walking = c(500, 1000))`) or `normalization`
-#' has several entries, PST's analysis runs exactly once per radius and every requested PST normaliser is applied to that run's
-#' arrays. The result has `segment_id` once, then, radius by radius: `choice<tag>`, `node_count<tag>`, `total_depth<tag>`,
-#' `total_depth_weight<tag>` (weighted only) and `choice_<norm><tag>` for each normalisation other than `"none"`
-#' (the raw `choice` is always kept, so `"none"` adds no column). `<tag>` is `_` plus a dimension code (`s` straight, `w`
-#' walking, `n` steps, `a` angular) and the radius, written exactly (`.` as `p`): `choice_w500`, `choice_turner_w0p5`;
-#' it is empty when no field varies. Fixed restrictions apply to every radius and are recorded in the metadata
-#' (`rpst:*`, `rpst_manifest` attribute), which is authoritative. The same result goes to `output_file` or
-#' `spatial_output_file` as one table, published once after everything succeeded.
+#' **Several radii and normalisations.** One radius field of [analysis_radius()] may hold several values,
+#' and `normalization` may hold several names. PST then runs once per radius and each requested
+#' normaliser is applied to that run. A call with one radius and one normalisation returns the plain columns
+#' described under Value. Otherwise the result has `segment_id` once, then radius by radius: `choice<tag>`,
+#' `node_count<tag>`, `total_depth<tag>`, `total_depth_weight<tag>` (weighted only) and
+#' `choice_<norm><tag>` for each normalisation other than `"none"`. `<tag>` is an underscore plus a dimension
+#' code (`s` straight, `w` walking, `n` steps, `a` angular) and the radius written exactly with `.` as `p`,
+#' for example `choice_w500` or `choice_turner_w0p5`. It is empty when no field varies. Fixed restrictions
+#' apply to every radius and are recorded in the result's metadata (`rpst:*` keys and the `rpst_manifest`
+#' attribute). The same table goes to `output_file` or `spatial_output_file`. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
 #'
-#' @param graph A live graph created by [segment_graph()].
-#' @param radius Independent limits created by [analysis_radius()]. One field of `analysis_radius()` may hold several values (a
-#'   multi-radius): PST then runs once per radius, in the supplied order, and one combined result is returned or written.
-#'   See Details and <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
-#' @param weigh_by_length TRUE or FALSE (default).
-#' @param normalization Exact name: "none", "standard", "turner", "syntax"; or a character vector of distinct names.
-#'   With several names (or a multi-radius) the call returns the multi-result schema described in Details.
-#' @param angle_threshold One finite native-float number without nonzero underflow;
-#'   degrees, default zero.
-#' @param angle_precision One whole number from 1 through 4294967295; degrees,
-#'   default one. Zero is unsafe for the native queue and is rejected.
-#' @param output_file NULL (default) or one file path. When given, the analysis runs once and its result is written
-#'   directly to a Parquet file (zstd) without building an R data frame; see [pst_result_file]. Needs the optional
-#'   package arrow (>= 25.0.0). The file has the same columns, order and row identity as the data frame, with PST's
-#'   native float values stored as float32 (reading them back in R gives the identical doubles).
-#' @param overwrite `TRUE` or `FALSE` (default). With `output_file` or `spatial_output_file`, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see [pst_result_file] for the platform differences, notably on Windows.
-#' @param spatial_output_file `NULL` (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-#'   is written: the original geometry and attributes of the file the graph was built from, plus this analysis' result
-#'   columns, matched to the source features by position (no spatial join). The output format equals the source format
-#'   (GeoParquet or FlatGeobuf) and the CRS and geometry are unchanged; a result column named like a source column
-#'   replaces it, other result columns are appended. The destination must end in `.fgb` (FlatGeobuf source) or `.parquet` (GeoParquet source), in any letter case. Mutually exclusive with `output_file`; needs a graph built from a
-#'   file path; `overwrite` applies to this file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns an invisible [pst_result_file] descriptor. See <https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md>.
-#' @return With output_file = NULL, a data frame in input segment order: segment_id, raw choice, integer
-#'   node_count, total_depth; total_depth_weight in weighted mode, and normalized
-#'   when requested. Numeric outputs widen PST float values to double. With several normalisations or a multi-radius
-#'   the columns follow the multi-result schema described in Details. With `output_file` or `spatial_output_file`, the result is written to a file instead and an invisible `pst_result_file` descriptor (`path`, `rows`, `columns`, `format`) is returned; see [pst_result_file].
+#' **Threads.** PST uses several worker threads; see [network_betweenness()] for how to cap them.
+#'
+#' @section Limitations:
+#' **Very long chains of shortest-path steps can crash R.** PST gathers choice scores with a recursive
+#' procedure that has no depth limit and runs on a worker thread with the operating system's default stack. The
+#' recursion depth is set by the longest chain of consecutive shortest-path steps reachable within the radius
+#' (equal-cost ties included), not by the number of segments in the network. A very long, nearly straight
+#' sequence of short segments analysed with an unrestricted or large radius can exhaust the stack and terminate
+#' the R process without an R error.
+#'
+#' What has been observed: an unrestricted 8,000-segment collinear chain terminated the process on macOS ARM64,
+#' whereas a radius-limited run of the same chain succeeded. With an 8 MB thread stack on Linux, chains of tens of thousands
+#' of segments completed. The failure has only been reproduced on synthetic chains, and no realistic street
+#' network is known to reach such depths. The usable depth depends on the platform, compiler and flags, and has not
+#' been measured on Windows.
+#'
+#' Workaround: restrict the radius. A `steps` radius bounds the depth by its value, and a `walking` or `straight`
+#' radius by the number of segments that fit inside it. An `angular` radius does not bound runs of
+#' near-collinear segments. [angular_integration()] shares part of this recursion with a larger tolerance. rPSTool does not change
+#' PST's traversal. See `KNOWN_LIMITATIONS.md` in the repository and
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/angular-controls.md>.
+#'
+#' @param graph A segment graph created by [segment_graph()].
+#' @param radius Distance limits created by [analysis_radius()]. One field may hold several values (see Details).
+#' @param weigh_by_length `TRUE` or `FALSE` (default). Whether reached segments are weighted by length.
+#' @param normalization One or more of `"none"` (default), `"standard"`, `"turner"` and `"syntax"`.
+#' @param angle_threshold One finite number of degrees (default 0) that fits single precision without
+#'   underflow. Turns below it count as zero.
+#' @param angle_precision One whole number from 1 through 4294967295: the angular resolution in degrees
+#'   used to rank paths (default 1). Zero is rejected.
+#' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
+#'   see [pst_result_file].
+#' @return With a single radius and normalisation, a data frame in segment order with:
+#'   * `segment_id`: one-based identifier,
+#'   * `choice`: the raw choice score,
+#'   * `node_count` and `total_depth`: reached segments (including the origin) and their summed angular depth,
+#'   * `total_depth_weight` (weighted calls only), and
+#'   * `normalized` when requested.
+#'
+#'   Numeric columns are doubles widened from PST's single precision. For several radii or normalisations the
+#'   columns follow the naming scheme described in Details. With `output_file` or `spatial_output_file` the
+#'   results are written to a file and an invisible [pst_result_file] descriptor is returned.
+#' @seealso [angular_integration()], [segment_graph()], [analysis_radius()], [network_betweenness()]
+#' @references
+#' Turner, A. (2007). From axial to road-centre lines: a new representation for space syntax and a new
+#' model of route choice for transport network analysis. *Environment and Planning B: Planning and Design*,
+#' 34(3), 539-555. \doi{10.1068/b32067}
+#'
+#' Hillier, B., Yang, T. and Turner, A. (2012). Normalising least angle choice in Depthmap and how it opens up
+#' new perspectives on the global and local analysis of city space. *Journal of Space Syntax*, 3(2), 155-193.
 #' @export
 #' @examples
 #' g <- segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))

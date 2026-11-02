@@ -2,7 +2,7 @@
 % Please edit documentation in R/angular-integration.R
 \name{angular_integration}
 \alias{angular_integration}
-\title{Calculate PST Angular Integration on a segment graph}
+\title{Angular Integration of a segment graph}
 \usage{
 angular_integration(
   graph,
@@ -19,80 +19,96 @@ angular_integration(
 )
 }
 \arguments{
-\item{graph}{A live graph created by segment_graph().}
+\item{graph}{A segment graph created by \code{\link[=segment_graph]{segment_graph()}}.}
 
-\item{steps}{NULL or one non-negative whole number no greater than 2147483647, setting the native step limit.}
+\item{steps}{\code{NULL} (default) or one non-negative whole number no greater than 2147483647: a step limit.
+Supply either \code{steps} or \code{radius}.}
 
-\item{radius}{Optional independent limits created by analysis_radius(). Supply either radius or non-NULL steps. One field may hold
-several values (multi-radius): the native analysis then runs once per radius; see Details.}
+\item{radius}{Optional distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}. One field may hold several values
+(see Details).}
 
-\item{weigh_by_length}{TRUE or FALSE (default). Native length weighting of reached segments.}
+\item{weigh_by_length}{\code{TRUE} or \code{FALSE} (default). Whether reached segments are weighted by length.}
 
-\item{normalization}{Exact name: "turner" (default), "syntax", or "hillier"; or a character vector of distinct names
-(each PST normaliser is applied to the same native run).}
+\item{normalization}{\code{"turner"} (default), \code{"syntax"} or \code{"hillier"}, or a character vector of distinct names.}
 
-\item{angle_threshold}{One finite number fitting a native float without nonzero underflow; degrees, default zero.}
+\item{angle_threshold}{One finite number of degrees (default 0) that fits single precision without
+underflow.}
 
-\item{angle_precision}{One whole number from 1 through 4294967295; degrees, default one. Zero is unsafe for the native queue and is rejected.}
+\item{angle_precision}{One whole number from 1 through 4294967295: the angular resolution in degrees used
+to rank paths (default 1). Zero is rejected.}
 
-\item{weight_outputs}{TRUE or FALSE (default). Include native total_weight and total_depth_weight even when unweighted; weighted mode always includes them.}
+\item{weight_outputs}{\code{TRUE} or \code{FALSE} (default). Include \code{total_weight} and \code{total_depth_weight} even
+when unweighted.}
 
-\item{output_file}{NULL (default) or one file path. When given, the analysis runs once and its result is written
-directly to a Parquet file (zstd) without building an R data frame; see \link{pst_result_file}. Needs the optional
-package arrow (>= 25.0.0). The file has the same columns, order and row identity as the data frame, with PST's
-native float values stored as float32 (reading them back in R gives the identical doubles).}
-
-\item{overwrite}{\code{TRUE} or \code{FALSE} (default). With \code{output_file} or \code{spatial_output_file}, whether an existing file may be replaced. Replacement is a single rename and the old file is untouched if anything fails; see \link{pst_result_file} for the platform differences, notably on Windows.}
-
-\item{spatial_output_file}{\code{NULL} (default) or one file path. When given, the analysis runs once and a NEW spatial dataset
-is written: the original geometry and the original attributes of the file the graph was built from, plus this
-analysis' result columns, matched to the source features by position (no spatial join). The output format always
-equals the source format (GeoParquet to GeoParquet, FlatGeobuf to FlatGeobuf) and the CRS and geometry are carried
-over unchanged. A result column whose name equals a source column replaces that column; other result columns are
-appended. The destination must end in \code{.fgb} (FlatGeobuf source) or \code{.parquet} (GeoParquet source), in any letter case. Mutually exclusive with \code{output_file}; needs a graph built from a file path; \code{overwrite} applies to this
-file only, never to the source. The source file must not be modified or reordered after the graph is built. Returns
-an invisible \link{pst_result_file} descriptor. See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/spatial-io/spatial-output.md}.}
+\item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
+see \link{pst_result_file}.}
 }
 \value{
-With output_file = NULL, a data frame in input segment order: one-based segment_id, integration, integer node_count and total_depth. Weighted mode or weight_outputs adds total_weight and total_depth_weight. Float outputs are widened to double. With several radii or normalisations the columns follow the multi-result schema described in Details. With \code{output_file} or \code{spatial_output_file}, the result is written to a file instead and an invisible \code{pst_result_file} descriptor (\code{path}, \code{rows}, \code{columns}, \code{format}) is returned; see \link{pst_result_file}.
+With a single radius and normalisation, a data frame in segment order with:
+\itemize{
+\item \code{segment_id}: one-based identifier,
+\item \code{integration}: the normalised score,
+\item \code{node_count}: integer number of segments reached, including the origin,
+\item \code{total_depth}: summed angular depth, and
+\item \code{total_weight} and \code{total_depth_weight} in weighted calls or with \code{weight_outputs = TRUE}.
+}
+
+Numeric columns are doubles widened from PST's single precision. For several radii or normalisations the
+columns follow the naming scheme described in Details. With \code{output_file} or \code{spatial_output_file} the
+results are written to a file and an invisible \link{pst_result_file} descriptor is returned.
 }
 \description{
-Calls PSTAAngularIntegration and its exported Turner, syntax (NAIN) or Hillier
-normalizer. Defaults retain the unweighted Turner score and existing columns.
-Length weighting selects the matching native length-weighted normalizer, using
-total_weight and total_depth_weight; no R score formula is evaluated.
+Calculates Angular Integration for every segment of a segment graph: how close each segment is, in angular
+cost, to all other segments within a radius. Use it for segment-based (angular) integration analysis of
+street networks, optionally weighted by segment length and with different normalisations.
 }
 \details{
-Node counts include the origin; native total_weight excludes it. In unweighted
-mode total_weight counts other reached segments; in weighted mode it sums their
-lengths. Total depth and depth-weight sums use syntax angle units (90 degrees is
-one unit). Weighted results include both weight columns. Set weight_outputs to
-TRUE to also request them in unweighted mode.
+\strong{Normalisation.} \code{normalization} selects PST's \code{"turner"} (default), \code{"syntax"} (normalised angular
+integration, NAIN) or \code{"hillier"} normalisation; with \code{weigh_by_length = TRUE} the matching length-weighted
+form is used. All scores are computed by PST.
 
-Turns strictly below angle_threshold degrees become zero. Negative thresholds
-have no effect; thresholds above 180 zero every turn. PST rounds each remaining
-turn to angle_precision degree units for shortest-path queue priorities. Reported
-depths and angular limits use unrounded thresholded angles. Coarse precision can
-change path ties. Neither control changes geometry or connectivity.
+\strong{Reached segments.} \code{node_count} includes the origin, whereas \code{total_weight} excludes it. Unweighted,
+\code{total_weight} is the number of other reached segments; weighted, it is the sum of their lengths. Total depth
+and depth-weight sums are in syntax angle units (90 degrees is one unit). Weighted calls always include
+\code{total_weight} and \code{total_depth_weight}; \code{weight_outputs = TRUE} adds them to unweighted calls too.
 
-The graph must have exact endpoint connectivity and at most 32 endpoint incidences
-per coordinate. Axmeter is unsupported. Worker caps follow network_betweenness;
-workers never call R and failures propagate after workers join. Outputs own
-independent R storage and the graph remains reusable. Written native NaN/Inf
-values remain unchanged.
+\strong{Angle settings.} Turns strictly smaller than \code{angle_threshold} degrees count as zero (a negative
+threshold has no effect, and a threshold above 180 zeroes every turn). PST rounds each remaining turn to
+\code{angle_precision} degree units when ranking shortest paths, so a coarse precision can change ties.
+Reported depths and angular limits use the unrounded, thresholded angles. Neither setting changes the
+geometry or connectivity.
 
-\strong{Multi-radius and multi-normalisation.} A call with one radius and one normalisation behaves, and is named, exactly as
-before. If \code{radius} varies one field or \code{normalization} has several entries, PST's analysis runs once per radius and every
-requested normaliser (length-weighted or unweighted, per \code{weigh_by_length}) is applied to that run's diagnostics. The result
-has \code{segment_id} once, then radius by radius: \verb{integration_<norm><tag>} for each normalisation, \verb{node_count<tag>},
-\verb{total_depth<tag>} and, when weighted or \code{weight_outputs}, \verb{total_weight<tag>} and \verb{total_depth_weight<tag>}. \verb{<tag>} is \verb{_}
-plus a dimension code (\code{s} straight, \code{w} walking, \code{n} steps, \code{a} angular) and the radius written exactly (\code{.} as \code{p}), empty when
-no field varies. Fixed restrictions are recorded in the metadata (\verb{rpst:*}, \code{rpst_manifest} attribute), which is authoritative.
-See \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
+\strong{Several radii and normalisations.} One radius field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values, and
+\code{normalization} may hold several names. PST then runs once per radius and every requested normaliser is
+applied to that run. The result has \code{segment_id} once, then radius by radius:
+\verb{integration_<norm><tag>} for each normalisation, \verb{node_count<tag>}, \verb{total_depth<tag>} and, when weighted
+or \code{weight_outputs = TRUE}, \verb{total_weight<tag>} and \verb{total_depth_weight<tag>}. \verb{<tag>} is an underscore
+plus a dimension code (\code{s} straight, \code{w} walking, \code{n} steps, \code{a} angular) and the radius written exactly
+with \code{.} as \code{p}, and is empty when no field varies. Fixed restrictions are recorded in the result's
+metadata (\verb{rpst:*} keys and the \code{rpst_manifest} attribute). See
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 }
+\section{Limitations}{
+
+The graph must have exact endpoint connectivity with at most 32 endpoint incidences at any coordinate, and
+axmeter radii are rejected. Angular Integration shares part of the deep recursion that limits
+\code{\link[=angular_choice]{angular_choice()}}, but with a larger tolerance; see the Limitations section of that page.
+}
+
 \examples{
 g <- segment_graph(rbind(c(0, 0, 3, 0), c(3, 0, 3, 3)))
 angular_integration(g)
 angular_integration(g, weigh_by_length = TRUE, normalization = "syntax")
 angular_integration(g, radius = analysis_radius(steps = c(1, 2)))
+}
+\references{
+Turner, A. (2007). From axial to road-centre lines: a new representation for space syntax and a new
+model of route choice for transport network analysis. \emph{Environment and Planning B: Planning and Design},
+34(3), 539-555. \doi{10.1068/b32067}
+
+Hillier, B., Yang, T. and Turner, A. (2012). Normalising least angle choice in Depthmap and how it opens up
+new perspectives on the global and local analysis of city space. \emph{Journal of Space Syntax}, 3(2), 155-193.
+}
+\seealso{
+\code{\link[=angular_choice]{angular_choice()}}, \code{\link[=network_integration]{network_integration()}} for axial graphs, \code{\link[=segment_graph]{segment_graph()}}, \code{\link[=analysis_radius]{analysis_radius()}}
 }

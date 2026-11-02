@@ -2,7 +2,7 @@
 % Please edit documentation in R/construction.R
 \name{create_junctions}
 \alias{create_junctions}
-\title{Create junction coordinates with pinned PST}
+\title{Find the junctions between lines}
 \usage{
 create_junctions(
   x,
@@ -14,53 +14,48 @@ create_junctions(
 )
 }
 \arguments{
-\item{x}{Integer or double matrix with columns \verb{x1,y1,x2,y2}, or \verb{x,y}
-when \code{line_indices} is supplied, or the corresponding XY LINESTRING/POINT
-sf/sfc form. Column names do not determine order.}
+\item{x}{A numeric matrix with columns \verb{x1, y1, x2, y2} (column names do not determine the order), or \verb{x, y} when
+\code{line_indices} is supplied, or the equivalent XY LINESTRING/POINT \code{sf}/\code{sfc} object.}
 
-\item{line_indices}{Optional numeric two-column matrix of whole one-based
-endpoint indices into \code{x}. PST's world center uses the coordinate prefix
-through the largest referenced index, including unused rows in that prefix.}
+\item{line_indices}{Optional two-column matrix of whole, one-based endpoint indices into \code{x}. PST's world centre uses
+the coordinate prefix through the largest referenced index, including unused rows in that prefix.}
 
-\item{y}{Optional second layer, in the same matrix or sf/sfc formats as \code{x}.}
+\item{y}{Optional second layer in the same formats as \code{x}.}
 
 \item{line_indices_y}{Optional endpoint index matrix for \code{y}.}
 
-\item{unlinks}{Optional numeric matrix with columns \verb{x,y}, or XY POINT sf/sfc.}
+\item{unlinks}{Optional matrix with columns \verb{x, y}, or XY POINT \code{sf}/\code{sfc} object.}
 
-\item{output}{\code{"native"} (default) or \code{"sf"} (requires optional sf).}
+\item{output}{\code{"native"} (default) returns a matrix; \code{"sf"} returns point geometry (requires 'sf').}
 }
 \value{
-A double matrix with columns \verb{x,y}. It owns its R storage; the
-transient native result owner is freed before returning. With \code{output="sf"},
-returns XY POINT geometry with one-based \code{junction_id} in native order,
-derived solely from the copied native coordinates.
+A numeric matrix with columns \code{x} and \code{y}, in PST's order. With \code{output = "sf"}, XY POINT features with a
+one-based \code{junction_id}.
 }
 \description{
-Explicit native construction utility, independent of any graph owner. PST
-computes in local floats around the first layer's double world center.
-One layer retains repeated pairwise intersections; two layers retain unique
-inter-layer intersections. A shared endpoint of just two lines does not
-necessarily qualify in one-layer mode. Points retain native sorted order.
-Unlinks remove the nearest junction without a tolerance. Pinned PST's unlink
-compaction can also discard leading survivors; rPSTool preserves that behaviour.
+Returns the coordinates where lines cross or meet, optionally between two sets of lines, after removing unlinked
+crossings. It is a stand-alone utility and does not create a graph.
 }
 \details{
-An empty first line layer is rejected before PST: the pinned implementation
-returns success without writing its result. A nonempty layer can validly
-produce a zero-row native-written result. An explicitly empty second layer
-selects two-layer mode and therefore produces no intersections.
+PST works in single-precision local coordinates around the world centre of the first layer. With one layer, repeated
+pairwise intersections are kept. With two layers (\code{y}), only the unique intersections between the layers are kept. A
+shared endpoint of just two lines does not necessarily count as a junction in one-layer mode. Points are returned in
+PST's sorted order. Each unlink removes the nearest junction without a tolerance; PST's unlink compaction can also
+discard leading survivors, and rPSTool preserves that behaviour.
 
-Optional sf/sfc inputs use exactly two finite XY vertices per LINESTRING
-for packed layers, or XY POINT coordinate features with explicit indices.
-Unlinks accept XY POINTs. Attributes are ignored. Known geographic CRS is
-rejected; sf inputs must share compatible metadata, including unknown CRS.
-Mixed matrices must already share the numerical frame. No reprojection or
-unit conversion occurs. Output CRS comes only from supplied sf metadata
-(matrix-only \code{output = "sf"} results have unknown CRS). Inputs must be
-finite and fit PST's native coordinate and distance bounds.
+An empty first layer is rejected, because PST returns without writing a result. A non-empty layer can validly give
+zero junctions. An explicitly empty second layer selects two-layer mode and therefore gives no intersections.
+
+\code{sf} inputs are XY LINESTRINGs with exactly two finite vertices, or XY POINT coordinates with explicit indices; unlinks
+are XY POINTs. Attributes are ignored. A known geographic CRS is rejected, \code{sf} inputs must have compatible CRS
+(including unknown), and mixed matrices must already share one coordinate frame. Nothing is reprojected or converted.
+The output CRS comes only from supplied \code{sf} metadata (unknown for matrix input). Inputs must be finite and within
+PST's coordinate range.
 }
 \examples{
 x <- rbind(c(-1, 0, 1, 0), c(0, -1, 0, 1))
 create_junctions(x)
+}
+\seealso{
+\code{\link[=create_segment_map]{create_segment_map()}}, \code{\link[=axial_graph]{axial_graph()}}
 }

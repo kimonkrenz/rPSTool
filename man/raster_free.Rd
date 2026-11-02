@@ -2,24 +2,21 @@
 % Please edit documentation in R/raster.R
 \name{raster_free}
 \alias{raster_free}
-\title{Release a native comparison raster}
+\title{Release a comparison raster}
 \usage{
 raster_free(raster)
 }
 \arguments{
-\item{raster}{A \code{pst_raster}.}
+\item{raster}{A raster created by \code{\link[=compare_line_results]{compare_line_results()}}.}
 }
 \value{
 \code{NULL}, invisibly.
 }
 \description{
-Releases the comparison owner and its dependent raster.
-}
-\details{
-Release is idempotent and invalidates all aliases. Garbage
-collection also releases the comparison owner. Saved/deserialized native
-pointers must be reconstructed; copied raster data and polygons are ordinary
-R values with independent lifetimes.
+Releases the memory held by a raster created by \code{\link[=compare_line_results]{compare_line_results()}}. Releasing is optional, since a raster is also
+released when it is no longer in use, and repeating it is safe. After release the raster (and every copy of it) can no longer
+be used, but data already copied with \code{\link[=raster_data]{raster_data()}} or \code{\link[=raster_to_polygons]{raster_to_polygons()}} is unaffected. A raster cannot be saved and
+restored; recreate it instead.
 }
 \examples{
 x <- matrix(c(0, 0, 2, 2, 0, 2, 2, 0), 2, 4, byrow = TRUE)
