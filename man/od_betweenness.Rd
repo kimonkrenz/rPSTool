@@ -14,7 +14,9 @@ od_betweenness(
   destination_weights = NULL,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL
+  spatial_output_file = NULL,
+  origin_weight_name = NULL,
+  destination_weight_name = NULL
 )
 }
 \arguments{
@@ -37,9 +39,13 @@ polygon or point group). Zero and negative values are excluded by PST.}
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}.}
+
+\item{origin_weight_name, destination_weight_name}{\code{NULL}, or short names for \code{origin_weights} and
+\code{destination_weights} used in the result column names (\verb{..._wo<name>_wd<name>}); see \code{weight_name} in
+\code{\link[=network_betweenness]{network_betweenness()}}.}
 }
 \value{
-A data frame in line order with one-based \code{line_id} and \code{od_betweenness} (double, widened from single
+A data frame in line order with one-based \code{line_id} and \verb{od_<d>_<radius>} (for example \code{od_w_rw800}; see \link{result_column_names}) (double, widened from single
 precision). Empty origin or destination sets give PST's written zero scores. With \code{output_file} or
 \code{spatial_output_file} the results are written to a file and an invisible \link{pst_result_file} descriptor is returned.
 }

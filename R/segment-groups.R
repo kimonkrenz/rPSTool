@@ -134,8 +134,8 @@ print.pst_segment_group_graph <- function(x, ...) {
 #'   [pst_result_file]. `integration`, `node_count` and `total_depth` are stored as nullable columns: a row is
 #'   null in all three exactly when PST wrote neither its count nor its depth, which is when the data frame
 #'   holds `NA`.
-#' @return A data frame in group order with `group_id` (integer), `integration` (double), `node_count`
-#'   (integer) and `total_depth` (double). Outputs PST did not write are `NA`. With `output_file` an invisible
+#' @return A data frame in group order with `group_id` (integer), `gi_<radius>` (integration, double), `nc_<radius>`
+#'   (node count, integer) and `td_<radius>` (total depth, double); see [result_column_names]. Outputs PST did not write are `NA`. With `output_file` an invisible
 #'   [pst_result_file] descriptor is returned instead.
 #' @seealso [segment_group_graph()], [segment_grouping()], [analysis_radius()]
 #' @export
@@ -149,16 +149,17 @@ print.pst_segment_group_graph <- function(x, ...) {
 segment_group_integration <- function(graph, radius = analysis_radius(), output_file = NULL, overwrite = FALSE) {
   ptr <- .pst_group_pointer(graph, "pst_segment_group_graph")
   overwrite <- .pst_flag(overwrite, "overwrite")
+  cols <- .pst_nm_segment_group_integration(radius)
   if (!is.null(output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "segment_group_integration", list(radius = .pst_radius_parameters(radius)), graph, ptr,
-      c("group_id", "integration", "node_count", "total_depth"),
+      c("group_id", .pst_nm_names(cols)),
       "group id order (one-based, ascending); no external identifiers",
       function(stream, columns, metadata_names, metadata_values, batch_rows)
         .Call(C_rpst_segment_group_integration_stream, ptr, radius, stream, columns, metadata_names, metadata_values,
               batch_rows),
-      graph_type = "segment_group", rows = .Call(C_rpst_segment_group_graph_info, ptr)))
+      graph_type = "segment_group", rows = .Call(C_rpst_segment_group_graph_info, ptr), cols = cols))
   out <- .Call(C_rpst_segment_group_integration, ptr, radius)
-  data.frame(group_id = seq_along(out[[1L]]), integration = out[[1L]],
-             node_count = out[[2L]], total_depth = out[[3L]])
+  structure(data.frame(group_id = seq_along(out[[1L]]), integration = out[[1L]],
+             node_count = out[[2L]], total_depth = out[[3L]]), names = c("group_id", .pst_nm_names(cols)))
 }

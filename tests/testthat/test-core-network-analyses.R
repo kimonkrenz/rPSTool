@@ -250,7 +250,7 @@ test_that("all radius fields and centrality modes match direct official-wrapper 
     radius <- do.call(analysis_radius,case$radius)
     out <- switch(case$routine,
       reach=network_reach(a,radius),
-      integration=rPSTool:::.pst_network_integration_run(a,radius=radius),
+      integration=legacy_ni_run(a,radius=radius),
       betweenness=network_betweenness(a,radius,case$distance),
       angular_choice=angular_choice(s,radius,case$weighted),
       angular_integration=angular_integration(s,radius=radius))

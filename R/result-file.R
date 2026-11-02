@@ -99,7 +99,7 @@
 # Compact, useful file metadata (Parquet key/value metadata via the Arrow schema).
 .pst_result_metadata <- function(fn, parameters, graph_type, rows, graph,
                                  order = "native graph order (source feature order); no external feature identifiers",
-                                 float_columns = TRUE) {
+                                 float_columns = TRUE, cols = NULL) {
   crs <- attr(graph, "crs", exact = TRUE)
   wkt <- if (is.list(crs) && is.character(crs$wkt) && length(crs$wkt) == 1L && !is.na(crs$wkt)) crs$wkt else ""
   status <- .pst_engine_pin()
@@ -116,6 +116,8 @@
     "rpst:order" = order)
   # only tables that actually hold native single-precision columns say so (Segment Grouping has none: all int32)
   if (float_columns) md <- c(md, "rpst:float_columns" = "float32: PST native single precision, widened exactly to double by R")
+  if (!is.null(cols))   # column manifest (docs/output-naming.md); the names are labels, this is the authoritative description
+    md <- c(md, "rpst:naming" = "1", "rpst:columns" = .pst_json(.pst_nm_manifest(cols)))
   md
 }
 
@@ -231,13 +233,6 @@ print.pst_result_file <- function(x, ...) {
   invisible(x)
 }
 
-.pst_angular_integration_names <- function(weights)
-  c("segment_id", "integration", "node_count", "total_depth",
-    if (weights) c("total_weight", "total_depth_weight"))
-.pst_angular_choice_names <- function(weigh_by_length, normalization)
-  c("segment_id", "choice", "node_count", "total_depth",
-    if (weigh_by_length) "total_depth_weight", if (normalization != "none") "normalized")
-
 .pst_radius_parameters <- function(radius_or_steps) {
   if (inherits(radius_or_steps, "pst_radius")) unclass(radius_or_steps) else list(steps = radius_or_steps)
 }
@@ -246,10 +241,10 @@ print.pst_result_file <- function(x, ...) {
 # the analysis' own native stream entry point as call(stream, column_names, metadata_names, metadata_values,
 # batch_rows); the row count comes back from that native call.
 .pst_axial_result_file <- function(output_file, overwrite, fn, parameters, graph, ptr, columns, order, call,
-                                   graph_type = "axial", rows = NULL, spatial_output_file = NULL) {
+                                   graph_type = "axial", rows = NULL, spatial_output_file = NULL, cols = NULL) {
   # Native size of the graph, never editable R metadata: lines for an axial graph (default), or the caller's native count.
   if (is.null(rows)) rows <- .Call(C_rpst_graph_info, ptr)[[1L]]
-  metadata <- .pst_result_metadata(fn, parameters, graph_type, rows, graph, order)
+  metadata <- .pst_result_metadata(fn, parameters, graph_type, rows, graph, order, cols = cols)
   invisible(.pst_write_result_file(
     output_file, overwrite, columns = columns, expected_rows = NA_real_,
     export = function(stream, batch_rows) call(stream, columns, names(metadata), unname(metadata), batch_rows),

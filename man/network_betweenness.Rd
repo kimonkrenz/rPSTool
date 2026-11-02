@@ -13,7 +13,8 @@ network_betweenness(
   attraction_points = NULL,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL
+  spatial_output_file = NULL,
+  weight_name = NULL
 )
 }
 \arguments{
@@ -33,12 +34,18 @@ underflow to zero). Supply one per line, or one per attraction point when \code{
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
 see \link{pst_result_file}. In a result file, the \code{NA} values described below are stored as nulls.}
+
+\item{weight_name}{\code{NULL}, or a short name for \code{weights} (for example \code{"population"}) used in the result column
+names (\code{..._wpopulation_...}). Without it, user weights are labelled \code{wv}. The name is lower-cased and every
+other character than letters, digits and \verb{_} becomes \verb{_}; the original is kept in the result metadata. It is a
+label only: it does not check that the same name always means the same values.}
 }
 \value{
-A data frame in line order with \code{line_id}, the raw \code{betweenness}, integer \code{node_count} and
-\code{total_depth}, plus \code{normalized} when requested. Raw \code{betweenness} and \code{"standard"} normalisation are never \code{NA}.
-\code{node_count} and \code{total_depth} are \code{NA} for origins PST skipped in weighted calls, and \code{normalized}
-is \code{NA} for those rows with \code{"freeman"} or \code{"syntax"}. \code{NaN} and \code{Inf} values written by PST are returned
+A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with
+\code{attraction_points}), integer node count (\code{nc_...}) and total depth (\code{td_...}), plus the normalised score
+(\code{..._s}, \code{..._f} or \code{..._y}) when requested; see \link{result_column_names}. The raw score and \code{"standard"}
+normalisation are never \code{NA}. The node count and total depth are \code{NA} for origins PST skipped in weighted calls,
+and the normalised score is \code{NA} for those rows with \code{"freeman"} or \code{"syntax"}. \code{NaN} and \code{Inf} values written by PST are returned
 unchanged. With \code{output_file} or \code{spatial_output_file} the results are written to a file and an invisible
 \link{pst_result_file} descriptor is returned (\code{line_id} and \code{node_count} are stored as int32, the other
 columns as float32).

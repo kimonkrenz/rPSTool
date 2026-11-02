@@ -68,7 +68,7 @@ rs_balanced <- function(before, after = { invisible(gc()); invisible(gc()); rs_c
 # Read a Parquet file as plain R vectors (no tibble/data.frame class differences).
 rs_read <- function(path) {
   b <- as.data.frame(rs_read_parquet(path))   # owned, non-mapped handle: the file can be replaced straight away on Windows
-  setNames(lapply(names(b), function(n) as.vector(b[[n]])), names(b))
+  setNames(lapply(names(b), function(n) as.vector(b[[n]])), legacy_names(names(b)))   # legacy role names: see helper-legacy-schema.R
 }
 rs_bytes <- function(x) if (is.double(x)) writeBin(x, raw()) else writeBin(as.integer(x), raw())
 # Exact comparison of a persisted table with the in-memory data frame: names, order, rows, R types, values and,

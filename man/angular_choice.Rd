@@ -38,14 +38,17 @@ see \link{pst_result_file}.}
 With a single radius and normalisation, a data frame in segment order with:
 \itemize{
 \item \code{segment_id}: one-based identifier,
-\item \code{choice}: the raw choice score,
-\item \code{node_count} and \code{total_depth}: reached segments (including the origin) and their summed angular depth,
-\item \code{total_depth_weight} (weighted calls only), and
-\item \code{normalized} when requested.
+\item \verb{ac_a_<radius>[_wl]_n[...]}: the raw choice score,
+\item \code{nc_...} and \code{td_...}: reached segments (including the origin) and their summed angular depth,
+\item \code{tdw_...} (weighted calls only), and
+\item \code{ac_..._t}, \code{ac_..._s} or \code{ac_..._c}: the Turner, standard or NACH normalisation when requested.
 }
 
+For example \code{ac_a_rw3000_n}, \code{nc_a_rw3000} and \code{td_a_rw3000} for a walking radius of 3000. The names are
+described in \link{result_column_names}.
+
 Numeric columns are doubles widened from PST's single precision. For several radii or normalisations the
-columns follow the naming scheme described in Details. With \code{output_file} or \code{spatial_output_file} the
+columns repeat this scheme radius by radius, named exactly as in a single call. With \code{output_file} or \code{spatial_output_file} the
 results are written to a file and an invisible \link{pst_result_file} descriptor is returned.
 }
 \description{
@@ -69,14 +72,10 @@ the length-weighted total depth when \code{weigh_by_length = TRUE} (as the PST f
 
 \strong{Several radii and normalisations.} One radius field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values,
 and \code{normalization} may hold several names. PST then runs once per radius and each requested
-normaliser is applied to that run. A call with one radius and one normalisation returns the plain columns
-described under Value. Otherwise the result has \code{segment_id} once, then radius by radius: \verb{choice<tag>},
-\verb{node_count<tag>}, \verb{total_depth<tag>}, \verb{total_depth_weight<tag>} (weighted only) and
-\verb{choice_<norm><tag>} for each normalisation other than \code{"none"}. \verb{<tag>} is an underscore plus a dimension
-code (\code{s} straight, \code{w} walking, \code{n} steps, \code{a} angular) and the radius written exactly with \code{.} as \code{p},
-for example \code{choice_w500} or \code{choice_turner_w0p5}. It is empty when no field varies. Fixed restrictions
-apply to every radius and are recorded in the result's metadata (\verb{rpst:*} keys and the \code{rpst_manifest}
-attribute). The same table goes to \code{output_file} or \code{spatial_output_file}. See
+normaliser is applied to that run. The result has \code{segment_id} once, then radius by radius the same columns a
+single call with that radius would give, named identically (see Value and \link{result_column_names}). Fixed
+restrictions apply to every radius and are recorded in the result's metadata (\verb{rpst:*} keys and the
+\code{rpst_manifest} attribute). The same table goes to \code{output_file} or \code{spatial_output_file}. See
 \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 
 \strong{Threads.} PST uses several worker threads; see \code{\link[=network_betweenness]{network_betweenness()}} for how to cap them.

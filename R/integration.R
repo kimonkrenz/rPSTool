@@ -43,12 +43,14 @@
 #' @return With `junctions = FALSE`, a data frame with one row per input line, in the order of the lines
 #'   supplied to [axial_graph()]:
 #'   * `line_id`: one-based row index of the line,
-#'   * `integration`: PST's integration score,
-#'   * `node_count`: integer number of lines reached, including the line itself,
-#'   * `total_depth`: the sum of the topological steps to the reached lines.
+#'   * `ni_s_<radius>`: PST's integration score (for example `ni_s_rs3` within three steps, `ni_s_rg` unrestricted),
+#'   * `nc_s_<radius>`: integer number of lines reached, including the line itself,
+#'   * `td_s_<radius>`: the sum of the topological steps to the reached lines.
+#'
+#'   The names are described in [result_column_names].
 #'
 #'   With `junctions = TRUE`, a list with `lines` (that data frame) and `junctions`, a data frame with
-#'   one-based `junction_id`, world coordinates `x` and `y` and `integration` (a POINT `sf` object if
+#'   one-based `junction_id`, world coordinates `x` and `y` and the junction score `nj_s_<radius>` (a POINT `sf` object if
 #'   `junction_output = "sf"`). A graph without crossings gives a zero-row junction table. With `output_file`
 #'   or `spatial_output_file` the results are written to a file and an invisible [pst_result_file]
 #'   descriptor is returned.
@@ -107,21 +109,24 @@ network_integration <- function(graph, steps = NULL, radius = NULL, junctions = 
            call. = FALSE)
     return(.pst_axial_result_file(
       output_file, overwrite, "network_integration", list(radius = .pst_radius_parameters(steps)), graph, ptr,
-      c("line_id", "integration", "node_count", "total_depth"), "native line order (source feature order); no external feature identifiers",
+      c("line_id", .pst_nm_names(.pst_nm_network_integration(steps))), "native line order (source feature order); no external feature identifiers",
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_network_integration_stream, ptr, steps, stream, columns, metadata_names, metadata_values, batch_rows),
-      spatial_output_file = spatial_output_file))
+      spatial_output_file = spatial_output_file, cols = .pst_nm_network_integration(steps)))
   }
   out <- .Call(C_rpst_network_integration_outputs, ptr, steps, junctions)
   lines <- data.frame(line_id = seq_along(out[[1L]]), integration = out[[1L]],
              node_count = out[[2L]], total_depth = out[[3L]])
+  names(lines) <- c("line_id", .pst_nm_names(.pst_nm_network_integration(steps)))
+  junction_name <- .pst_nm_names(.pst_nm_junction(steps))
   if (!junctions) return(lines)
   if (junction_output == "sf")
     return(list(lines = lines,
                 junctions = .pst_sf_point_output(
                   out[[4L]], attr(graph, "crs", exact = TRUE),
-                  data.frame(junction_id = seq_along(out[[5L]]), integration = out[[5L]]))))
+                  structure(data.frame(junction_id = seq_along(out[[5L]]), integration = out[[5L]]),
+                              names = c("junction_id", junction_name)))))
   list(lines = lines,
-       junctions = data.frame(junction_id = seq_along(out[[5L]]),
+       junctions = structure(data.frame(junction_id = seq_along(out[[5L]]),
                               x = out[[4L]][, 1L], y = out[[4L]][, 2L],
-                              integration = out[[5L]]))
+                              integration = out[[5L]]), names = c("junction_id", "x", "y", junction_name)))
 }

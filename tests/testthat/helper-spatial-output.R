@@ -52,11 +52,13 @@ so_leftovers <- function(dir) list.files(dir, pattern = "^\\.rpst-", all.files =
 so_read <- function(path, format) {
   if (format == "flatgeobuf") {
     x <- sf::st_read(path, quiet = TRUE)
-    list(attrs = sf::st_drop_geometry(x), wkb = sf::st_as_binary(sf::st_geometry(x)), crs = sf::st_crs(x), names = names(sf::st_drop_geometry(x)))
+    list(attrs = legacy_frame(sf::st_drop_geometry(x)), wkb = sf::st_as_binary(sf::st_geometry(x)), crs = sf::st_crs(x),
+         names = legacy_names(names(sf::st_drop_geometry(x))))
   } else {
     t <- rs_read_parquet(path, as_data_frame = FALSE)
     d <- as.data.frame(t)
-    list(attrs = d[setdiff(names(d), "geometry")], wkb = unclass(d$geometry), table = t, names = setdiff(names(d), "geometry"))
+    list(attrs = legacy_frame(d[setdiff(names(d), "geometry")]), wkb = unclass(d$geometry), table = t,
+         names = legacy_names(setdiff(names(d), "geometry")))
   }
 }
 so_wkb_of <- function(path) sf::st_as_binary(sf::st_geometry(sf::st_read(path, quiet = TRUE)))

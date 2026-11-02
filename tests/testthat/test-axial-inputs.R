@@ -52,9 +52,9 @@ test_that("junction integration matches direct PST and retains existing line res
     g <- axial_case_graph(case)
     for (expected in case$integrations) {
       radius <- do.call(analysis_radius, expected$radius)
-      result <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE)
+      result <- legacy_ni_run(g, radius = radius, junctions = TRUE)
       expect_identical(names(result), c("lines", "junctions"))
-      expect_identical(result$lines, rPSTool:::.pst_network_integration_run(g, radius = radius))
+      expect_identical(result$lines, legacy_ni_run(g, radius = radius))
       expect_identical(result$lines$line_id, seq_along(expected$scores))
       expect_identical(result$lines$node_count, as.integer(unlist(expected$counts)))
       axial_exact_classes(result$lines$integration, axial_vector(expected$scores))
@@ -65,7 +65,7 @@ test_that("junction integration matches direct PST and retains existing line res
       actual_coords <- matrix(c(result$junctions$x, result$junctions$y), ncol=2L)
       expect_identical(actual_coords, axial_rows(expected$junction_coords))
       axial_exact_classes(result$junctions$integration, axial_vector(expected$junction_scores))
-      expect_identical(result, rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE))
+      expect_identical(result, legacy_ni_run(g, radius = radius, junctions = TRUE))
     }
     axial_native("graph_release", g$ptr)
   }

@@ -47,6 +47,10 @@
 #'   and each feature becomes one group (an empty polygon is a zero-count group). Empty collections, multipart, mixed,
 #'   Z/M and empty POINT features are rejected.
 #' @param radius Distance limits created by [analysis_radius()].
+#' @param weight_name `NULL`, or a short name for the weight vector (`attraction_values` or `line_weights`) used in
+#'   the result column names (`..._wpopulation`). Without it, user weights are labelled `wv`. The name is lower-cased
+#'   and every other character than letters, digits and `_` becomes `_`; the original is kept in the result metadata.
+#'   It is a label only: it does not check that the same name always means the same values.
 #' @param origin `"lines"`, `"junctions"`, `"points"` or `"point_groups"`. Points and point groups are those retained
 #'   when the graph was built, not newly supplied origins.
 #' @param distance The distance used, default `"steps"`. For `attraction_reach()`: `"straight"`, `"walking"`, `"steps"`,
@@ -70,8 +74,9 @@
 #'   omit it.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them; see
 #'   [pst_result_file]. `spatial_output_file` is available only with `origin = "lines"`.
-#' @return A data frame with one-based `origin_id` and `attraction_reach` or `attraction_distance` (doubles widened
-#'   from PST's single precision). `attraction_distance()` also returns the integer `destination_index` unless
+#' @return A data frame with one-based `origin_id` and `ar_...` (attraction reach) or `ad_...` (attraction distance)
+#'   (doubles widened from PST's single precision), named as described in [result_column_names] (for example
+#'   `ar_w_rw800`). `attraction_distance()` also returns the integer destination index `di_...` unless
 #'   `destination_indices = FALSE`. With `output_file` or `spatial_output_file` the results are written to a file and an
 #'   invisible [pst_result_file] descriptor is returned.
 #' @seealso [axial_graph()], [network_reach()], [analysis_radius()]
@@ -85,7 +90,7 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
     origin = "lines", distance = "steps", points_per_polygon = NULL,
     polygon_point_interval = NULL, attraction_values = NULL, decay = "constant",
     decay_constant = NULL, distribution = "divide", collection = "mean",
-    output_file = NULL, overwrite = FALSE, spatial_output_file = NULL) {
+    output_file = NULL, overwrite = FALSE, spatial_output_file = NULL, weight_name = NULL) {
   ptr <- .pst_analysis_graph(graph)
   .pst_validate_radius(radius)
   origin <- .pst_mode(origin, c("lines", "junctions", "points", "point_groups"), "origin")
@@ -100,22 +105,25 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
   attraction_points <- converted$points
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
+  weight <- .pst_nm_user_weight(!is.null(attraction_values), weight_name, "weight_name")
+  cols <- .pst_nm_attraction_reach(radius, origin, distance, weight, decay, decay_constant, distribution, collection,
+                                   polygon_point_interval)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_reach",
       c(.pst_attraction_parameters(radius, origin, distance, attraction_points, points_per_polygon,
                                    polygon_point_interval),
-        list(attraction_values = .pst_count_or_null(attraction_values), decay = decay,
+        list(attraction_values = .pst_count_or_null(attraction_values), weight_name = weight_name, decay = decay,
              decay_constant = decay_constant, distribution = distribution, collection = collection)),
-      graph, ptr, c("origin_id", "attraction_reach"), .pst_attraction_order(origin),
+      graph, ptr, c("origin_id", .pst_nm_names(cols)), .pst_attraction_order(origin),
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_attraction_reach_stream, ptr, radius, origin, distance,
         attraction_points, points_per_polygon, polygon_point_interval, attraction_values,
         decay, decay_constant, distribution, collection, stream, columns, metadata_names, metadata_values, batch_rows),
-      spatial_output_file = spatial_output_file))
+      spatial_output_file = spatial_output_file, cols = cols))
   out <- .Call(C_rpst_attraction_reach, ptr, radius, origin, distance,
     attraction_points, points_per_polygon, polygon_point_interval, attraction_values,
     decay, decay_constant, distribution, collection)
-  data.frame(origin_id = seq_along(out), attraction_reach = out)
+  structure(data.frame(origin_id = seq_along(out), attraction_reach = out), names = c("origin_id", .pst_nm_names(cols)))
 }
 
 #' @rdname attraction_reach
@@ -123,7 +131,8 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
 attraction_distance <- function(graph, attraction_points, radius = analysis_radius(),
     origin = "lines", distance = "steps", points_per_polygon = NULL,
     polygon_point_interval = NULL, line_weights = NULL, point_edge_weight = 0,
-    destination_indices = TRUE, output_file = NULL, overwrite = FALSE, spatial_output_file = NULL) {
+    destination_indices = TRUE, output_file = NULL, overwrite = FALSE, spatial_output_file = NULL,
+    weight_name = NULL) {
   ptr <- .pst_analysis_graph(graph)
   .pst_validate_radius(radius)
   origin <- .pst_mode(origin, c("lines", "junctions", "points", "point_groups"), "origin")
@@ -137,24 +146,28 @@ attraction_distance <- function(graph, attraction_points, radius = analysis_radi
   attraction_points <- converted$points
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
+  weight <- .pst_nm_user_weight(!is.null(line_weights), weight_name, "weight_name")
+  cols <- .pst_nm_attraction_distance(radius, origin, distance, weight, point_edge_weight, polygon_point_interval,
+                                      isTRUE(destination_indices))
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_distance",
       c(.pst_attraction_parameters(radius, origin, distance, attraction_points, points_per_polygon,
                                    polygon_point_interval),
-        list(line_weights = .pst_count_or_null(line_weights), point_edge_weight = point_edge_weight,
+        list(line_weights = .pst_count_or_null(line_weights), weight_name = weight_name, point_edge_weight = point_edge_weight,
              destination_indices = destination_indices)),
-      graph, ptr, c("origin_id", "attraction_distance", if (isTRUE(destination_indices)) "destination_index"),
+      graph, ptr, c("origin_id", .pst_nm_names(cols)),
       .pst_attraction_order(origin),
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_attraction_distance_stream, ptr, radius, origin, distance,
         attraction_points, points_per_polygon, polygon_point_interval, line_weights,
         point_edge_weight, destination_indices, stream, columns, metadata_names, metadata_values, batch_rows),
-      spatial_output_file = spatial_output_file))
+      spatial_output_file = spatial_output_file, cols = cols))
   out <- .Call(C_rpst_attraction_distance, ptr, radius, origin, distance,
     attraction_points, points_per_polygon, polygon_point_interval, line_weights,
     point_edge_weight, destination_indices)
   result <- data.frame(origin_id = seq_along(out[[1L]]), attraction_distance = out[[1L]])
   if (destination_indices) result$destination_index <- out[[2L]]
+  names(result) <- c("origin_id", .pst_nm_names(cols))
   result
 }
 

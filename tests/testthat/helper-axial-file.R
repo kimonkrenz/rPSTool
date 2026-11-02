@@ -37,7 +37,7 @@ ax_expect_reference <- function(g, case) {
   expect_identical(state[[2L]], as.integer(unlist(case$group_sizes)))
   for (expected in case$integrations) {
     radius <- do.call(analysis_radius, expected$radius)
-    result <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE)
+    result <- legacy_ni_run(g, radius = radius, junctions = TRUE)
     expect_identical(result$lines$node_count, as.integer(unlist(expected$counts)))
     ax_exact_classes(result$lines$integration, ax_vector(expected$scores))
     expect_identical(result$lines$total_depth, ax_vector(expected$depths))
@@ -54,8 +54,8 @@ ax_expect_same_graph <- function(a, b, radii = list(NULL, analysis_radius(steps 
   expect_identical(axial_crossing_coords(a), axial_crossing_coords(b))
   expect_identical(ax_native("graph_point_state", a$ptr), ax_native("graph_point_state", b$ptr))
   for (radius in radii)
-    expect_identical(rPSTool:::.pst_network_integration_run(a, radius = radius, junctions = TRUE),
-                     rPSTool:::.pst_network_integration_run(b, radius = radius, junctions = TRUE))
+    expect_identical(legacy_ni_run(a, radius = radius, junctions = TRUE),
+                     legacy_ni_run(b, radius = radius, junctions = TRUE))
 }
 
 # GDAL's own read order of a FlatGeobuf file (an independent oracle for "physical file order").

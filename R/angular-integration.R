@@ -22,12 +22,9 @@
 #'
 #' **Several radii and normalisations.** One radius field of [analysis_radius()] may hold several values, and
 #' `normalization` may hold several names. PST then runs once per radius and every requested normaliser is
-#' applied to that run. The result has `segment_id` once, then radius by radius:
-#' `integration_<norm><tag>` for each normalisation, `node_count<tag>`, `total_depth<tag>` and, when weighted
-#' or `weight_outputs = TRUE`, `total_weight<tag>` and `total_depth_weight<tag>`. `<tag>` is an underscore
-#' plus a dimension code (`s` straight, `w` walking, `n` steps, `a` angular) and the radius written exactly
-#' with `.` as `p`, and is empty when no field varies. Fixed restrictions are recorded in the result's
-#' metadata (`rpst:*` keys and the `rpst_manifest` attribute). See
+#' applied to that run. The result has `segment_id` once, then radius by radius the same columns a single call
+#' with that radius would give, named identically (see Value and [result_column_names]). Fixed restrictions are
+#' recorded in the result's metadata (`rpst:*` keys and the `rpst_manifest` attribute). See
 #' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
 #'
 #' @section Limitations:
@@ -52,13 +49,16 @@
 #'   see [pst_result_file].
 #' @return With a single radius and normalisation, a data frame in segment order with:
 #'   * `segment_id`: one-based identifier,
-#'   * `integration`: the normalised score,
-#'   * `node_count`: integer number of segments reached, including the origin,
-#'   * `total_depth`: summed angular depth, and
-#'   * `total_weight` and `total_depth_weight` in weighted calls or with `weight_outputs = TRUE`.
+#'   * `ai_a_<radius>[_wl]_<norm>[...]`: the normalised score (`t` Turner, `a` NAIN, `h` Hillier),
+#'   * `nc_...`: integer number of segments reached, including the origin,
+#'   * `td_...`: summed angular depth, and
+#'   * `tw_...` and `tdw_...` in weighted calls or with `weight_outputs = TRUE`.
+#'
+#'   For example `ai_a_rw3000_t`, `nc_a_rw3000` and `td_a_rw3000` for a walking radius of 3000 and Turner normalisation.
+#'   The names are described in [result_column_names].
 #'
 #'   Numeric columns are doubles widened from PST's single precision. For several radii or normalisations the
-#'   columns follow the naming scheme described in Details. With `output_file` or `spatial_output_file` the
+#'   columns repeat this scheme radius by radius, named exactly as in a single call. With `output_file` or `spatial_output_file` the
 #'   results are written to a file and an invisible [pst_result_file] descriptor is returned.
 #' @seealso [angular_choice()], [network_integration()] for axial graphs, [segment_graph()], [analysis_radius()]
 #' @references
@@ -89,12 +89,14 @@ angular_integration <- function(graph, steps = NULL, radius = NULL,
                                           angle_precision, weight_outputs, output_file, overwrite, spatial_output_file))
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
     weights <- .pst_flag(weigh_by_length, "weigh_by_length") || .pst_flag(weight_outputs, "weight_outputs")
-    columns <- .pst_angular_integration_names(weights)
+    cols <- .pst_nm_angular_integration(steps, weigh_by_length, weight_outputs, normalization,
+                                        angle_threshold, angle_precision)
+    columns <- c("segment_id", .pst_nm_names(cols))
     rows <- .Call(C_rpst_segment_graph_info, ptr)
     parameters <- list(radius = .pst_radius_parameters(steps), weigh_by_length = weigh_by_length,
                        normalization = normalization, angle_threshold = angle_threshold,
                        angle_precision = angle_precision, weight_outputs = weight_outputs)
-    metadata <- .pst_result_metadata("angular_integration", parameters, "segment", rows, graph)
+    metadata <- .pst_result_metadata("angular_integration", parameters, "segment", rows, graph, cols = cols)
     return(invisible(.pst_write_result_file(
       output_file, overwrite, columns = columns, expected_rows = rows,
       export = function(stream, batch_rows)
@@ -110,5 +112,7 @@ angular_integration <- function(graph, steps = NULL, radius = NULL,
     result$total_weight <- out[[4L]]
     result$total_depth_weight <- out[[5L]]
   }
+  names(result) <- c("segment_id", .pst_nm_names(.pst_nm_angular_integration(
+    steps, weigh_by_length, weight_outputs, normalization, angle_threshold, angle_precision)))
   result
 }
