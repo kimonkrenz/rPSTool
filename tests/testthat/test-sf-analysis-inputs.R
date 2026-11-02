@@ -1,3 +1,12 @@
+
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+capacity_c_2_9_3 <- c(2, 9, 3)
+capacity_1 <- 1
+origin_wt_c_1_2 <- c(1, 2)
+capacity_c_1_2 <- c(1, 2)
+cost_c_1_1_1 <- c(1, -1, 1)
+cost_1_3 <- 1:3
+
 sa_rows <- function(x, width = 2L) matrix(as.double(unlist(x)), ncol = width, byrow = TRUE)
 sa_points <- function(x, crs = NA_integer_) sf::st_sfc(
   lapply(seq_len(nrow(x)), function(i) sf::st_point(x[i, ])), crs = crs)
@@ -49,8 +58,8 @@ if (requireNamespace("sf", quietly = TRUE)) {
       args <- case$args
       args$origins <- sa_rows(args$origins)
       args$radius <- do.call(analysis_radius, args$radius)
-      for (field in c("origin_weights", "destination_weights"))
-        if (!is.null(args[[field]])) args[[field]] <- as.double(unlist(args[[field]]))
+      for (field in c("origin_weights", "destination_weights"))   # named objects, passed to do.call as symbols
+        if (!is.null(args[[field]])) { assign(field, as.double(unlist(args[[field]]))); args[[field]] <- as.name(field) }
       baseline <- do.call(od_betweenness, c(list(graph = graphs[[name]]), args))
       args$origins <- sa_points(args$origins)
       expect_identical(do.call(od_betweenness, c(list(graph = graphs[[name]]), args)), baseline)
@@ -73,8 +82,8 @@ if (requireNamespace("sf", quietly = TRUE)) {
       args <- case$args
       args$attraction_points <- sa_rows(args$attraction_points)
       args$radius <- do.call(analysis_radius, args$radius)
-      for (field in c("attraction_values", "line_weights"))
-        if (!is.null(args[[field]])) args[[field]] <- as.double(unlist(args[[field]]))
+      for (field in c("attraction_values", "line_weights"))   # named objects, passed to do.call as symbols
+        if (!is.null(args[[field]])) { assign(field, as.double(unlist(args[[field]]))); args[[field]] <- as.name(field) }
       fn <- if (case$analysis == "reach") attraction_reach else attraction_distance
       baseline <- do.call(fn, c(list(graph = graphs[[name]]), args))
       args$attraction_points <- sf::st_sf(values = rep(999, nrow(args$attraction_points)),
@@ -104,7 +113,7 @@ if (requireNamespace("sf", quietly = TRUE)) {
       for (distance in c("straight", "walking", "steps", "angular", "axmeter", "none")) {
         for (distribution in c("copy", "divide")) {
           args <- list(graph = g, origin = origin, distance = distance,
-                       polygon_point_interval = .7, attraction_values = c(2, 9, 3),
+                       polygon_point_interval = .7, attraction_values = quote(capacity_c_2_9_3),
                        distribution = distribution)
           expect_identical(do.call(attraction_reach, c(args, list(attraction_points = polygons))),
                            do.call(attraction_reach, c(args, list(attraction_points = p, points_per_polygon = c(9, 0, 4)))))
@@ -113,8 +122,9 @@ if (requireNamespace("sf", quietly = TRUE)) {
       for (distance in c("straight", "walking", "steps", "angular", "weights")) {
         if (origin == "point_groups" && distance == "straight") next
         for (indices in c(TRUE, FALSE)) {
+          cost_c_1_2 <- if (distance == "weights") c(1, 2) else NULL
           args <- list(graph = g, origin = origin, distance = distance, polygon_point_interval = .7,
-                       destination_indices = indices, line_weights = if (distance == "weights") c(1, 2) else NULL)
+                       destination_indices = indices, line_weights = if (distance == "weights") quote(cost_c_1_2))
           expect_identical(do.call(attraction_distance, c(args, list(attraction_points = polygons))),
                            do.call(attraction_distance, c(args, list(attraction_points = p, points_per_polygon = c(9, 0, 4)))))
         }
@@ -130,11 +140,12 @@ if (requireNamespace("sf", quietly = TRUE)) {
     expect_identical(result, saved)
     perm <- c(3L, 1L, 2L)
     reordered <- rbind(second[-5, ], outer[-5, ], c(NaN, NaN), hole[-5, ])
+    capacity_permuted <- c(2, 9, 3)[perm]
     expect_identical(attraction_reach(g, polygons[perm], polygon_point_interval = .7,
-                                         attraction_values = c(2, 9, 3)[perm]),
+                                         attraction_values = capacity_permuted),
                      attraction_reach(g, reordered, points_per_polygon = c(4, 9, 0),
-                                         polygon_point_interval = .7, attraction_values = c(2, 9, 3)[perm]))
-    expect_error(attraction_reach(g, polygons, polygon_point_interval = 1, attraction_values = 1), "weights must have exactly")
+                                         polygon_point_interval = .7, attraction_values = capacity_permuted))
+    expect_error(attraction_reach(g, polygons, polygon_point_interval = 1, attraction_values = capacity_1), "weights must have exactly")
     for (fn in list(attraction_reach, attraction_distance)) {
       expect_error(fn(g, polygons, points_per_polygon = c(9, 0, 4)), "must be NULL")
       expect_error(fn(g, polygons), "interval")
@@ -204,8 +215,8 @@ if (requireNamespace("sf", quietly = TRUE)) {
     empty <- sa_points(matrix(numeric(), 0, 2))
     expect_error(network_reach(g, origins = empty), "at least one row")
     for (fn in sa_calls(g)[-1]) expect_identical(fn(empty), fn(matrix(numeric(), 0, 2)))
-    expect_error(od_betweenness(g, sa_points(rbind(c(0, 0))), origin_weights = c(1, 2)), "origin_weights")
-    expect_error(attraction_reach(g, sa_points(rbind(c(0, 0))), attraction_values = c(1, 2)), "weights must have exactly")
+    expect_error(od_betweenness(g, sa_points(rbind(c(0, 0))), origin_weights = origin_wt_c_1_2), "origin_weights")
+    expect_error(attraction_reach(g, sa_points(rbind(c(0, 0))), attraction_values = capacity_c_1_2), "weights must have exactly")
   })
 
   test_that("Attraction Distance retains every mode exclusion with sf inputs", {
@@ -228,10 +239,10 @@ if (requireNamespace("sf", quietly = TRUE)) {
       expect_error(attraction_distance(g, input, analysis_radius(axmeter = 1), polygon_point_interval = interval), "axmeter radius")
       expect_error(attraction_distance(g, input, distance = "axmeter", polygon_point_interval = interval), "distance")
       expect_error(attraction_distance(g, input, distance = "weights", polygon_point_interval = interval), "line_weights")
-      expect_error(attraction_distance(g, input, distance = "weights", line_weights = c(1, -1, 1),
+      expect_error(attraction_distance(g, input, distance = "weights", line_weights = cost_c_1_1_1,
                                           polygon_point_interval = interval), "non-negative")
       expect_error(attraction_distance(g, input, destination_indices = NA, polygon_point_interval = interval), "destination_indices")
-      expect_error(attraction_distance(g, input, line_weights = 1:3, polygon_point_interval = interval), "line_weights")
+      expect_error(attraction_distance(g, input, line_weights = cost_1_3, polygon_point_interval = interval), "line_weights")
       expect_error(attraction_distance(g, input, point_edge_weight = -1, polygon_point_interval = interval), "point_edge_weight")
     }
   })

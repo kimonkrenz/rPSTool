@@ -9,11 +9,12 @@ First release.
   walking radius 3000, Turner normalisation), `ac_a_rw3000_n` (raw Angular Choice) and `nc_a_rw3000` (node count). Scalar and
   multi-radius calls name a calculation identically. These replace the generic names `integration`, `choice`, `node_count`,
   `total_depth`, `normalized`, `betweenness`, `reached_count` and so on. See `?result_column_names` and `docs/output-naming.md`.
-* `network_betweenness()`, `attraction_reach()`, `attraction_distance()` and `od_betweenness()` gain a
-  required `weight_name` (`origin_weight_name` and `destination_weight_name` for the latter) whenever custom weights are
-  supplied; the name becomes part of the column names. Weights without a name, a name without weights, and names with
-  no letter or digit are errors raised before any calculation. Names are normalised automatically (lower case, runs of other
-  characters become one `_`, outer underscores removed: `Jobs-2021` gives `jobs_2021`); the original is kept in the metadata.
+* Custom weights are named after the R expression passed to `weights` (`network_betweenness()`), `attraction_values`
+  (`attraction_reach()`), `line_weights` (`attraction_distance()`) and `origin_weights` / `destination_weights`
+  (`od_betweenness()`, inferred independently): an object name (`weights = population`) or a literal data-frame column
+  (`data$population`, `data[["population"]]`). Anonymous vectors and calculated expressions are errors raised before any
+  calculation; assign them to a named object first. Names are normalised automatically (lower case, runs of other characters
+  become one `_`, outer underscores removed: `Jobs-2021` gives `jobs_2021`); the original is kept in the metadata.
 * Existing result columns in a spatial-output source are detected before the native calculation starts: a clash needs
   `overwrite = TRUE` (replacing the column in the new file only), and a clash differing only by letter case is always an error.
 * The metadata of every result file carries a `rpst:columns` manifest describing each column.

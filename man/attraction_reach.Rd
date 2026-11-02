@@ -20,8 +20,7 @@ attraction_reach(
   collection = "mean",
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL,
-  weight_name = NULL
+  spatial_output_file = NULL
 )
 
 attraction_distance(
@@ -37,8 +36,7 @@ attraction_distance(
   destination_indices = TRUE,
   output_file = NULL,
   overwrite = FALSE,
-  spatial_output_file = NULL,
-  weight_name = NULL
+  spatial_output_file = NULL
 )
 }
 \arguments{
@@ -78,13 +76,6 @@ point or polygon. Zero and negative values are skipped by PST.}
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}. \code{spatial_output_file} is available only with \code{origin = "lines"}.}
-
-\item{weight_name}{Required whenever \code{attraction_values} (\code{attraction_reach()}) or \code{line_weights}
-(\code{attraction_distance()}) is supplied, and an error otherwise: a descriptive name for the weights (for example
-\code{"population"}) used in the result column names (\code{..._wpopulation}). It is lower-cased, every run of other characters
-becomes one \verb{_} and leading/trailing underscores are dropped (\code{"Jobs-2021"} gives \code{jobs_2021}); only a name with no
-letter or digit left is an error. The original is kept in the result metadata.
-It is a label only: it does not check that the same name always means the same values.}
 
 \item{line_weights}{\code{attraction_distance()} only. \code{NULL}, or for \code{distance = "weights"} one non-negative finite
 weight per graph line.}
@@ -143,6 +134,19 @@ unknown included). A known geographic CRS is rejected. Nothing is reprojected or
 In \code{attraction_reach()} a distance that does not match the radius metrics, such as the default \code{"steps"} with a
 walking radius, makes PST search steps and walking together, which can be extremely slow and memory-hungry on dense
 networks. Results are not affected. Use \code{distance = "none"} or the matching distance, or add a \code{steps} radius.
+}
+
+\section{Naming custom weights}{
+
+Custom weights are named in the result columns (\code{..._wpopulation_...}) after the R expression you supply, so no extra
+argument is needed: an object name (\code{attraction_values = capacity}) or a literal data-frame column (\code{line_weights = costs$cost}
+or \code{line_weights = costs[["cost"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
+no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
+(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
+metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
+is a label only: it does not check that the same name always means the same values.
 }
 
 \examples{

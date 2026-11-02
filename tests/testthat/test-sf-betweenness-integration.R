@@ -1,3 +1,9 @@
+
+# Weight vectors used by the tests below; the object names become the weight names in the result columns.
+wt_c_5_6_7 <- c(5, 6, 7)
+wt_c_1_2 <- c(1, 2)
+wt_c_2_3 <- c(2, 3)
+
 sb_rows <- function(rows, width = 2L) matrix(as.double(unlist(rows)), ncol = width, byrow = TRUE)
 sb_pts <- function(m, crs = NA_integer_, ...) {
   geometry <- sf::st_sfc(lapply(seq_len(nrow(m)), function(i) sf::st_point(m[i, ])), crs = crs)
@@ -45,16 +51,17 @@ test_that("order, explicit weights (zero, negative) and attribute independence h
     expected <- network_betweenness(g, distance = distance, weights = w, attraction_points = p)
     expect_identical(network_betweenness(g, distance = distance, weights = w, attraction_points = sb_pts(p)), expected)
     # Attributes never supply weights.
-    attributed <- sb_pts(p, NA_integer_, weight = c(9, 9, 9), weights = c(5, 6, 7))
+    attributed <- sb_pts(p, NA_integer_, weight = c(9, 9, 9), weights = wt_c_5_6_7)
     expect_identical(network_betweenness(g, distance = distance, weights = w, attraction_points = attributed), expected)
     if (!is.null(w)) {
       order <- c(3, 1, 2)
-      expect_identical(network_betweenness(g, distance = distance, weights = w[order], attraction_points = sb_pts(p[order, ])),
-                       network_betweenness(g, distance = distance, weights = w[order], attraction_points = p[order, ]))
+      w_reordered <- w[order]
+      expect_identical(network_betweenness(g, distance = distance, weights = w_reordered, attraction_points = sb_pts(p[order, ])),
+                       network_betweenness(g, distance = distance, weights = w_reordered, attraction_points = p[order, ]))
     }
   }
   # Mismatched weight length remains the native contract.
-  expect_error(network_betweenness(g, weights = c(1, 2), attraction_points = sb_pts(p)))
+  expect_error(network_betweenness(g, weights = wt_c_1_2, attraction_points = sb_pts(p)))
 })
 
 test_that("Betweenness sf points follow the graph-versus-analysis CRS contract", {
@@ -97,13 +104,13 @@ test_that("Betweenness does not retain or depend on sf input after the call", {
   skip_if_not_installed("sf")
   g <- axial_graph(sb_chain())
   points <- sb_pts(rbind(c(.25, 0), c(2.5, 0)))
-  expected <- network_betweenness(g, weights = c(2, 3), attraction_points = points)
+  expected <- network_betweenness(g, weights = wt_c_2_3, attraction_points = points)
   points[[1L]][1L] <- 99
-  mutated <- network_betweenness(g, weights = c(2, 3), attraction_points = points)
+  mutated <- network_betweenness(g, weights = wt_c_2_3, attraction_points = points)
   expect_false(identical(mutated, expected))
   rm(points); invisible(gc())
-  expect_identical(network_betweenness(g, weights = c(2, 3), attraction_points = rbind(c(.25, 0), c(2.5, 0))), expected)
-  expect_identical(network_betweenness(g, weights = c(2, 3), attraction_points = sb_pts(rbind(c(.25, 0), c(2.5, 0)))), expected)
+  expect_identical(network_betweenness(g, weights = wt_c_2_3, attraction_points = rbind(c(.25, 0), c(2.5, 0))), expected)
+  expect_identical(network_betweenness(g, weights = wt_c_2_3, attraction_points = sb_pts(rbind(c(.25, 0), c(2.5, 0)))), expected)
 })
 
 # ---- Integration junction output ----

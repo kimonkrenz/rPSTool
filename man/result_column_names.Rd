@@ -23,8 +23,9 @@ Omitted where the analysis has none (Network Reach, segment groups, \code{distan
 point and thousands are never abbreviated), every active restriction in the order straight, walking, steps,
 angular, axmeter; \code{rg} when unrestricted.
 \item \strong{Weight:} none when unweighted (including the unit-weight totals of an unweighted Angular Integration), \code{wl}
-length weighting, \verb{w<name>} custom weights, whose name must be supplied with \code{weight_name}, and \verb{wo<name>} and
-\verb{wd<name>} origin and destination weights of \code{\link[=od_betweenness]{od_betweenness()}}.
+length weighting, \verb{w<name>} custom weights, named after the R object or data-frame column you pass (\code{weights = population}
+gives \code{wpopulation}; anonymous vectors and calculations are errors), and \verb{wo<name>} and \verb{wd<name>} origin and destination
+weights of \code{\link[=od_betweenness]{od_betweenness()}}, each named independently.
 \item \strong{Normalisation:} \code{t} Turner, \code{a} NAIN, \code{c} NACH, \code{h} Hillier, \code{s} standard, \code{f} Freeman, \code{y} Network Betweenness
 \code{syntax}, \code{n} raw.
 \item \strong{Diagnostics:} \code{nc} node count, \code{td} total depth, \code{tw} total weight, \code{tdw} total depth weight, \code{rc} reached
