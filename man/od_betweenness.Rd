@@ -40,9 +40,9 @@ polygon or point group). Zero and negative values are excluded by PST.}
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}.}
 
-\item{origin_weight_name, destination_weight_name}{\code{NULL}, or short names for \code{origin_weights} and
-\code{destination_weights} used in the result column names (\verb{..._wo<name>_wd<name>}); see \code{weight_name} in
-\code{\link[=network_betweenness]{network_betweenness()}}.}
+\item{origin_weight_name, destination_weight_name}{Required whenever \code{origin_weights}, respectively
+\code{destination_weights}, is supplied (each is checked independently), and an error otherwise: descriptive names used
+in the result column names (\verb{..._wo<name>_wd<name>}); see \code{weight_name} in \code{\link[=network_betweenness]{network_betweenness()}}.}
 }
 \value{
 A data frame in line order with one-based \code{line_id} and \verb{od_<d>_<radius>} (for example \code{od_w_rw800}; see \link{result_column_names}) (double, widened from single

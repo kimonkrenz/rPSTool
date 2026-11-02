@@ -79,9 +79,10 @@ point or polygon. Zero and negative values are skipped by PST.}
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them; see
 \link{pst_result_file}. \code{spatial_output_file} is available only with \code{origin = "lines"}.}
 
-\item{weight_name}{\code{NULL}, or a short name for the weight vector (\code{attraction_values} or \code{line_weights}) used in
-the result column names (\code{..._wpopulation}). Without it, user weights are labelled \code{wv}. The name is lower-cased
-and every other character than letters, digits and \verb{_} becomes \verb{_}; the original is kept in the result metadata.
+\item{weight_name}{Required whenever \code{attraction_values} (\code{attraction_reach()}) or \code{line_weights}
+(\code{attraction_distance()}) is supplied, and an error otherwise: a descriptive name for the weights (for example
+\code{"population"}) used in the result column names (\code{..._wpopulation}). It is lower-cased, spaces become \verb{_}, and only
+the letters a-z, digits and \verb{_} are allowed; anything else is an error. The original is kept in the result metadata.
 It is a label only: it does not check that the same name always means the same values.}
 
 \item{line_weights}{\code{attraction_distance()} only. \code{NULL}, or for \code{distance = "weights"} one non-negative finite

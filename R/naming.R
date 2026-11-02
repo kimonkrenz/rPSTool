@@ -32,29 +32,34 @@
   if (length(parts)) paste(parts, collapse = "_") else "rg"
 }
 
-.pst_nm_reserved_weights <- c("l", "u", "v")
+# Weight identifiers that would collide with a built-in weighting code: `wl` is length weighting.
+.pst_nm_reserved_weights <- "l"
 
-# Deterministic sanitisation of a user weight identifier: lower case, every run of characters other than a-z, 0-9 and '_'
-# becomes one '_', leading and trailing '_' are dropped. Never truncated; the original is kept in the metadata.
+# Strict normalisation of a user weight identifier: lower case, spaces become '_', and only the ASCII letters a-z, digits and
+# '_' are allowed; anything else is an error (never silently replaced). The name is never truncated, and the original
+# is kept in the metadata. Different identifiers that normalise alike (`Jobs 2021`, `jobs_2021`) name the same field.
 .pst_nm_weight_id <- function(name, arg) {
   if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name))
-    stop(arg, " must be NULL or one non-empty string.", call. = FALSE)
-  id <- gsub("^_+|_+$", "", gsub("[^a-z0-9_]+", "_", tolower(name)))
-  if (!nzchar(id))
-    stop(arg, " = \"", name, "\" has no letters or digits to build a column name from.", call. = FALSE)
+    stop(arg, " must be one non-empty string, for example ", arg, " = \"population\".", call. = FALSE)
+  id <- gsub(" ", "_", tolower(name), fixed = TRUE)
+  if (!grepl("^[a-z0-9_]+$", id) || !grepl("[a-z0-9]", id))
+    stop(arg, " = \"", name, "\" is not a valid weight identifier: use only the letters a-z, digits, spaces and '_' ",
+         "(spaces become '_'), with at least one letter or digit.", call. = FALSE)
   if (id %in% .pst_nm_reserved_weights)
-    stop(arg, " = \"", name, "\" would give the weight code 'w", id, "', which is reserved ('wl' length weighting, ",
-         "'wu' unit weights, 'wv' unnamed user weights). Choose a longer name.", call. = FALSE)
+    stop(arg, " = \"", name, "\" would give the weight code 'w", id, "', which is reserved for length weighting. ",
+         "Choose a longer name.", call. = FALSE)
   id
 }
 
-# The weight component and its provenance for user-supplied numeric weights. `present` is whether weights were supplied.
-.pst_nm_user_weight <- function(present, name, arg, prefix = "w") {
+# The weight component and its provenance for user-supplied numeric weights. A name is mandatory for supplied weights and an
+# error for absent ones; there is no fallback label.
+.pst_nm_user_weight <- function(present, name, arg, prefix = "w", weights_arg = "weights") {
   if (!present) {
-    if (!is.null(name)) stop(arg, " requires the matching weights to be supplied.", call. = FALSE)
+    if (!is.null(name)) stop(arg, " was supplied without ", weights_arg, "; a weight name needs the matching weights.", call. = FALSE)
     return(list(code = "", name = NULL))
   }
-  if (is.null(name)) return(list(code = paste0(prefix, "v"), name = NULL))
+  if (is.null(name))
+    stop("Custom weights require ", arg, ". Supply a descriptive identifier, for example ", arg, " = \"population\".", call. = FALSE)
   list(code = paste0(prefix, .pst_nm_weight_id(name, arg)), name = name)
 }
 
@@ -135,7 +140,7 @@
 # total_depth, [total_weight, total_depth_weight].
 .pst_nm_angular_integration <- function(radius, weighted, weight_outputs, norms, threshold, precision) {
   r <- .pst_nm_radius(radius); p <- .pst_nm_angular_params(threshold, precision)
-  w <- if (weighted) "wl" else if (weight_outputs) "wu" else ""
+  w <- if (weighted) "wl" else ""   # unweighted totals carry no weight component (see docs/output-naming.md)
   cols <- lapply(norms, function(n)
     .pst_nm_col("ai", "integration", "a", r, if (weighted) "wl" else "", .pst_nm_integration_norm[[n]], p, normalization = n))
   cols <- c(cols, list(.pst_nm_col("nc", "node_count", "a", r, params = p, with_weight = FALSE),
@@ -167,9 +172,13 @@
 .pst_nm_betweenness_norm <- c(none = "n", standard = "s", freeman = "f", syntax = "y")
 .pst_nm_network_betweenness <- function(radius, distance, normalization, weight, attraction) {
   r <- .pst_nm_radius(radius); d <- .pst_nm_distance_codes[[distance]]; code <- if (attraction) "at" else "nb"
+  # PST skips origins whose effective weight is not positive and then writes neither count nor depth, so for weighted and
+  # attraction runs the diagnostics depend on the weights and carry them; attraction runs have their own codes (anc, atd)
+  # because their origins are the lines that received attraction weight.
+  nc <- if (attraction) "anc" else "nc"; td <- if (attraction) "atd" else "td"
   cols <- list(.pst_nm_col(code, "betweenness", d, r, weight$code, "n", normalization = "none", weight_name = weight$name),
-               .pst_nm_col("nc", "node_count", d, r, with_weight = FALSE),
-               .pst_nm_col("td", "total_depth", d, r, with_weight = FALSE))
+               .pst_nm_col(nc, "node_count", d, r, weight$code, weight_name = weight$name),
+               .pst_nm_col(td, "total_depth", d, r, weight$code, weight_name = weight$name))
   if (normalization != "none")
     cols[[4L]] <- .pst_nm_col(code, "normalized", d, r, weight$code, .pst_nm_betweenness_norm[[normalization]],
                               normalization = normalization, weight_name = weight$name)
@@ -237,13 +246,15 @@
 #' * **Radius:** `rl`, `rw`, `rs`, `ra`, `ram` followed by the full value (`rw3000`, `rs3`, `rw0p5`; `p` is the decimal
 #'   point and thousands are never abbreviated), every active restriction in the order straight, walking, steps,
 #'   angular, axmeter; `rg` when unrestricted.
-#' * **Weight:** `wl` length weighting, `wu` unit weights (weight totals of an unweighted run), `w<name>` user weights
-#'   named with `weight_name`, `wv` user weights without a name, `wo<name>` and `wd<name>` origin and destination weights
-#'   of [od_betweenness()].
+#' * **Weight:** none when unweighted (including the unit-weight totals of an unweighted Angular Integration), `wl`
+#'   length weighting, `w<name>` custom weights, whose name must be supplied with `weight_name`, and `wo<name>` and
+#'   `wd<name>` origin and destination weights of [od_betweenness()].
 #' * **Normalisation:** `t` Turner, `a` NAIN, `c` NACH, `h` Hillier, `s` standard, `f` Freeman, `y` Network Betweenness
 #'   `syntax`, `n` raw.
 #' * **Diagnostics:** `nc` node count, `td` total depth, `tw` total weight, `tdw` total depth weight, `rc` reached
-#'   count, `rln` reached length, `rca` reached area, `di` destination index.
+#'   count, `rln` reached length, `rca` reached area, `di` destination index; `anc` and `atd` are the node count and total
+#'   depth of Attraction Betweenness. The diagnostics of weighted and attraction runs carry the weight component,
+#'   because PST skips origins without positive weight.
 #' * **Parameters:** written only when different from the default, in a fixed order: `at<v>` `angle_threshold`, `ap<v>`
 #'   `angle_precision`, `or<x>` `origin`, `dc<x>` `decay`, `dk<v>` `decay_constant`, `ds<x>` `distribution`, `cl<x>`
 #'   `collection`, `pe<v>` `point_edge_weight`, `pi<v>` `polygon_point_interval`, `dm<x>` `destination_mode`.

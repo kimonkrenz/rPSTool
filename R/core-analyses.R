@@ -57,20 +57,21 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
   .pst_sf_analysis_crs(graph, origins)
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
+  cols <- .pst_nm_network_reach(radius); result_names <- .pst_nm_names(cols)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "network_reach",
       list(radius = .pst_radius_parameters(radius), origins = if (is.null(origins)) "lines" else NROW(origins)),
-      graph, ptr, c(if (is.null(origins)) "line_id" else "origin_id", .pst_nm_names(.pst_nm_network_reach(radius))),
+      graph, ptr, c(if (is.null(origins)) "line_id" else "origin_id", result_names),
       if (is.null(origins)) "native line order (source feature order); no external feature identifiers"
       else "supplied origin row order; one-based row positions, no external identifiers",
       function(stream, columns, metadata_names, metadata_values, batch_rows) .Call(C_rpst_reach_points_stream, ptr, radius, origins, stream, columns, metadata_names, metadata_values, batch_rows),
-      spatial_output_file = spatial_output_file, cols = .pst_nm_network_reach(radius)))
+      spatial_output_file = spatial_output_file, cols = cols))
   out <- .Call(C_rpst_reach_points, ptr, radius, origins)
   result <- data.frame(line_id = seq_along(out[[1L]]), reached_count = out[[1L]],
              reached_length = out[[2L]], reached_area = out[[3L]])
   if (!is.null(origins)) names(result)[1L] <- "origin_id"
-  names(result)[-1L] <- .pst_nm_names(.pst_nm_network_reach(radius))
+  names(result)[-1L] <- result_names
   result
 }
 
@@ -117,10 +118,10 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #'   (`x`, `y`), or an XY POINT `sf`/`sfc` object.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
 #'   see [pst_result_file]. In a result file, the `NA` values described below are stored as nulls.
-#' @param weight_name `NULL`, or a short name for `weights` (for example `"population"`) used in the result column
-#'   names (`..._wpopulation_...`). Without it, user weights are labelled `wv`. The name is lower-cased and every
-#'   other character than letters, digits and `_` becomes `_`; the original is kept in the result metadata. It is a
-#'   label only: it does not check that the same name always means the same values.
+#' @param weight_name Required whenever `weights` is supplied, and an error otherwise: a descriptive name for the
+#'   weights (for example `"population"`) used in the result column names (`..._wpopulation_...`). It is lower-cased,
+#'   spaces become `_`, and only the letters a-z, digits and `_` are allowed; anything else is an error. The original is
+#'   kept in the result metadata. It is a label only: it does not check that the same name always means the same values.
 #' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`, or `at_...` with
 #'   `attraction_points`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
 #'   (`..._s`, `..._f` or `..._y`) when requested; see [result_column_names]. The raw score and `"standard"`
@@ -134,7 +135,7 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' @examples
 #' g <- axial_graph(cbind(0:4, 0, 1:5, 0))
 #' network_betweenness(g, normalization = "freeman")
-#' network_betweenness(g, weights = c(1, 0, 2, 3, 1))
+#' network_betweenness(g, weights = c(1, 0, 2, 3, 1), weight_name = "population")
 #' network_betweenness(g, attraction_points = rbind(c(0.5, 0), c(4.5, 1)))
 network_betweenness <- function(graph, radius = analysis_radius(), distance = "steps",
                             normalization = "none", weights = NULL,
@@ -148,8 +149,9 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
   .pst_sf_analysis_crs(graph, attraction_points)
   attraction_points <- .pst_sf_points(attraction_points, "attraction_points")
   overwrite <- .pst_flag(overwrite, "overwrite")
-  weight <- .pst_nm_user_weight(!is.null(weights), weight_name, "weight_name")
+  weight <- .pst_nm_user_weight(!is.null(weights), weight_name, "weight_name", "w", "weights")
   cols <- .pst_nm_network_betweenness(radius, distance, normalization, weight, !is.null(attraction_points))
+  .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "network_betweenness",
@@ -259,9 +261,10 @@ angular_choice <- function(graph, radius = analysis_radius(), weigh_by_length = 
   if (!.pst_is_scalar_call(plan, normalization))
     return(.pst_angular_choice_multi(graph, ptr, plan, weigh_by_length, normalization, angle_threshold, angle_precision,
                                      output_file, overwrite, spatial_output_file))
+  cols <- .pst_nm_angular_choice(radius, weigh_by_length, normalization, angle_threshold, angle_precision)
+  result_names <- .pst_nm_names(cols)   # generated names are validated before any native work
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
-    cols <- .pst_nm_angular_choice(radius, weigh_by_length, normalization, angle_threshold, angle_precision)
-    columns <- c("segment_id", .pst_nm_names(cols))
+    columns <- c("segment_id", result_names)
     rows <- .Call(C_rpst_segment_graph_info, ptr)
     parameters <- list(radius = .pst_radius_parameters(radius), weigh_by_length = weigh_by_length,
                        normalization = normalization, angle_threshold = angle_threshold,
@@ -276,11 +279,10 @@ angular_choice <- function(graph, radius = analysis_radius(), weigh_by_length = 
   }
   out <- .Call(C_rpst_angular_choice_controls, ptr, radius, weigh_by_length, normalization,
                angle_threshold, angle_precision)
-  cols <- .pst_nm_angular_choice(radius, weigh_by_length, normalization, angle_threshold, angle_precision)
   result <- data.frame(segment_id = seq_along(out[[1L]]), choice = out[[1L]],
                        node_count = out[[2L]], total_depth = out[[3L]])
   if (weigh_by_length) result$total_depth_weight <- out[[4L]]
   if (normalization != "none") result$normalized <- out[[5L]]
-  names(result) <- c("segment_id", .pst_nm_names(cols))
+  names(result) <- c("segment_id", result_names)
   result
 }
