@@ -13,33 +13,27 @@
   value
 }
 
-# The ordered result columns of a multi-result call: name, role, radius index, normalisation (NA for raw/diagnostics).
-.pst_multi_spec <- function(analysis, plan, norms, weighted, weight_outputs = FALSE) {
-  rows <- list()
-  add <- function(name, role, radius, norm = NA_character_)
-    rows[[length(rows) + 1L]] <<- data.frame(name = name, role = role, radius = radius, normalization = norm,
-                                             stringsAsFactors = FALSE)
+# The ordered result columns of a multi-result call: name, role, radius index, normalisation (NA for raw/diagnostics). The
+# names come from the central naming layer (R/naming.R), so a scalar and a multi-radius call name the same column alike;
+# attr(, "cols") holds the full column descriptions for the manifest.
+.pst_multi_spec <- function(analysis, plan, norms, weighted, weight_outputs = FALSE, threshold = 0, precision = 1) {
+  rows <- list(); all_cols <- list()
   for (i in seq_along(plan$configs)) {
-    t <- .pst_radius_tag(plan, i)
-    if (analysis == "choice") {
-      add(paste0("choice", t), "choice", i)
-      add(paste0("node_count", t), "node_count", i)
-      add(paste0("total_depth", t), "total_depth", i)
-      if (weighted) add(paste0("total_depth_weight", t), "total_depth_weight", i)
-      for (n in setdiff(norms, "none")) add(paste0("choice_", n, t), "normalized", i, n)
-    } else {
-      for (n in norms) add(paste0("integration_", n, t), "integration", i, n)
-      add(paste0("node_count", t), "node_count", i)
-      add(paste0("total_depth", t), "total_depth", i)
-      if (weighted || weight_outputs) {
-        add(paste0("total_weight", t), "total_weight", i)
-        add(paste0("total_depth_weight", t), "total_depth_weight", i)
-      }
+    config <- plan$configs[[i]]
+    cols <- if (analysis == "choice") .pst_nm_angular_choice(config, weighted, norms, threshold, precision)
+            else .pst_nm_angular_integration(config, weighted, weight_outputs, norms, threshold, precision)
+    for (col in cols) {
+      norm <- if (col$role %in% c("normalized", "integration")) col$normalization else NA_character_
+      rows[[length(rows) + 1L]] <- data.frame(name = col$name, role = col$role, radius = i, normalization = norm,
+                                              stringsAsFactors = FALSE)
+      col$radius_index <- i
+      all_cols[[length(all_cols) + 1L]] <- col
     }
   }
   spec <- do.call(rbind, rows)
   if (anyDuplicated(tolower(c("segment_id", spec$name))))
     stop("Internal error: duplicate multi-result column names.", call. = FALSE)
+  attr(spec, "cols") <- all_cols
   spec
 }
 
@@ -56,9 +50,14 @@
   parameters$normalization <- .pst_json_array(as.list(norms))
   md <- .pst_result_metadata(fn, parameters, "segment", rows, graph)
   md[["rpst:schema"]] <- "2"
-  manifest <- lapply(seq_len(nrow(spec)), function(i)
-    list(name = spec$name[[i]], role = spec$role[[i]], radius = spec$radius[[i]],
-         normalization = if (is.na(spec$normalization[[i]])) NULL else spec$normalization[[i]]))
+  full <- attr(spec, "cols")
+  manifest <- lapply(seq_len(nrow(spec)), function(i) {
+    col <- full[[i]]
+    c(list(name = spec$name[[i]], role = spec$role[[i]], radius = spec$radius[[i]],
+           normalization = if (is.na(spec$normalization[[i]])) NULL else spec$normalization[[i]]),
+      col[c("code", "distance", "weight", "parameters")][nzchar(unlist(col[c("code", "distance", "weight", "parameters")]))],
+      list(radius_tag = col$radius))
+  })
   c(md,
     "rpst:radius_varying" = plan$varying,
     "rpst:radius_fixed" = .pst_json(if (length(plan$fixed)) plan$fixed else structure(list(), names = character())),
@@ -93,7 +92,7 @@
 
 .pst_angular_choice_multi <- function(graph, ptr, plan, weighted, norms, threshold, precision,
                                       output_file, overwrite, spatial_output_file) {
-  spec <- .pst_multi_spec("choice", plan, norms, weighted)
+  spec <- .pst_multi_spec("choice", plan, norms, weighted, FALSE, threshold, precision)
   native <- setdiff(norms, "none")
   parameters <- list(radius = NULL, weigh_by_length = weighted, normalization = NULL,
                      angle_threshold = threshold, angle_precision = precision)
@@ -109,7 +108,7 @@
                                            output_file, overwrite, spatial_output_file) {
   weighted <- .pst_flag(weighted, "weigh_by_length")
   weight_outputs <- .pst_flag(weight_outputs, "weight_outputs")
-  spec <- .pst_multi_spec("integration", plan, norms, weighted, weight_outputs)
+  spec <- .pst_multi_spec("integration", plan, norms, weighted, weight_outputs, threshold, precision)
   parameters <- list(radius = NULL, weigh_by_length = weighted, normalization = NULL,
                      angle_threshold = threshold, angle_precision = precision, weight_outputs = weight_outputs)
   .pst_multi_run(graph, ptr, "angular_integration", plan, norms, spec, parameters, output_file, overwrite,

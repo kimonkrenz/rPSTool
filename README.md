@@ -60,13 +60,13 @@ g <- axial_graph(ex$axial, unlinks = ex$unlinks)
 # Network integration within three direction changes; row i of the result belongs to row i of ex$axial
 res <- network_integration(g, radius = analysis_radius(steps = 3))
 head(res, 3)
-#>   line_id integration node_count total_depth
-#> 1       1    3.249486        180         452
-#> 2       2    2.896899        152         397
-#> 3       3    3.173414        161         402
+#>   line_id  ni_s_rs3 nc_s_rs3 td_s_rs3
+#> 1       1  3.249486      180      452
+#> 2       2  2.896899      152      397
+#> 3       3  3.173414      161      402
 
 plot(sf::st_geometry(ex$axial),
-     col = colour_map(res$integration, "coral_day", limits = range(res$integration)), lwd = 2)
+     col = colour_map(res$ni_s_rs3, "coral_day", limits = range(res$ni_s_rs3)), lwd = 2)
 ```
 
 The vignette [Getting started with rPSTool: the Barnsbury example](vignettes/getting-started.Rmd) covers two workflows: an in-memory

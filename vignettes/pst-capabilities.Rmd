@@ -229,9 +229,9 @@ rad_steps    <- analysis_radius(steps = 2)
 rad_walking  <- analysis_radius(walking = 55)
 rad_combined <- analysis_radius(steps = 2, walking = 55)
 reach <- cbind(
-  steps_only   = network_reach(g, radius = rad_steps)$reached_count,
-  walking_only = network_reach(g, radius = rad_walking)$reached_count,
-  combined     = network_reach(g, radius = rad_combined)$reached_count)
+  steps_only   = network_reach(g, radius = rad_steps)[[2]],
+  walking_only = network_reach(g, radius = rad_walking)[[2]],
+  combined     = network_reach(g, radius = rad_combined)[[2]])
 reach
 # lines whose combined count differs from the steps-only / the walking-only count
 c(vs_steps = sum(reach[, "combined"] != reach[, "steps_only"]),
@@ -263,13 +263,15 @@ w  <- angular_choice(sg, radius = analysis_radius(walking = 25),
                          weigh_by_length = TRUE, normalization = "syntax")
 u  <- angular_choice(sg, radius = analysis_radius(walking = 25),
                          weigh_by_length = FALSE, normalization = "syntax")
-all.equal(w$normalized, log10(w$choice + 1) / log10(2 + w$total_depth_weight),
+all.equal(w[[6]], log10(w[[2]] + 1) / log10(2 + w[[5]]),
           tolerance = 1e-6)
-all.equal(u$normalized, log10(u$choice + 1) / log10(2 + u$total_depth),
+all.equal(u[[5]], log10(u[[2]] + 1) / log10(2 + u[[4]]),
           tolerance = 1e-6)
 ```
 
 ### Angle threshold and precision
+
+(Result columns are selected by position here because their names carry the radius and parameters; see `?result_column_names`.)
 
 Turns smaller than `angle_threshold` degrees count as zero, and
 `angle_precision` sets the rounding unit used when ranking paths. These change
@@ -284,7 +286,7 @@ a0  <- angular_choice(bent, normalization = "syntax",
                           angle_threshold = 0,  angle_precision = 1)
 a15 <- angular_choice(bent, normalization = "syntax",
                           angle_threshold = 15, angle_precision = 1)
-round(rbind(threshold_0 = a0$total_depth, threshold_15 = a15$total_depth), 2)
+round(rbind(threshold_0 = a0[[4]], threshold_15 = a15[[4]]), 2)
 ```
 
 rPSTool applies explicitly supplied angle settings in both the weighted and the
@@ -354,8 +356,8 @@ decay_check <- do.call(rbind, lapply(c("power", "curve", "divide"), function(d) 
                          decay_constant = 2)
   data.frame(decay = d, default_equals_C1 = identical(default, c1),
              C2_differs_from_C1 = !identical(c1, c2),
-             mean_default = round(mean(default$attraction_reach), 4),
-             mean_C2 = round(mean(c2$attraction_reach), 4))
+             mean_default = round(mean(default[[2]]), 4),
+             mean_C2 = round(mean(c2[[2]]), 4))
 }))
 decay_check
 ```
@@ -378,7 +380,7 @@ Because the graph persists, repeated analyses cost only the analysis itself:
 ```{r reuse}
 radii <- list(steps_2 = analysis_radius(steps = 2), steps_3 = analysis_radius(steps = 3),
               unrestricted = analysis_radius())
-vapply(radii, function(r) mean(network_integration(g, radius = r)$integration),
+vapply(radii, function(r) mean(network_integration(g, radius = r)[[2]]),
        numeric(1))
 ```
 

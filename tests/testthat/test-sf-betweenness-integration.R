@@ -121,8 +121,8 @@ test_that("sf junction output matches the direct fixture junction results (all o
     g <- do.call(axial_graph, args)
     for (expected in case$integrations) {
       radius <- do.call(analysis_radius, expected$radius)
-      native <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE)
-      out <- rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE, junction_output = "sf")
+      native <- legacy_ni_run(g, radius = radius, junctions = TRUE)
+      out <- legacy_ni_run(g, radius = radius, junctions = TRUE, junction_output = "sf")
       expect_identical(names(out), c("lines", "junctions"))
       expect_identical(out$lines, native$lines)
       expect_s3_class(out$lines, "data.frame"); expect_false(inherits(out$lines, "sf"))
@@ -134,7 +134,7 @@ test_that("sf junction output matches the direct fixture junction results (all o
       xy <- if (nrow(j)) do.call(rbind, lapply(sf::st_geometry(j), unclass)) else matrix(numeric(), 0L, 2L)
       expect_identical(unname(xy), unname(cbind(native$junctions$x, native$junctions$y)))
       expect_true(is.na(sf::st_crs(j)))
-      expect_identical(rPSTool:::.pst_network_integration_run(g, radius = radius, junctions = TRUE), native)
+      expect_identical(legacy_ni_run(g, radius = radius, junctions = TRUE), native)
       checked <- checked + 1L
     }
   }

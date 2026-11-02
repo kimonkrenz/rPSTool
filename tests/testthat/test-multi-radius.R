@@ -107,8 +107,8 @@ test_that("Angular Choice: every multi column equals the scalar call", {
       expect_identical(first, paste0("choice", tag(values[[1L]])))
     }
   }
-  m <- attr(angular_choice(g, analysis_radius(walking = c(5, 9)), normalization = c("syntax", "turner")), "rpst_manifest")
-  expect_identical(m$columns$name[1:5], c("choice_w5", "node_count_w5", "total_depth_w5", "choice_syntax_w5", "choice_turner_w5"))
+  m <- attr(rPSTool::angular_choice(g, analysis_radius(walking = c(5, 9)), normalization = c("syntax", "turner")), "rpst_manifest")
+  expect_identical(m$columns$name[1:5], c("ac_a_rw5_n", "nc_a_rw5", "td_a_rw5", "ac_a_rw5_c", "ac_a_rw5_t"))
   expect_identical(m$columns$radius, rep(1:2, each = 5))
 })
 
@@ -251,7 +251,7 @@ test_that("FlatGeobuf spatial output holds one combined table equal to the in-me
   g <- segment_graph(src)
   radius <- analysis_radius(walking = c(25, 10, 60), angular = 180)
   norms <- c("turner", "syntax")
-  frame <- angular_choice(g, radius, normalization = norms)
+  frame <- rPSTool::angular_choice(g, radius, normalization = norms)
   out <- file.path(dir, "out.fgb")
   res <- angular_choice(g, radius, normalization = norms, spatial_output_file = out)
   expect_s3_class(res, "pst_result_file")
@@ -278,7 +278,7 @@ test_that("FlatGeobuf spatial output holds one combined table equal to the in-me
   params <- jsonlite::fromJSON(meta[["rpst:parameters"]], simplifyVector = FALSE)
   expect_equal(unlist(params$radius$walking), c(25, 10, 60)); expect_identical(unlist(params$normalization), norms)
   # integration, same route
-  fi <- angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE)
+  fi <- rPSTool::angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE)
   out2 <- file.path(dir, "int.fgb")
   angular_integration(g, radius = radius, normalization = c("hillier", "turner"), weigh_by_length = TRUE, spatial_output_file = out2)
   back2 <- so_read(out2, "flatgeobuf")
@@ -288,26 +288,27 @@ test_that("FlatGeobuf spatial output holds one combined table equal to the in-me
   out3 <- file.path(dir, "scalar.fgb")
   angular_choice(g, analysis_radius(walking = 25), normalization = "syntax", spatial_output_file = out3)
   expect_identical(mr_fgb_meta(out3)[["rpst:schema"]], "1")
-  expect_null(mr_fgb_meta(out3)[["rpst:columns"]])
+  expect_identical(vapply(jsonlite::fromJSON(mr_fgb_meta(out3)[["rpst:columns"]], simplifyVector = FALSE), function(x) x$name, ""),
+                   c("ac_a_rw25_n", "nc_a_rw25", "td_a_rw25", "ac_a_rw25_c"))
 })
 
 test_that("a source column with a result's name is replaced; stale earlier tagged columns are never silently dropped", {
   skip_multi_fgb()
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   m <- so_segments(20)
-  attrs <- so_attributes(20); attrs$choice_w25 <- 1:20; attrs$node_count_w10 <- 1:20
+  attrs <- so_attributes(20); attrs$ac_a_rw25_n <- 1:20; attrs$nc_a_rw10 <- 1:20
   src <- so_write_fgb(file.path(dir, "net.fgb"), m, attrs)
   g <- segment_graph(src)
   res <- angular_choice(g, analysis_radius(walking = c(25, 10)), spatial_output_file = file.path(dir, "o.fgb"))
-  expect_setequal(res$replaced, c("choice_w25", "node_count_w10"))
+  expect_setequal(res$replaced, c("ac_a_rw25_n", "nc_a_rw10"))
   back <- so_read(file.path(dir, "o.fgb"), "flatgeobuf")
-  expect_identical(sum(back$names == "choice_w25"), 1L)
-  expect_equal(as.numeric(back$attrs$choice_w25), angular_choice(g, analysis_radius(walking = 25))$choice, tolerance = 0)
+  expect_identical(sum(back$names == "ac_a_rw25_n"), 1L)
+  expect_equal(as.numeric(back$attrs$ac_a_rw25_n), angular_choice(g, analysis_radius(walking = 25))$choice, tolerance = 0)
   # chain: a second run with different radii keeps the first run's columns as ordinary attributes
   res2 <- angular_choice(segment_graph(file.path(dir, "o.fgb")), analysis_radius(walking = c(25, 99)),
                              spatial_output_file = file.path(dir, "o2.fgb"))
-  expect_true(all(c("choice_w10", "choice_w25", "choice_w99") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf")$names))
-  expect_false("choice_w10" %in% res2$columns[res2$columns %in% c("choice_w99")])
+  expect_true(all(c("ac_a_rw10_n", "ac_a_rw25_n", "ac_a_rw99_n") %in% so_read(file.path(dir, "o2.fgb"), "flatgeobuf")$names))
+  expect_false("ac_a_rw10_n" %in% res2$columns[res2$columns %in% c("ac_a_rw99_n")])
 })
 
 test_that("a mid-sequence failure publishes nothing and leaves an existing destination untouched", {
@@ -363,8 +364,8 @@ test_that("file-backed multi-radius calls record fixed straight / steps restrict
     case <- cases[[k]]
     for (analysis in c("choice", "integration")) {
       args <- list(g, radius = case$radius, angle_threshold = 25, angle_precision = 4)
-      if (analysis == "choice") { call <- angular_choice; args$normalization <- c("turner", "syntax"); args <- c(list(g, case$radius), args[-(1:2)]) }
-      else { call <- angular_integration; args$normalization <- c("turner", "hillier"); args$weigh_by_length <- TRUE }
+      if (analysis == "choice") { call <- rPSTool::angular_choice; args$normalization <- c("turner", "syntax"); args <- c(list(g, case$radius), args[-(1:2)]) }
+      else { call <- rPSTool::angular_integration; args$normalization <- c("turner", "hillier"); args$weigh_by_length <- TRUE }
       frame <- do.call(call, args)
       out <- file.path(dir, sprintf("%s-%d.fgb", analysis, k))
       do.call(call, c(args, list(spatial_output_file = out)))
@@ -386,17 +387,16 @@ test_that("file-backed multi-radius calls record fixed straight / steps restrict
       sargs <- list(g, radius = first, angle_threshold = 25, angle_precision = 4)
       scalar <- if (analysis == "choice") angular_choice(g, first, normalization = "turner", angle_threshold = 25, angle_precision = 4)
                 else angular_integration(g, radius = first, weigh_by_length = TRUE, normalization = "turner", angle_threshold = 25, angle_precision = 4)
-      tag <- paste0("_", c(straight = "s", walking = "w", steps = "n", angular = "a")[[case$vary]],
-                    rPSTool:::.pst_radius_value_text(case$radius[[case$vary]][[1L]], case$vary == "steps"))
-      expect_identical(frame[[paste0(if (analysis == "choice") "choice_turner" else "integration_turner", tag)]],
-                       if (analysis == "choice") scalar$normalized else scalar$integration)
+      first_name <- paste0(if (analysis == "choice") "ac_a_" else "ai_a_", rPSTool:::.pst_nm_radius(first),
+                           if (analysis == "choice") "_t_at25_ap4" else "_wl_t_at25_ap4")
+      expect_identical(frame[[first_name]], if (analysis == "choice") scalar$normalized else scalar$integration)
     }
   }
   # the angle controls matter: different controls give different columns (the call is not ignoring them)
   h <- mr_graph()
-  a <- angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"))
-  b <- angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"), angle_threshold = 60, angle_precision = 9)
-  expect_false(identical(a$total_depth_w40, b$total_depth_w40))
+  a <- rPSTool::angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"))
+  b <- rPSTool::angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"), angle_threshold = 60, angle_precision = 9)
+  expect_false(identical(a$td_a_rw40, b$td_a_rw40_at60_ap9))
 })
 
 test_that("file output of the multi-result route is available on every platform", {

@@ -2,6 +2,17 @@
 
 First release.
 
+## Result column names
+
+* Every analysis names its result columns with one scheme that identifies the analysis, distance, radius, weighting,
+  normalisation and non-default analytical parameters: for example `ai_a_rw3000_t` (Angular Integration, angular distance,
+  walking radius 3000, Turner normalisation), `ac_a_rw3000_n` (raw Angular Choice) and `nc_a_rw3000` (node count). Scalar and
+  multi-radius calls name a calculation identically. These replace the generic names `integration`, `choice`, `node_count`,
+  `total_depth`, `normalized`, `betweenness`, `reached_count` and so on. See `?result_column_names` and `docs/output-naming.md`.
+* `network_betweenness()`, `attraction_reach()`, `attraction_distance()` and `od_betweenness()` gain `weight_name` arguments
+  (`origin_weight_name` and `destination_weight_name` for the latter) that label user weights in the column names.
+* The metadata of every result file carries a `rpst:columns` manifest describing each column.
+
 ## Engine
 
 * Native R interface to the pinned PST engine (`pstalgo` v3.3.2, commit `63df80a2cf3dd289be95ea3d91667c3490719b75`), compiled into the
