@@ -85,7 +85,7 @@ than \code{false}), at most two are used. Invalid explicit caps are rejected bef
 \examples{
 g <- axial_graph(cbind(0:4, 0, 1:5, 0))
 network_betweenness(g, normalization = "freeman")
-network_betweenness(g, weights = c(1, 0, 2, 3, 1))
+network_betweenness(g, weights = c(1, 0, 2, 3, 1), weight_name = "population")
 network_betweenness(g, attraction_points = rbind(c(0.5, 0), c(4.5, 1)))
 }
 \seealso{
