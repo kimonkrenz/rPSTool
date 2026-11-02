@@ -115,24 +115,31 @@ test_that("custom weights require a name; names are normalised strictly", {
   expect_identical(bet(weight_name = "Jobs 2021")[1L], "at_w_rw800_wjobs_2021_n")
   expect_identical(bet(weight_name = "jobs_2021")[1L], "at_w_rw800_wjobs_2021_n")
   expect_identical(bet(weight_name = "wjobs_2021")[1L], "at_w_rw800_wwjobs_2021_n")   # the prefix is always added
-  # only a-z, 0-9 and '_' survive: anything else is an error, never silently altered or truncated
-  for (bad in c("Jobs-2021", "Jobs/2021", "Population (%)", "caf\u00e9", "a.b", "", "!!", NA_character_))
+  # runs of other characters become one '_', outer underscores go; the result is never truncated
+  for (same in c("Jobs-2021", "Jobs/2021", "Jobs  2021", "JOBS 2021", " jobs_2021 ", "Jobs (2021)"))
+    expect_identical(bet(weight_name = same)[1L], "at_w_rw800_wjobs_2021_n", info = same)
+  expect_identical(bet(weight_name = "Population (%)")[1L], "at_w_rw800_wpopulation_n")
+  expect_identical(bet(weight_name = "caf\u00e9 x")[1L], "at_w_rw800_wcaf_x_n")
+  expect_identical(bet(weight_name = "a.b.c")[1L], "at_w_rw800_wa_b_c_n")
+  # only an empty name or one without a letter or digit is an error
+  for (bad in c("", "!!", "---", " ", "(%)", NA_character_))
     expect_error(bet(weight_name = bad), "weight_name", info = bad)
   expect_error(bet(weight_name = c("a", "b")), "one non-empty string")
   expect_error(bet(weight_name = 1), "one non-empty string")
   expect_error(bet(weight_name = "l"), "reserved")
+  expect_error(bet(weight_name = " L! "), "reserved")
   expect_error(rPSTool::network_betweenness(a, r, distance = "walking", weight_name = "x"), "supplied without weights")
   # the same rules and the same pre-computation timing for all four custom-weight APIs
   pts <- rbind(c(0.5, 0.5)); o <- rbind(c(0.2, 0))
   expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1), "Custom weights require weight_name")
-  expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1, weight_name = "Cap-1"), "weight_name")
+  expect_error(rPSTool::attraction_reach(a, pts, r, distance = "walking", attraction_values = 1, weight_name = "!!"), "weight_name")
   expect_error(rPSTool::attraction_distance(a, pts, distance = "weights", line_weights = rep(1, 3)), "Custom weights require weight_name")
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1), "Custom weights require origin_weight_name")
   expect_error(rPSTool::od_betweenness(a, o, r, destination_weights = rep(1, 2)), "Custom weights require destination_weight_name")
   # origin and destination names are validated independently
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "pop",
-                                       destination_weights = rep(1, 2), destination_weight_name = "jobs/2021"), "destination_weight_name")
-  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "pop-1",
+                                       destination_weights = rep(1, 2), destination_weight_name = "%%"), "destination_weight_name")
+  expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "--",
                                        destination_weights = rep(1, 2), destination_weight_name = "jobs"), "origin_weight_name")
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weight_name = "pop"), "supplied without origin_weights")
   expect_identical(cols(rPSTool::od_betweenness(a, o, r, origin_weights = 1, origin_weight_name = "Pop 1",

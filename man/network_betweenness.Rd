@@ -37,8 +37,8 @@ see \link{pst_result_file}. In a result file, the \code{NA} values described bel
 
 \item{weight_name}{Required whenever \code{weights} is supplied, and an error otherwise: a descriptive name for the
 weights (for example \code{"population"}) used in the result column names (\code{..._wpopulation_...}). It is lower-cased,
-spaces become \verb{_}, and only the letters a-z, digits and \verb{_} are allowed; anything else is an error. The original is
-kept in the result metadata. It is a label only: it does not check that the same name always means the same values.}
+every run of other characters becomes one \verb{_} and leading/trailing underscores are dropped (\code{"Jobs-2021"} gives
+\code{jobs_2021}); only a name with no letter or digit left is an error. The original is kept in the result metadata. It is a label only: it does not check that the same name always means the same values.}
 }
 \value{
 A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with
