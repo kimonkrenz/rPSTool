@@ -41,10 +41,13 @@ test_that("spatial_output_file is appended after overwrite; output_file stays at
               network_reach = c("graph", "radius", "origins", "output_file", "overwrite"),
               network_betweenness = c("graph", "radius", "distance", "normalization", "weights", "attraction_points", "output_file", "overwrite"),
               od_betweenness = c("graph", "origins", "radius", "distance", "destination_mode", "origin_weights", "destination_weights", "output_file", "overwrite"))
-  for (name in names(fns)) expect_identical(names(formals(get(name))), c(fns[[name]], "spatial_output_file"), info = name)
-  expect_identical(tail(names(formals(attraction_reach)), 3L), c("output_file", "overwrite", "spatial_output_file"))
-  expect_identical(tail(names(formals(attraction_distance)), 3L), c("output_file", "overwrite", "spatial_output_file"))
-  expect_null(formals(angular_choice)$spatial_output_file)
+  # the weight_name arguments of the output-naming scheme follow spatial_output_file
+  trailing <- list(network_betweenness = "weight_name", od_betweenness = c("origin_weight_name", "destination_weight_name"))
+  for (name in names(fns)) expect_identical(names(formals(getExportedValue("rPSTool", name))),
+                                            c(fns[[name]], "spatial_output_file", trailing[[name]]), info = name)
+  expect_identical(tail(names(formals(rPSTool::attraction_reach)), 4L), c("output_file", "overwrite", "spatial_output_file", "weight_name"))
+  expect_identical(tail(names(formals(rPSTool::attraction_distance)), 4L), c("output_file", "overwrite", "spatial_output_file", "weight_name"))
+  expect_null(formals(rPSTool::angular_choice)$spatial_output_file)
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE), add = TRUE)
   path <- so_write_fgb(file.path(dir, "s.fgb"), so_segments())
   g <- segment_graph(path)
@@ -117,7 +120,7 @@ test_that("every eligible analysis writes the source geometry and attributes plu
           expect_identical(unname(res$attrs[[col]]), unname(mem[[col]]), info = paste(format, indexed, kind, name, col))
           expect_identical(unname(res$attrs[[col]]), unname(exp$fresh[-1L][[col]]), info = paste(format, indexed, kind, name, col, "fresh"))
         }
-        expect_identical(desc$rows, 30L); expect_identical(desc$appended, names(mem)); expect_identical(desc$replaced, character())
+        expect_identical(desc$rows, 30L); expect_identical(legacy_names(desc$appended), names(mem)); expect_identical(desc$replaced, character())
         checked <- checked + 1
       }
     }
@@ -144,31 +147,44 @@ test_that("CRS, header/layer metadata and the geo metadata are carried over unch
 })
 
 # ---- column replacement ------------------------------------------------------------------------------------------------
-test_that("a result column with a source column's name replaces it in place; repeated analyses never duplicate columns", {
+test_that("a result column with a source column's name needs overwrite = TRUE and then replaces it in place; the source is never modified", {
   skip_spatial()
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE), add = TRUE)
   m <- so_segments(); attrs <- so_attributes(nrow(m))
-  attrs$choice <- as.character(seq_len(nrow(m))); attrs$node_count <- seq_len(nrow(m)) * 100L   # same names as results
+  attrs$ac_a_rs2_n <- as.character(seq_len(nrow(m))); attrs$nc_a_rs2 <- seq_len(nrow(m)) * 100L   # same names as results
   attrs$tail <- seq_len(nrow(m)) / 3
   for (format in FORMATS) {
     path <- so_make_source(format, file.path(dir, paste0("s.", so_ext[[format]])), m, attrs = attrs)
+    before <- so_md5(path)
     g <- segment_graph(path)
     out1 <- file.path(dir, paste0("o1.", so_ext[[format]]))
-    d1 <- angular_choice(g, radius = analysis_radius(steps = 2), spatial_output_file = out1)
-    expect_identical(d1$replaced, c("choice", "node_count")); expect_identical(d1$appended, "total_depth")
-    r1 <- so_read(out1, format)
-    expect_identical(names(r1$attrs), c(names(attrs), "total_depth"))        # in-place replacement, one appended, no duplicates
-    mem <- angular_choice(g, radius = analysis_radius(steps = 2))
-    expect_identical(unname(r1$attrs$choice), mem$choice); expect_identical(unname(r1$attrs$node_count), mem$node_count)
+    # default overwrite = FALSE: a clear error naming every conflicting column, before anything is written
+    expect_error(rPSTool::angular_choice(g, radius = analysis_radius(steps = 2), spatial_output_file = out1),
+                 "already exist in the source: ac_a_rs2_n, nc_a_rs2.*overwrite = TRUE")
+    expect_false(file.exists(out1)); expect_length(so_leftovers(dir), 0L)
+    d1 <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2), spatial_output_file = out1, overwrite = TRUE)
+    expect_identical(d1$replaced, c("ac_a_rs2_n", "nc_a_rs2")); expect_identical(d1$appended, "td_a_rs2")
+    r1 <- so_read(out1, format, legacy = FALSE)
+    expect_identical(names(r1$attrs), c(names(attrs), "td_a_rs2"))        # in-place replacement, one appended, no duplicates
+    mem <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2))
+    expect_identical(unname(r1$attrs$ac_a_rs2_n), mem$ac_a_rs2_n); expect_identical(unname(r1$attrs$nc_a_rs2), mem$nc_a_rs2)
     expect_identical(r1$attrs$tail, attrs$tail); expect_identical(r1$attrs$osm_id, attrs$osm_id)   # unrelated columns untouched
-    # run again on the output with different parameters -> replaced again
+    expect_identical(so_md5(path), before)                                  # the source file is byte-for-byte unchanged
+    expect_identical(r1$wkb, so_wkb_of(path))                               # geometry and order preserved
+    # a different calculation on the output accumulates without any collision
     g2 <- segment_graph(out1)
     out2 <- file.path(dir, paste0("o2.", so_ext[[format]]))
-    d2 <- angular_choice(g2, radius = analysis_radius(steps = 3), spatial_output_file = out2)
-    expect_identical(d2$replaced, c("choice", "node_count", "total_depth")); expect_identical(d2$appended, character())
-    r2 <- so_read(out2, format)
-    expect_identical(names(r2$attrs), names(r1$attrs)); expect_false(anyDuplicated(names(r2$attrs)) > 0)
-    expect_identical(unname(r2$attrs$choice), angular_choice(g, radius = analysis_radius(steps = 3))$choice)
+    d2 <- rPSTool::angular_choice(g2, radius = analysis_radius(steps = 3), spatial_output_file = out2)
+    expect_identical(d2$replaced, character()); expect_identical(d2$appended, c("ac_a_rs3_n", "nc_a_rs3", "td_a_rs3"))
+    r2 <- so_read(out2, format, legacy = FALSE)
+    expect_identical(names(r2$attrs), c(names(r1$attrs), d2$appended)); expect_false(anyDuplicated(names(r2$attrs)) > 0)
+    # the same calculation on its own output is a collision again
+    out3 <- file.path(dir, paste0("o3.", so_ext[[format]]))
+    expect_error(rPSTool::angular_choice(segment_graph(out1), radius = analysis_radius(steps = 2), spatial_output_file = out3),
+                 "already exist in the source")
+    expect_false(file.exists(out3))
+    d3 <- rPSTool::angular_choice(segment_graph(out1), radius = analysis_radius(steps = 2), spatial_output_file = out3, overwrite = TRUE)
+    expect_identical(d3$replaced, c("ac_a_rs2_n", "nc_a_rs2", "td_a_rs2")); expect_identical(d3$appended, character())
   }
 })
 
@@ -176,14 +192,15 @@ test_that("ambiguous or duplicate names are rejected, and no file or temporary i
   skip_spatial()
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE), add = TRUE)
   m <- so_segments(); attrs <- so_attributes(nrow(m))
-  # FlatGeobuf looks fields up case-insensitively: a source column "Choice" is ambiguous with the result "choice"
-  a2 <- attrs; a2$Choice <- 1
+  # FlatGeobuf looks fields up case-insensitively: a source column "AC_A_RG_N" is ambiguous with the result "ac_a_rg_n"
+  a2 <- attrs; a2$AC_A_RG_N <- 1
   fgb <- so_write_fgb(file.path(dir, "ci.fgb"), m, attrs = a2); out <- file.path(dir, "o.fgb")
-  expect_error(angular_choice(segment_graph(fgb), spatial_output_file = out), "only by letter case")
+  expect_error(rPSTool::angular_choice(segment_graph(fgb), spatial_output_file = out), "only by letter case")
+  expect_error(rPSTool::angular_choice(segment_graph(fgb), spatial_output_file = out, overwrite = TRUE), "only by letter case")
   expect_false(file.exists(out)); expect_length(so_leftovers(dir), 0L)
   # GeoParquet: the geometry column's name collides with a result column
-  gpq <- so_write_gpq(file.path(dir, "geom.parquet"), m, attrs = attrs, primary = "choice"); out2 <- file.path(dir, "o.parquet")
-  expect_error(angular_choice(segment_graph(gpq), spatial_output_file = out2), "name of the geometry column")
+  gpq <- so_write_gpq(file.path(dir, "geom.parquet"), m, attrs = attrs, primary = "ac_a_rg_n"); out2 <- file.path(dir, "o.parquet")
+  expect_error(rPSTool::angular_choice(segment_graph(gpq), spatial_output_file = out2), "name of the geometry column")
   expect_false(file.exists(out2)); expect_length(so_leftovers(dir), 0L)
   # duplicate source column names never reach the writer: arrow cannot even open such a dataset at graph construction
   dup <- file.path(dir, "dup.parquet")

@@ -38,7 +38,7 @@ must not be modified or reordered after the graph is built. See
 
 \strong{\code{overwrite}.} With \code{overwrite = FALSE} (default) an existing destination is never replaced; with \code{TRUE} it is replaced. Files
 are written under a temporary name and published only when complete, so replacement is a single rename and the old file is
-untouched if anything fails. No guarantee of durability after a crash is made. \code{overwrite} applies to the output file only, never to the source.
+untouched if anything fails. No guarantee of durability after a crash is made. With \code{spatial_output_file}, \code{overwrite = TRUE} additionally allows result columns that already exist in the source to be replaced in the new file; with \code{FALSE} such a collision is an error raised before the analysis. \code{overwrite} never modifies the source.
 
 \strong{Descriptor.} The descriptor is a list with the absolute \code{path}, the number of \code{rows}, the \code{columns} in file order and the
 \code{format} (\code{"parquet"}). For \code{spatial_output_file} it additionally has \code{spatial = TRUE}, the \code{source} network path, the
