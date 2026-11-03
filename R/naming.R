@@ -277,7 +277,7 @@
 #'   `syntax`, `n` raw.
 #' * **Diagnostics:** `nc` node count, `td` total depth, `tw` total weight, `tdw` total depth weight, `rc` reached
 #'   count, `rln` reached length, `rca` reached area, `di` destination index; `anc` and `atd` are the node count and total
-#'   depth of Attraction Betweenness. The diagnostics of weighted and attraction runs carry the weight component,
+#'   depth of Attraction Betweenness. The diagnostics of weighted runs carry the weight component,
 #'   because PST skips origins without positive weight.
 #' * **Parameters:** written only when different from the default, in a fixed order: `at<v>` `angle_threshold`, `ap<v>`
 #'   `angle_precision`, `or<x>` `origin`, `dc<x>` `decay`, `dk<v>` `decay_constant`, `ds<x>` `distribution`, `cl<x>`

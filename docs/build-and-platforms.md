@@ -29,8 +29,7 @@ R CMD check --no-manual rPSTool_0.1.0.tar.gz     # use the current version's tar
 
 Targets are macOS (Apple clang), Windows (Rtools) and Linux (GCC or clang). The package has no runtime downloads, needs no
 network access during checks, bounds thread use in check environments (see the worker policy in
-[architecture](architecture.md#threading-and-progress)), and writes only to temporary or user-specified locations. Validation
-status is in [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
+[architecture](architecture.md#threading-and-progress)), and writes only to temporary or user-specified locations.
 
 `arrow` (>= 25.0.0), `jsonlite` and `sf` are optional (`Suggests`); none is imported, linked or required to build, and rPSTool
 links no libarrow. Vendored third-party sources (FlatBuffers headers, FlatGeobuf generated headers, Arrow C data/stream interface

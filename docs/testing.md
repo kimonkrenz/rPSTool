@@ -3,16 +3,15 @@
 ## Correctness oracle
 
 Upstream PST is the numerical authority. rPSTool tests show that rPSTool calls PST correctly; they do not validate PST against an
-independently written algorithm. Two kinds of fidelity are distinguished (evidence labels S, N, E, Q as in
-[PST coverage](pst-coverage.md)):
+independently written algorithm. Two kinds of fidelity are distinguished (see [PST coverage](pst-coverage.md)):
 
-* **Engine fidelity**: values equal what the pinned exported C API computes. Direct-PST fixtures (evidence N) establish this
+* **Engine fidelity**: values equal what the pinned exported C API computes. Direct-PST fixtures establish this
   and nothing more; a fixture whose arrays, flags or defaults were selected by rPSTool shows engine fidelity and wrapper
   self-consistency only.
 * **Application fidelity**: the arrays, flags and defaults selected equal what PST for QGIS selects. This rests on documented
   source traces, on sensitivity tests showing that the selected buffer or flag differs observably from the plausible alternative,
   and on manual comparison in a real QGIS installation ([`tools/validation/qgis-comparison/`](../tools/validation/qgis-comparison/README.md)).
-  No Q-level comparison has been recorded; intentional differences are listed in
+  No comparison in a real QGIS installation has been recorded; intentional differences are listed in
   [QGIS differences](compatibility/qgis-differences.md).
 
 Consistency tests between rPSTool routes (multi-radius against scalar, file against memory, adapter against matrix) are not
@@ -68,11 +67,11 @@ RPST_FULL_TESTS=false Rscript tools/ci/check-package.R ubuntu     # CRAN-mode ru
 NOT_CRAN=true Rscript -e 'testthat::test_dir("tests/testthat")'   # full tests from a development checkout
 ```
 
-Approximate run times on one Linux machine with 4 cores: about 1500 s for the full suite and about 280 s for CRAN mode.
+The full suite takes much longer than CRAN mode.
 
 ## Optional dependencies in tests
 
-`arrow` (>= 25.0.0), `sf`, `jsonlite` and `ggplot2` are suggested packages. Tests and examples that need them skip when they are
+`arrow`, `sf`, `jsonlite` and `ggplot2` are suggested packages. The minimum supported `arrow` is 25.0.0, the release the Arrow C declarations in `src/arrow-c-abi` were taken from; the recorded CRAN-comment runs used a newer release (see `cran-comments.md`). Tests and examples that need them skip when they are
 absent, except that the local development gate requires them, so a full validation exercises every path. The native Arrow
 boundary tests (`test-arrow-native.R`) need no Arrow.
 
@@ -80,5 +79,4 @@ boundary tests (`test-arrow-native.R`) need no Arrow.
 
 Four tests skip on Windows because they depend on POSIX-only facilities (device files, FIFOs, `ulimit -f`); the inventory is
 `tools/ci/windows-test-skips.tsv`. On Windows an open Arrow reader blocks replacing or deleting the file, so tests that read
-Parquet files through Arrow close their handles explicitly. Platform validation status is in
-[KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md); build notes are in [build and platforms](build-and-platforms.md).
+Parquet files through Arrow close their handles explicitly. Build notes are in [build and platforms](build-and-platforms.md).

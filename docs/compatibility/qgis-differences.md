@@ -12,8 +12,8 @@ User-facing examples with explicit settings are in the vignette *PST capabilitie
 
 | Item | Plugin behaviour | rPSTool |
 |---|---|---|
-| Length-weighted Angular Choice, syntax (NACH) normalisation | passes `total_depth_weights`; unweighted passes `total_depths` | `PSTAAngularChoiceSyntaxNormalize` receives `total_depth_weight` when `weigh_by_length = TRUE`, `total_depth` otherwise; identical for scalar, multi-radius, multi-normalisation, Parquet and spatial outputs |
-| Attraction Reach decay constant when a nonconstant function is selected | wizard default `C = 1` | `decay_constant = NULL` means 1 for `"power"`, `"curve"`, `"divide"` (and 0 for `"constant"`); explicit values (including 0) unchanged. **The default decay function itself still differs:** the wizard defaults to `pow`, rPSTool to `"constant"`; state `decay =` explicitly to reproduce the wizard | . See [attractions](attractions.md). |
+| Length-weighted Angular Choice, syntax (NACH) normalisation | passes `total_depth_weights`; unweighted passes `total_depths` | `PSTAAngularChoiceSyntaxNormalize` receives the length-weighted total depth (`tdw_..._wl`) when `weigh_by_length = TRUE`, the total depth (`td_...`) otherwise; identical for scalar, multi-radius, multi-normalisation, Parquet and spatial outputs |
+| Attraction Reach decay constant when a nonconstant function is selected | wizard default `C = 1` | `decay_constant = NULL` means 1 for `"power"`, `"curve"`, `"divide"` (and 0 for `"constant"`); explicit values (including 0) unchanged. **The default decay function itself still differs:** the wizard defaults to `pow`, rPSTool to `"constant"`; state `decay =` explicitly to reproduce the wizard. See [attractions](attractions.md). |
 | Network Integration radius types | steps only: wizard `RadiusPage(radius_types=[STEPS])` and Python execution code `Radii(steps=...)` (commit `5f3f70f`, present in v3.3.2) | steps only; straight, walking, angular and axmeter limits, alone or mixed with steps, are rejected before the native call |
 
 ## Deliberate departures (rPSTool differs and keeps its behaviour)
@@ -33,4 +33,4 @@ The plugin's undefined names (`networkintegrationanalysis.py`, `createjunctionsa
 
 ## Not exposed by QGIS but exposed by rPSTool
 
-Listed and classified in [PST coverage](../pst-coverage.md).
+Listed in [PST coverage](../pst-coverage.md).

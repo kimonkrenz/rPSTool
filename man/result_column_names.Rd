@@ -30,7 +30,7 @@ weights of \code{\link[=od_betweenness]{od_betweenness()}}, each named independe
 \code{syntax}, \code{n} raw.
 \item \strong{Diagnostics:} \code{nc} node count, \code{td} total depth, \code{tw} total weight, \code{tdw} total depth weight, \code{rc} reached
 count, \code{rln} reached length, \code{rca} reached area, \code{di} destination index; \code{anc} and \code{atd} are the node count and total
-depth of Attraction Betweenness. The diagnostics of weighted and attraction runs carry the weight component,
+depth of Attraction Betweenness. The diagnostics of weighted runs carry the weight component,
 because PST skips origins without positive weight.
 \item \strong{Parameters:} written only when different from the default, in a fixed order: \verb{at<v>} \code{angle_threshold}, \verb{ap<v>}
 \code{angle_precision}, \verb{or<x>} \code{origin}, \verb{dc<x>} \code{decay}, \verb{dk<v>} \code{decay_constant}, \verb{ds<x>} \code{distribution}, \verb{cl<x>}

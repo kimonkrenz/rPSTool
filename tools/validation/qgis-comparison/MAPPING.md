@@ -72,7 +72,7 @@ Notation: `P` = the plugin `props` dict (the keys the wizards set); "dtype" = ty
 
 ### Angular Integration (segment) — `angularintegrationanalysis.py`
 * Options: weight modes (none / length), normalisations (Turner, NAIN, Hillier), angle precision/threshold, combined radius (all ticked types), output N/TD/MD.
-* One PST call per weight mode (length-weighted first, then unweighted), then one exported normaliser per ticked normalisation. rPSTool: `angular_integration(sg, radius, weigh_by_length, normalization = "turner"|"syntax"|"hillier", angle_threshold, angle_precision)` – the tool calls it once per normalisation and uses `integration`, `node_count`, `total_depth`.
+* One PST call per weight mode (length-weighted first, then unweighted), then one exported normaliser per ticked normalisation. rPSTool: `angular_integration(sg, radius, weigh_by_length, normalization = "turner"|"syntax"|"hillier", angle_threshold, angle_precision)` – the tool calls it once per normalisation and uses the `ai_...`, `nc_...` and `td_...` columns.
 * Columns, order: weighted block `AI{r}wl` (Turner; `A`… suffix = NAIN, `H` = Hillier: `AI{r}wlA`, `AI{r}wlH`), then N/TD/MD **once** (`AI{r}N`, `AI{r}D`, ⚙ `AI{r}M`) – emitted in the first block that runs – then unweighted block `AI{r}`, `AI{r}A`, `AI{r}H`.
 * Angle threshold/precision are passed to both runs.
 
@@ -92,7 +92,7 @@ Notation: `P` = the plugin `props` dict (the keys the wizards set); "dtype" = ty
 * Distance modes (checkboxes) straight, walking, steps, angle, axmeter, attribute-cost (`weights`); combined radius from the radius page. rPSTool `distance = "straight"|"walking"|"steps"|"angular"|"weights"`; **axmeter has no rPSTool AD equivalent** (not exercised).
 * Cost mode: `line_weights = layer[dw_attribute]`, `point_edge_weight = point_connection_weight`.
 * Destinations: all points, or per ticked data column ⚙ **only points with value > 0 are passed to PST (NULL counts as 0)** – rPSTool callers must filter themselves; the destination index then refers to the filtered list.
-* Column: `AD{dist}{r}{title}`, `title` = ⚙ first two characters of the lower-cased custom name / data column name / layer name; plus (if ticked) ⚙ `…_{suffix}` = attribute of the nearest destination (via `destination_index`; NULL when −1). Order: for each data column → for each distance mode: distance, attribute copy.
+* Column: `AD{dist}{r}{title}`, `title` = ⚙ first two characters of the lower-cased custom name / data column name / layer name; plus (if ticked) ⚙ `…_{suffix}` = attribute of the nearest destination (via `di_...`; NULL when −1). Order: for each data column → for each distance mode: distance, attribute copy.
 
 ### Attraction Reach — `attractionreachanalysis.py`
 * **Non-weight mode** (default): radii come from the *Radius page* (`rad_*`, `.split()` - one analysis per ticked type; `attractionreachanalysis.py`), `distance = "none"`: `attraction_reach(g, dest, radius = single, origin, distance = "none", attraction_values, distribution, collection)`; column `AR{r}{title}`.
@@ -130,12 +130,12 @@ Notation: `P` = the plugin `props` dict (the keys the wizards set); "dtype" = ty
 
 | # | Where | What the plugin does in Python | rPSTool |
 |---|---|---|---|
-| P1 | `MeanDepthGen` (NI, NB, AI, AC, Group integration) | `M = TD/(N-1)` in double, `0.0` when `N-1 <= 0` | not provided; compute from `node_count`, `total_depth` |
+| P1 | `MeanDepthGen` (NI, NB, AI, AC, Group integration) | `M = TD/(N-1)` in double, `0.0` when `N-1 <= 0` | not provided; compute from `nc_...`, `td_...` |
 | P2 | Reach | area × 1e-6 / 1e-4 for km²/ha, float32 rounding | areas in CRS units² |
 | P3 | Group Integration | group result copied to every member segment | rPSTool returns one row per group |
 | P4 | Attraction Distance | removes destinations with value ≤ 0 or NULL before PST; destination attribute copy | caller filters / indexes |
 | P5 | all attraction analyses | NULL attribute → 0. Every caller passes a one-element list (`AttractionValueGen`'s multi-column `sum(values)` branch is dead code), so several ticked data columns produce separate columns. | caller |
-| P6 | column naming | `GenColName`, 2-letter attraction title, `k` suffix, truncated radii, weight-column name, `_split`/`_sp`, `seggrp_…`, `GI_…` | rPSTool uses fixed names (`integration`, `node_count`, …) |
+| P6 | column naming | `GenColName`, 2-letter attraction title, `k` suffix, truncated radii, weight-column name, `_split`/`_sp`, `seggrp_…`, `GI_…` | rPSTool uses the generated names of [output naming](../../../docs/output-naming.md) (`ai_...`, `nc_...`, …) |
 | P7 | AC unweighted run | silently ignores angle threshold/precision | honours them |
 | P8 | AC/AI N/TD/MD | emitted once, from the first block that runs; NI writes N/TD whenever MD is ticked | all outputs returned always |
 | P9 | NB/AT/OD/Reach/Group Integr. | silent no-op without a ticked radius | explicit unrestricted `analysis_radius()` |

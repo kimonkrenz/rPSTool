@@ -14,7 +14,7 @@ are retained native graph points: polygon-generated samples each require their
 own weight, not one weight per polygon/group.
 
 The result is independent R storage: one-based `line_id` and native float
-`od_betweenness` widened to double, in native input-line order. Results survive release of the graph and inputs.
+`od_<d>_<radius>[...]` widened to double, in native input-line order. Results survive release of the graph and inputs.
 Empty origin/destination sets return native written zeros. Every score is written, so there are no NA results.
 
 | Choice | PST behaviour |

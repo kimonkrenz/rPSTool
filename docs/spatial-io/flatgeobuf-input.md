@@ -48,8 +48,7 @@ retained unchanged; a geographic or uninterpretable CRS is rejected.
 
 ## 5. Memory
 
-Indicative decode scale on one Linux machine, not a guarantee: 5 million segments about 156 MiB and 1.5 s; 10 million about
-309 MiB and 2.5 s.
+Memory is dominated by PST's own graph; decoding the file adds comparatively little.
 
 ## 6. Not supported
 

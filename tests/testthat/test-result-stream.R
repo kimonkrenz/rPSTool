@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §4: the rPSTool result owner and its Arrow C stream producer, tested with a synthetic
+# docs/spatial-io/result-files.md: the rPSTool result owner and its Arrow C stream producer, tested with a synthetic
 # producer and a scripted consumer so ownership, release order and failure paths are exercised independently of any
 # PST analysis. The R `arrow` package is only needed by the tests that import the stream.
 

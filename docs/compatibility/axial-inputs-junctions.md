@@ -44,7 +44,7 @@ x/y matrix of world coordinates in native crossing order (a typed 0 x 2 matrix w
 junction rows have one-based integer IDs, world x/y doubles and PST's Integration score; no crossings give a zero-row data frame.
 
 `junction_output = "sf"` (requires `junctions = TRUE` and sf) replaces only the `junctions` component with POINT sf (`junction_id`,
-`integration`, geometry from the native x/y), in the graph's CRS (unknown if none); `lines` stays a data frame. See the
+`nj_s_<radius>`, geometry from the native x/y), in the graph's CRS (unknown if none); `lines` stays a data frame. See the
 [sf contract](../spatial-io/sf-adapters.md#betweenness-attraction-points-and-integration-junction-output).
 
 **Junction scores are accumulated.** Network Integration visits line-crossing records and adds each line's score divided by the number

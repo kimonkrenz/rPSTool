@@ -1,7 +1,6 @@
 # Release checklist (rPSTool 0.1.0)
 
-Platform validation status is in [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md); test environments and check results for CRAN
-are in `cran-comments.md`.
+Test environments and check results for CRAN are in `cran-comments.md`.
 
 ## Outstanding before submission
 

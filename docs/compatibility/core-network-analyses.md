@@ -40,7 +40,7 @@ includes origin and destination contributions; it is not the unweighted score mu
 returned only in weighted mode. See [angular controls](angular-controls.md).
 
 `normalization` is `"none"` (default), `"standard"`, `"turner"` (choice) or `"freeman"` (betweenness), or `"syntax"`; the result gets an additional
-`normalized` column and raw scores are always kept. Syntax normalization uses `total_depth`, and `total_depth_weight` for length-weighted
+normalised column (`nb_..._s/_f/_y`, `at_...`, `ac_..._t/_s/_c`) and raw scores are always kept. Syntax normalization uses the total depth (`td_...`), and the length-weighted total depth (`tdw_..._wl`) for length-weighted
 Angular Choice (see [QGIS differences](qgis-differences.md)). Network Integration computes its score internally and has no separate
 normalizer.
 
@@ -75,10 +75,10 @@ and negative weights are accepted; values that overflow float or underflow to ze
 matrix convention as Reach; sf/sfc XY POINT input is accepted in feature order, weights stay explicit and attributes are ignored
 ([sf contract](../spatial-io/sf-adapters.md#betweenness-attraction-points-and-integration-junction-output)).
 
-Where PST does not write a diagnostic (for example for origins it skips), the corresponding `node_count` and `total_depth` entries are
-integer/double `NA`, and `normalized` is `NA` for undefined rows. Written values, including non-finite ones, are returned as PST
-produced them; raw scores are never altered. In files (`output_file`) these `NA` values are Arrow nulls in `node_count`, `total_depth` and
-(Freeman/syntax) `normalized`; `betweenness` and the standard normalization are never null. See [result files](../spatial-io/result-files.md).
+Where PST does not write a diagnostic (for example for origins it skips), the corresponding node-count and total-depth entries (`nc_...`/`td_...`; `anc_...`/`atd_...` for Attraction Betweenness) are
+integer/double `NA`, and the normalised columns are `NA` for undefined rows. Written values, including non-finite ones, are returned as PST
+produced them; raw scores are never altered. In files (`output_file`) these `NA` values are Arrow nulls in the node-count and total-depth columns and
+in the Freeman/syntax normalised columns; the raw score and the standard normalisation are never null. See [result files](../spatial-io/result-files.md).
 
 ### Other semantics
 

@@ -76,7 +76,7 @@ points on a CRS-bearing graph need no sf. Distances, normalisation, signed weigh
 behaviour.
 
 `network_integration(..., junctions = TRUE, junction_output = "sf")` replaces only the `junctions` component with POINT sf:
-`junction_id`, `integration` and the geometry built from the native x/y (x/y are not repeated as columns). `junction_output`
+`junction_id`, the generated junction-integration column (`nj_s_<radius>`) and the geometry built from the native x/y (x/y are not repeated as columns). `junction_output`
 follows `junctions` in the signature, defaults to `"native"`, and requires `junctions = TRUE` and sf; otherwise the call fails
 before any native work. Native order and score values (including `NaN`/`Inf`) are preserved. A zero-junction result has zero
 features. The CRS is the graph's retained CRS (unknown for matrix-only graphs). `lines` stays an ordinary data frame without line

@@ -27,20 +27,22 @@ angular_choice(graph, radius = analysis_radius(), weigh_by_length = FALSE, norma
 * `overwrite = FALSE` (default) never replaces anything that exists at `output_file`; `TRUE` replaces the file by a single
   rename, and the old file is untouched if anything fails (see §5).
 * `output_file` requires the suggested package `arrow (>= 25.0.0)`, including zstd support. rPSTool uses arrow's
-  undocumented `RecordBatchReader$import_from_c()`; it checks at run time that this function exists and fails with an
-  error before computing anything if it does not. arrow 25.0.0 is the version this has been tested with.
+  undocumented `RecordBatchReader$import_from_c()`; it checks at run time that the installed version meets the minimum
+  and that this function exists, and fails with an error before computing anything otherwise.
 
 ## 2. File contents and metadata
 
 The file has exactly the columns, order and rows of the in-memory data frame for the same call, including the conditional
-`total_weight`/`total_depth_weight` columns of Angular Integration and `total_depth_weight`/`normalized` of Angular Choice.
-Column names are described in [output naming](../output-naming.md).
+weighted-output and diagnostic columns. Result column names are generated from the analysis, distance, radius, weights,
+normalisation and parameters (for example `ac_a_rw7_n`, `nc_a_rw7`, `td_a_rw7`); the rules are in
+[output naming](../output-naming.md) and `?result_column_names`. The tables below name each column by its role and give
+the naming prefix; they never use a fixed literal name except for the positional id columns.
 
-| Column | Parquet type | Content |
-| --- | --- | --- |
-| `segment_id` | int32 | one-based position in native graph order; no external identifiers |
-| float results | **float32** | PST's native `float`, stored unchanged; reading into R widens it exactly to the doubles of the data frame |
-| `node_count` | int32 | PST's native `unsigned int`; the call fails if a value exceeds `INT32_MAX` |
+| Role | Column name | Parquet type | Content |
+| --- | --- | --- | --- |
+| Positional id | `segment_id` (also `line_id`, `origin_id`, `group_id`, `junction_id` by graph type) | int32 | one-based position in native graph order; no external identifiers |
+| Result values | generated, for example `ac_...`, `ai_...` | **float32** | PST's native `float`, stored unchanged; reading into R widens it exactly to the doubles of the data frame |
+| Node-count diagnostic | generated, prefix `nc_` (`anc_` for Attraction Betweenness) | int32 | PST's native `unsigned int`; the call fails if a value exceeds `INT32_MAX` |
 
 All columns of the angular and mask-free axial analyses are non-nullable. Native Inf, NaN, `-0` and any other float bit pattern
 are stored bit for bit.
@@ -99,11 +101,8 @@ are stored bit for bit.
 
 * PST fills complete result arrays, so the native result is fully resident until the file is written. `output_file` is not a
   streaming or bounded-memory computation, and it is not faster than computing and then writing with arrow.
-* Writing from the native arrays avoids building the R data frame and arrow's input copy. On a Linux x86-64 machine with four
-  cores this lowered the peak memory above the graph by about 12-25 % at 1-2 million rows, but not at several million rows,
-  where PST's own working memory dominates (about 660 MiB above the graph at 3.9 million segments, 859 MiB at 5 million).
-  Memory retained by R after the call was lower (46 MiB against 174-252 MiB at 5 million segments). These are single-machine
-  observations, not guarantees.
+* Writing from the native arrays avoids building the R data frame and arrow's input copy. At large scale PST's own working
+  memory dominates, so the saving is modest.
 * Row identity is positional; external feature identifiers are not retained.
 
 ## 10. Not supported
@@ -115,24 +114,25 @@ identifiers.
 
 `output_file = NULL, overwrite = FALSE` are appended to:
 
-| Function | File route | Columns (after the int32 positional id, in data-frame order) |
-| --- | --- | --- |
-| `network_integration()` | `junctions = FALSE` only (`junctions = TRUE` is rejected before anything runs) | `line_id`, `integration` f32, `node_count` i32, `total_depth` f32 |
-| `network_reach()` | lines and supplied origins | `line_id` or `origin_id`, `reached_count` i32, `reached_length` f32, `reached_area` f32 |
-| `od_betweenness()` | all | `line_id`, `od_betweenness` f32 |
-| `attraction_reach()` | every origin kind and mode | `origin_id`, `attraction_reach` f32 |
-| `attraction_distance()` | every origin kind and mode, with or without `destination_indices` | `origin_id`, `attraction_distance` f32, optional `destination_index` signed i32 |
+Columns follow the positional id, in data-frame order. Names are generated (prefix, then distance, radius and parameters; see
+[output naming](../output-naming.md)); the prefix and an example name are given for each quantity.
+
+| Function | File route | Positional id | Quantities (prefix, example name, type) |
+| --- | --- | --- | --- |
+| `network_integration()` | `junctions = FALSE` only (`junctions = TRUE` is rejected before anything runs) | `line_id` | integration `ni_` (`ni_s_rg`) f32; node count `nc_` i32; total depth `td_` f32 |
+| `network_reach()` | lines and supplied origins | `line_id` or `origin_id` | reached count `rc_` (`rc_rs2`) i32; reached length `rln_` f32; reached area `rca_` f32 |
+| `od_betweenness()` | all | `line_id` | OD betweenness `od_` (`od_w_rs5`) f32 |
+| `attraction_reach()` | every origin kind and mode | `origin_id` | attraction reach `ar_` (`ar_s_rg`) f32 |
+| `attraction_distance()` | every origin kind and mode, with or without `destination_indices` | `origin_id` | attraction distance `ad_` (`ad_s_rg`) f32; with `destination_indices`, destination index `di_` signed i32 |
 
 PST writes every output element of these analyses (the one unwritten attraction combination is rejected before the call, see
 [attractions](../compatibility/attractions.md)), so they have no missing-value policy. Native `-1` (unreachable distance, fewer
-than two lines reached), `NaN` and `Inf` are ordinary values and are stored as such. `destination_index` is a signed int32 whose
+than two lines reached), `NaN` and `Inf` are ordinary values and are stored as such. The destination-index column (`di_...`) is a signed int32 whose
 `-1` means "no destination".
 
 Metadata: `rpst:graph_type = axial`; `rpst:graph_rows` is the native line count.
 
-Memory: as in §9. For a 2 million line axial lattice, `network_integration(steps = 3)` peaked about 127 MiB above the graph
-with `output_file` against 158 MiB for computing and then writing with arrow (single Linux machine); PST's own working memory
-is unchanged.
+Memory: as in §9.
 
 ## 13. Nullable columns: Segment Betweenness and Segment Group Integration
 
@@ -145,17 +145,19 @@ A column is nullable or not by function and parameters, never by whether a parti
 all files of one analysis share one schema. A null means exactly "PST wrote no value for this slot". A written `NaN`, `Inf`,
 `-Inf`, `-1` or `0` is an ordinary value; no numeric sentinel stands in for a null. In R, a null reads back as `NA`.
 
-| Function / column | Parquet type | Nullable | A row is null exactly when |
+Column names are generated ([output naming](../output-naming.md)); the table identifies each column by role and naming prefix.
+Example names are for a Network Betweenness call with a steps radius of 2 (`nb_s_rs2_n`, `nc_s_rs2`, `td_s_rs2`). The raw score is always present; each requested normalisation adds a further column.
+
+| Function / role (prefix) | Parquet type | Nullable | A row is null exactly when |
 | --- | --- | --- | --- |
-| `network_betweenness` `line_id` | int32 | no | never |
-| `betweenness` | float32 | no | never: PST writes the raw score of every line, including lines of skipped origins |
-| `node_count` | int32 | yes | PST skipped the origin (weighted and attraction modes only) |
-| `total_depth` | float32 | yes | same rows as `node_count` |
-| `normalized`, `"standard"` | float32 | no | never |
-| `normalized`, `"freeman"` or `"syntax"` | float32 | yes | the diagnostics of that row were not written; a written normaliser `NaN` stays a valid `NaN` |
-| `normalized`, `"none"` | none | column absent | |
-| `segment_group_integration` `group_id` | int32 | no | never (gaps are empty groups and are real rows) |
-| `integration`, `node_count`, `total_depth` | float32, int32, float32 | yes | PST wrote no values for the group |
+| `network_betweenness`: positional id `line_id` | int32 | no | never |
+| Raw betweenness score (`nb_...`, suffix `_n`; `at_...` in attraction mode) | float32 | no | never: PST writes the raw score of every line, including lines of skipped origins |
+| Node-count diagnostic (`nc_`; `anc_` in attraction mode) | int32 | yes | PST skipped the origin (weighted and attraction modes only) |
+| Total-depth diagnostic (`td_`; `atd_` in attraction mode) | float32 | yes | same rows as the node-count diagnostic |
+| Normalised score, `"standard"` (suffix `_s`) | float32 | no | never |
+| Normalised score, `"freeman"` or `"syntax"` (suffix `_f` or `_y`) | float32 | yes | the diagnostics of that row were not written; a written normaliser `NaN` stays a valid `NaN` |
+| `segment_group_integration`: positional id `group_id` | int32 | no | never (gaps are empty groups and are real rows) |
+| Group integration (`gi_`), node count (`nc_`), total depth (`td_`) | float32, int32, float32 | yes | PST wrote no values for the group |
 
 For group integration, PST writes all three outputs for every group or for none (a graph without native nodes), so a file has
 columns that are all-null or all-valid. An isolated group in a graph with nodes holds the written values `-1, 0, 0`, which are
@@ -183,8 +185,8 @@ addition to the keys of §2. They equal `max(group_id)` and `max(color)`.
 
 ## 14. Network Integration with junctions: not offered
 
-`network_integration(junctions = TRUE)` returns two tables from one native call: the lines (`line_id`, `integration`,
-`node_count`, `total_depth`) and the junctions (`junction_id`, `x`, `y`, `integration`). A result file holds one table, and
+`network_integration(junctions = TRUE)` returns two tables from one native call: the lines (`line_id` plus the generated
+integration, node-count and total-depth columns) and the junctions (`junction_id`, `x`, `y` plus the generated junction-integration column, prefix `nj_`). A result file holds one table, and
 publishing two files by two renames is not atomic: an interruption could leave one new and one old or missing file. The
 combination `junctions = TRUE` with `output_file` therefore fails with an explicit message. Use the in-memory result; with
 `junction_output = "sf"` the junctions are POINT features in the graph CRS.

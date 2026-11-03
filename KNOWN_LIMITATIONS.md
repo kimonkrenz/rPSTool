@@ -8,13 +8,12 @@ Restrictions of rPSTool that affect functionality, supported inputs, interpretat
 
 **Affects:** `angular_choice()`, and to a lesser extent `angular_integration()`.
 
-PST's Angular Choice (and, with a larger tolerance, Angular Integration) traverses shortest-path chains recursively on a worker thread, with no
-depth bound. A very long chain of shortest-path steps can exhaust the worker thread's stack, which crashes the R session. The depth reached
-depends on network topology and radius, not on network size, and the threshold depends on the platform's thread stack, the compiler and its
-flags. Measured on synthetic, unrestricted collinear chains: a crash at about 64,500 segments on Linux x86-64 (8 MB stack), and at 8,000
-segments on macOS ARM64. A radius-limited run on the same 8,000-segment chain succeeded. No realistic street network is known to reach such
-depths. rPSTool does not change PST's computation and has no guard. Workaround: restrict the analysis radius; a `steps` radius bounds the depth
-at about the number of steps plus one.
+PST's Angular Choice (and, to a lesser extent, Angular Integration) follows shortest-path chains recursively on worker threads, with no
+depth bound. A very long chain of shortest-path steps can exhaust a worker thread's stack, which terminates the R process. How deep the
+chain gets depends on the network's topology and on the radius, not on its size; the point at which the stack runs out depends on the
+platform and build. A radius restriction reduces the risk: a `steps` radius bounds the depth roughly by the step limit, and walking and
+straight limits shrink the reachable area, while an angular limit does not bound runs of near-collinear segments. rPSTool does not
+change PST's computation and has no guard.
 
 ### Combined radius limits can be very slow
 
@@ -82,12 +81,9 @@ is terminated. Which functions show a console progress line is described in [`do
 * **Threads.** PST creates worker threads. rPSTool caps them with the environment variable `RPST_NUM_THREADS`, and uses at most two
   while R's `_R_CHECK_LIMIT_CORES_` is set. `od_betweenness()` always runs on a single worker thread.
 
-## Platform validation
+## Platforms and comparison with PST for QGIS
 
-The full test suite and `R CMD check` passed in GitHub Actions at commit `4119f2b` on Linux x86-64, macOS ARM64 and Windows x86-64 (R 4.6.2),
-with 160,814, 160,814 and 160,759 test expectations; the 55-expectation difference on Windows is unexplained. Later local development runs
-(tree of `96a1547`, rebase-merged as `c6c4ed9`) passed on macOS ARM64 (161,539 expectations, `Status: OK`) and Windows x86-64 (161,484
-expectations, four approved skips, `Status: OK`). Linux, CRAN incoming checks and the release tarball have not been validated at the current tree.
+rPSTool targets Linux, macOS and Windows; see [build and platforms](docs/build-and-platforms.md).
 
 rPSTool's inputs and defaults were checked against the code of the PST for QGIS plugin, but its results have not been compared with real
 runs of the plugin. Intentional differences are listed in [QGIS differences](docs/compatibility/qgis-differences.md).

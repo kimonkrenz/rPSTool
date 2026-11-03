@@ -32,9 +32,9 @@ A character vector of distinct, valid, non-missing names from the analysis' **ex
 Angular Choice `none`, `standard`, `turner`, `syntax`; Angular Integration `turner`, `syntax`, `hillier`. Duplicates and
 unknown names are errors. Order is preserved.
 
-* Choice: `"none"` in a vector is accepted and contributes no column (the raw `choice` is always retained, once per radius; it is still listed in `rpst:normalizations` as requested).
+* Choice: `"none"` in a vector is accepted and contributes no column (the raw score `ac_a_<radius>[_wl]_n` is always retained, once per radius; it is still listed in `rpst:normalizations` as requested).
 * Integration: its `normalization` selects which PST normaliser turns the count/depth (or weight/depth-weight) diagnostics into
-  `integration`; there is no raw-only mode. Each requested normaliser gives one `integration_<norm>` column per radius.
+  the integration columns (`ai_...`); there is no raw-only mode. Each requested normaliser gives one `ai_a_<radius>[_wl]_<norm>` column per radius.
 
 ### 1.3 Which schema?
 
@@ -83,16 +83,16 @@ radius order; within a radius, in this order:
 
 Angular Choice (`<t>` = `_<tag>` or empty):
 
-1. `choice<t>` — raw
-2. `node_count<t>`, `total_depth<t>`
-3. `total_depth_weight<t>` — only if `weigh_by_length`
-4. `choice_<norm><t>` for each requested normalisation except `none`, in the requested order
+1. `ac_a_<radius>[_wl]_n` — raw score
+2. `nc_a_<radius>`, `td_a_<radius>`
+3. `tdw_a_<radius>_wl` — only if `weigh_by_length`
+4. `ac_a_<radius>[_wl]_<norm>` for each requested normalisation except `none`, in the requested order
 
 Angular Integration:
 
-1. `integration_<norm><t>` for each requested normalisation, in the requested order
-2. `node_count<t>`, `total_depth<t>`
-3. `total_weight<t>`, `total_depth_weight<t>` — only if `weigh_by_length` or `weight_outputs`
+1. `ai_a_<radius>[_wl]_<norm>` for each requested normalisation, in the requested order
+2. `nc_a_<radius>`, `td_a_<radius>`
+3. `tw_a_<radius>[_wl]`, `tdw_a_<radius>[_wl]` — only if `weigh_by_length` or `weight_outputs`
 
 Shared diagnostics appear once per radius, never once per normalisation. Types are the scalar types (counts int32, results
 float32 in files / double in data frames).

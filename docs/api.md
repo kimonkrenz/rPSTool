@@ -48,7 +48,7 @@ be a vector and `normalization` may name several methods; see [multi-radius](com
 * Coordinates are plain numeric matrices (`x1 y1 x2 y2` per line or segment); `sf`/`sfc` inputs and `output = "sf"` options are
   optional adapters ([sf adapters](spatial-io/sf-adapters.md)); `segment_graph()` and `axial_graph()` also accept one
   GeoParquet or FlatGeobuf path ([spatial I/O](spatial-io/README.md)).
-* Results are data frames or lists in input row order with the native column names; raw scores are kept and normalised scores are
+* Results are data frames or lists in input row order with column names from the naming scheme (`?result_column_names`); raw scores are kept and normalised scores are
   appended on request through the exported PST normalisers.
 * Analyses that support it accept `output_file`/`overwrite` and `spatial_output_file`.
 * No silent reordering, snapping, splitting, merging, unit conversion, deduplication, imputation, reprojection or clamping.

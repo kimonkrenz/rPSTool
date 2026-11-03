@@ -206,8 +206,8 @@ In its length-weighted Angular Choice run the plugin divides by the
 length-weighted total depth for the syntax (NACH) normalisation, and in its
 unweighted run by the plain total depth (see
 `docs/compatibility/qgis-differences.md`). rPSTool makes
-the same pairing and passes `total_depth_weight` when `weigh_by_length = TRUE`
-and `total_depth` otherwise.
+the same pairing and passes the length-weighted total depth (`tdw_..._wl`) when
+`weigh_by_length = TRUE` and the total depth (`td_...`) otherwise.
 
 The chunk below is a **check**, not how rPSTool computes the values. The engine's
 exported syntax normaliser for Angular Choice is

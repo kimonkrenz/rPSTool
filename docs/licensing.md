@@ -1,6 +1,6 @@
 # Licensing and attribution
 
-rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License: LGPL (>= 3)`). Copyright 2026 Kimon Krenz, who developed rPSTool independently, outside university employment duties and without grant funding. `DESCRIPTION` gives `cph` accordingly; notices are in `inst/COPYRIGHTS`, `inst/licenses/` and the vendored files' own headers. Part of the rPSTool code was written with AI coding assistance; this does not change the licence declared above.
+rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License: LGPL (>= 3)`). Copyright 2026 Kimon Krenz, who developed rPSTool independently, outside university employment duties and without grant funding. `DESCRIPTION` gives `cph` accordingly; notices are in `inst/COPYRIGHTS`, `inst/licenses/` and the vendored files' own headers.
 
 ## 1. Attribution matrix
 
@@ -18,9 +18,9 @@ rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License
 
 The Arrow NOTICE concerns Arrow's implementation, none of which is included.
 
-## 2. Combined work (LGPL-3 section 4)
+## 2. Combined work (LGPLv3 §4)
 
-rPSTool compiles all of PST/pstalgo into the package's single shared library, so the installed library is a Combined Work in the LGPL sense, and rPSTool's own code is itself LGPL-3-or-later. The source package ships the complete corresponding source, including the PST source, build recipes and patch records; recipients can modify PST and rebuild with `R CMD INSTALL`. Anyone distributing a compiled build must make the corresponding source available (LGPL-3 sections 4 and 6). Official builds pin PST v3.3.2 and check its hashes; that is a reproducibility safeguard, not a restriction on users who modify PST (see `inst/COPYRIGHTS`).
+rPSTool compiles all of PST/pstalgo into the package's single shared library, so the installed library is a Combined Work in the LGPL sense, and rPSTool's own code is itself LGPL-3-or-later. The source package ships the complete corresponding source, including the PST source, build recipes and patch records; recipients can modify PST and rebuild with `R CMD INSTALL`. Distribution of compiled builds incorporating PST is subject to the applicable requirements of LGPLv3 §4 (Combined Works), including licence notices, corresponding source and provisions for recombination with a modified library. Official builds pin PST v3.3.2 and check its hashes; that is a reproducibility safeguard, not a restriction on users who modify PST (see `inst/COPYRIGHTS`).
 
 `DESCRIPTION` lists `cph` for Kimon Krenz, Meta Berghauser Pont, Google Inc., Björn Harrtell and The Apache Software Foundation, and Martin Fitger as `ctb` (programmer, as named in the PST README). The developing organisations (KTH School of Architecture, Chalmers School of Architecture (SMoG), Spacescape AB) are credited in `inst/CITATION` and `inst/COPYRIGHTS`; no copyright role is asserted for them.
 

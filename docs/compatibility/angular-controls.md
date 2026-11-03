@@ -19,8 +19,8 @@ angular radii are supported; `axmeter` is rejected.
 | Total weight | Sum over other reached segments, excluding the origin; unit counts when unweighted, segment lengths when weighted. It is not an invented origin-inclusive count/length. |
 | Depth weight | Native sum of depth times segment weight, in syntax units; includes no invented origin contribution. |
 | Integration | Select Turner, syntax/NAIN or Hillier. Weighted mode calls the corresponding length-weighted export using native total weight and depth weight; unweighted mode uses count and depth. |
-| Optional columns | Weighted Integration always exposes total_weight/total_depth_weight; weight_outputs exposes both in unweighted mode too. Defaults avoid those buffers/columns. |
-| Choice | Raw scores, weighting and the standard and Turner normalizations follow PST. Syntax (NACH) normalization of a length-weighted run uses the native `total_depth_weight`, as the PST for QGIS plugin does; the unweighted run uses `total_depth`. `PSTAAngularChoiceSyntaxNormalize` computes `log10(score + 1) / log10(2 + TD)` for whichever depth array it receives. Scalar, multi-radius, in-memory and file outputs all follow this rule. |
+| Optional columns | Weighted Integration always exposes the weight and depth-weight columns (`tw_...`, `tdw_...`); weight_outputs exposes both in unweighted mode too. Defaults avoid those buffers/columns. |
+| Choice | Raw scores, weighting and the standard and Turner normalizations follow PST. Syntax (NACH) normalization of a length-weighted run uses the native length-weighted total depth (returned as `tdw_..._wl`), as the PST for QGIS plugin does; the unweighted run uses the total depth (`td_...`). `PSTAAngularChoiceSyntaxNormalize` computes `log10(score + 1) / log10(2 + TD)` for whichever depth array it receives. Scalar, multi-radius, in-memory and file outputs all follow this rule. |
 | Native exceptional values | Written finite/zero/NaN/Inf values are widened without clipping, NA conversion or R recomputation. Large valid geometry can yield native overflow. |
 
 Integration normalizers use PST's exports: `PSTAAngularIntegrationNormalize` (Turner, default), `...SyntaxNormalize` and
@@ -36,13 +36,6 @@ steps, on worker-thread stacks of default size. `ClearProcessedFlags` also runs 
 on topology and radius, not on network size. A `steps` radius bounds the depth (about steps + 1); `walking` and `straight` radii limit the
 reachable area; an `angular` radius does not bound runs of near-collinear segments.
 
-Measured (platform- and build-dependent, not guaranteed):
-
-- Linux x86-64, GCC 13, 8 MB thread stack, rPSTool's -O2 build: an unrestricted chain of collinear segments passed at 64,140 and crashed at 64,531
-  segments. Square grids reach depths of about 3 x sqrt(n/2) (270 for 16,020 segments).
-- macOS arm64: an unrestricted 8,000-segment collinear chain crashed with worker-thread stack exhaustion; a radius-limited chain of the same
-  length succeeded.
-- Windows: the default thread stack size has not been measured.
-
-Only synthetic collinear chains have been seen to fail; no realistic street network is known to reach such depths. Workaround: restrict the
+The point at which the stack runs out depends on the platform, the thread stack size and the build; the process terminates when it does.
+Long collinear chains are the typical trigger; no realistic street network is known to reach such depths. Workaround: restrict the
 analysis with a `steps` (or walking) radius. See also [KNOWN_LIMITATIONS.md](../../KNOWN_LIMITATIONS.md).

@@ -57,8 +57,8 @@ First release.
 ## Numerical behaviour
 
 * The build uses `-ffp-contract=off` and a fixed set of float overloads for reproducible floating-point evaluation.
-* Length-weighted `angular_choice(normalization = "syntax")` normalises with the length-weighted total depth (`total_depth_weight`), as the
-  original PST for QGIS plugin does; unweighted runs and the `"standard"` and `"turner"` normalisations use `total_depth`.
+* Length-weighted `angular_choice(normalization = "syntax")` normalises with the length-weighted total depth (`tdw_..._wl`), as the
+  original PST for QGIS plugin does; unweighted runs and the `"standard"` and `"turner"` normalisations use the total depth (`td_...`).
 * `attraction_reach()`: when a nonconstant `decay` (`"power"`, `"curve"`, `"divide"`) is selected and `decay_constant` is not supplied, the
   effective constant is 1, matching the original PST for QGIS wizard; `decay = "constant"` defaults to 0 and any explicit constant, including
   0, is passed to PST unchanged.

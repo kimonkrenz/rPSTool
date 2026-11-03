@@ -35,10 +35,9 @@ underflow to zero). Supply one per line, or one per attraction point when \code{
 see \link{pst_result_file}. In a result file, the \code{NA} values described below are stored as nulls.}
 }
 \value{
-A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with
-\code{attraction_points}), integer node count (\code{nc_...}) and total depth (\code{td_...}), plus the normalised score
+A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}), integer node count (\code{nc_...}) and total depth (\code{td_...}), plus the normalised score
 (\code{..._s}, \code{..._f} or \code{..._y}) when requested; see \link{result_column_names}. The raw score and \code{"standard"}
-normalisation are never \code{NA}. The node count and total depth are \code{NA} for origins PST skipped in weighted calls,
+normalisation are never \code{NA}. With \code{attraction_points} the columns are \code{at_..._n}, \code{anc_...} and \code{atd_...} instead. The node count and total depth are \code{NA} for origins PST skipped in weighted calls,
 and the normalised score is \code{NA} for those rows with \code{"freeman"} or \code{"syntax"}. \code{NaN} and \code{Inf} values written by PST are returned
 unchanged. With \code{output_file} or \code{spatial_output_file} the results are written to a file and an invisible
 \link{pst_result_file} descriptor is returned (\code{line_id} and the node count are stored as int32, the other
@@ -57,14 +56,14 @@ is one unit); other depths use the selected distance.
 Without \code{attraction_points}, supply one weight per line. With attraction points, PST assigns each point to
 its closest line and accumulates the weights there; supply one weight per point (omitted weights mean unit
 weights). Weighted scores include PST's endpoint and self contributions, so unit weights need not equal
-the unweighted scores. The node count (\code{nc_...}) includes the origin.
+the unweighted scores. The node count (\code{nc_...}, or \code{anc_...} with \code{attraction_points}) includes the origin.
 
 \strong{Normalisation.} The raw score (\code{nb_..._n}, or \code{at_..._n} with \code{attraction_points}) is always returned.
 \code{normalization} adds PST's \code{"standard"}, \code{"freeman"} (Freeman betweenness) or \code{"syntax"} normalisation as a
 further column (\code{..._s}, \code{..._f} or \code{..._y}).
 
 \strong{Skipped origins.} PST skips origins whose effective line weight is not positive and writes neither their
-node count (\code{nc_...}) nor their total depth (\code{td_...}). rPSTool reports these as \code{NA}, with \code{NA} Freeman or syntax
+node count (\code{nc_...}, or \code{anc_...} with \code{attraction_points}) nor their total depth (\code{td_...}, or \code{atd_...}). rPSTool reports these as \code{NA}, with \code{NA} Freeman or syntax
 normalised values for those rows. Standard normalisation still uses all genuine raw scores.
 
 \strong{Attraction points.} Points may be a matrix or an XY POINT \code{sf}/\code{sfc} object (features used in order). Empty, non-finite,

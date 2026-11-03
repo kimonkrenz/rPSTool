@@ -44,9 +44,7 @@ caller's responsibility. See the [CRS policy](sf-adapters.md#crs-policy).
 ## 5. Memory
 
 PST needs the complete line set in memory. The file route removes the input representation but not PST's own graph, and it does
-not hold an extra R matrix copy. Single-machine observation (Linux x86-64, a lattice of about 0.98 million lines): peak 351 MiB
-for the axial graph against 248 MiB for a segment graph. For reference, an `sf` LINESTRING layer costs about 624 bytes per
-feature, so the saving is large compared with `sf` and modest compared with a bare matrix.
+not hold an extra R matrix copy, so the saving is largest compared with an `sf` LINESTRING layer.
 
 ## 6. Not supported
 

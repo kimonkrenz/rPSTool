@@ -88,10 +88,7 @@ and every record, with 64 MiB size bounds.
 
 ## 6. Memory and speed
 
-Indicative figures from one Linux x86-64 machine with four cores (Angular Choice on a jittered segment lattice), not guarantees:
-
-* FlatGeobuf, 1 million features: the writer takes 1.0-1.6 s and peaks about 170-210 MiB above the graph. At 5 million features
-  the peak is about 860 MiB above the graph, dominated by PST's own arrays.
+* FlatGeobuf output memory is dominated by PST's own arrays.
 * GeoParquet is streamed by row group, so arrow's memory grows more slowly with size than when the whole table is held. It
   is not the fastest option at 1 million rows.
 * GeoParquet uses zstd, like `output_file`.

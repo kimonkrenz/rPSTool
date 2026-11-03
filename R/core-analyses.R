@@ -90,14 +90,14 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' Without `attraction_points`, supply one weight per line. With attraction points, PST assigns each point to
 #' its closest line and accumulates the weights there; supply one weight per point (omitted weights mean unit
 #' weights). Weighted scores include PST's endpoint and self contributions, so unit weights need not equal
-#' the unweighted scores. The node count (`nc_...`) includes the origin.
+#' the unweighted scores. The node count (`nc_...`, or `anc_...` with `attraction_points`) includes the origin.
 #'
 #' **Normalisation.** The raw score (`nb_..._n`, or `at_..._n` with `attraction_points`) is always returned.
 #' `normalization` adds PST's `"standard"`, `"freeman"` (Freeman betweenness) or `"syntax"` normalisation as a
 #' further column (`..._s`, `..._f` or `..._y`).
 #'
 #' **Skipped origins.** PST skips origins whose effective line weight is not positive and writes neither their
-#' node count (`nc_...`) nor their total depth (`td_...`). rPSTool reports these as `NA`, with `NA` Freeman or syntax
+#' node count (`nc_...`, or `anc_...` with `attraction_points`) nor their total depth (`td_...`, or `atd_...`). rPSTool reports these as `NA`, with `NA` Freeman or syntax
 #' normalised values for those rows. Standard normalisation still uses all genuine raw scores.
 #'
 #' **Attraction points.** Points may be a matrix or an XY POINT `sf`/`sfc` object (features used in order). Empty, non-finite,
@@ -123,10 +123,9 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' Custom weights are named in the result columns (`..._wpopulation_...`) after the R object or literal data-frame column you
 #' pass (`weights = population`, `weights = data$population`). Anonymous vectors and calculations are an error; assign
 #' them to a named object first. See [result_column_names] for the naming rules.
-#' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`, or `at_...` with
-#'   `attraction_points`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
+#' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
 #'   (`..._s`, `..._f` or `..._y`) when requested; see [result_column_names]. The raw score and `"standard"`
-#'   normalisation are never `NA`. The node count and total depth are `NA` for origins PST skipped in weighted calls,
+#'   normalisation are never `NA`. With `attraction_points` the columns are `at_..._n`, `anc_...` and `atd_...` instead. The node count and total depth are `NA` for origins PST skipped in weighted calls,
 #'   and the normalised score is `NA` for those rows with `"freeman"` or `"syntax"`. `NaN` and `Inf` values written by PST are returned
 #'   unchanged. With `output_file` or `spatial_output_file` the results are written to a file and an invisible
 #'   [pst_result_file] descriptor is returned (`line_id` and the node count are stored as int32, the other

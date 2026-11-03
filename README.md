@@ -127,7 +127,6 @@ original Place Syntax approach was introduced by Ståhle, Marcus and Karlström 
 Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. The Barnsbury example
 data are derived from Hillier and Iida (2005) and are included with the authors' permission; the movement gate counts were originally
 reported by Penn, Hillier, Banister and Xu (1998).
-OpenAI's ChatGPT and Anthropic's Claude were used as coding assistants; the package author is responsible for the software.
 
 ## Citation and licence
 

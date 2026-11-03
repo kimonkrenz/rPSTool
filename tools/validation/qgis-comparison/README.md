@@ -40,7 +40,7 @@ Maintenance only: `Rscript tools/validation/qgis-comparison/make-test-network.R 
 
 | Case | Probes |
 |---|---|
-| C01 | Angular Choice, weighted and unweighted, four normalisations; `ACwlC` uses `total_depth_weight` in both the plugin and rPSTool |
+| C01 | Angular Choice, weighted and unweighted, four normalisations; `ACwlC` uses the length-weighted total depth in both the plugin and rPSTool |
 | C02 | Weighted Angular Choice with a walking radius and non-default angle threshold/precision (forwarded by the plugin in the weighted branch) |
 | C03 | Unweighted Angular Choice with non-default angle settings: the source reading says the plugin does not forward them; the case compares against threshold 0 / precision 1. A mismatch here would mean the source reading is wrong and must be reported |
 | C04 | Network Integration, steps radius 2, node count and total depth |

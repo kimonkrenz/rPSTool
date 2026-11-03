@@ -9,7 +9,7 @@ missing-output policy below defines how they are reported. rPSTool recomputes no
 | --- | --- | --- |
 | `segment_grouping(graph, angle_threshold=1, split_at_junctions=FALSE)` | `PSTASegmentGrouping`, descriptor 1 | Segment graph; data frame `segment_id`, `group_id`, `color` in source segment order, integer `n_groups` / `n_colors` attributes |
 | `segment_group_graph(graph, group_id)` | `PSTACreateSegmentGroupGraph`, descriptor 1; `PSTAFreeSegmentGroupGraph` | Segment graph and integer/double group IDs; returns a distinct segment-group graph |
-| `segment_group_integration(graph, radius=analysis_radius())` | `PSTASegmentGroupIntegration`, descriptor 1 | Group graph; group-ID ordered data frame `group_id`, `integration`, `node_count`, `total_depth` |
+| `segment_group_integration(graph, radius=analysis_radius())` | `PSTASegmentGroupIntegration`, descriptor 1 | Group graph; group-ID ordered data frame `group_id`, `gi_<radius>`, `nc_<radius>`, `td_<radius>` |
 
 Native zero-based group and color indices become one-based R IDs without reordering or relabeling; float results are widened to double. Grouping uses
 PST's angular-deviation pairing and graph coloring; colors are labels, not RGB.
@@ -43,7 +43,7 @@ group. An isolated/empty group in a graph with native nodes receives actual PST
 writes of `-1,0,0`, which are preserved. Count one is not invented for isolated
 groups. Missing NA and genuinely written NaN are distinguishable in R.
 
-File output (`output_file`): the paired-mask policy above is persisted as Arrow nulls shared by `integration`, `node_count` and `total_depth`;
+File output (`output_file`): the paired-mask policy above is persisted as Arrow nulls shared by `gi_...`, `nc_...` and `td_...`;
 written `NaN`/`Inf`/`-1`/`0` stay valid. See [result files](../spatial-io/result-files.md).
 
 ## Zero-length segments

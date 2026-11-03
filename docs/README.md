@@ -17,7 +17,6 @@
 | Build, platforms, compiler diagnostics | [build-and-platforms.md](build-and-platforms.md), [exact warning policy](../tools/ci/README.md) |
 | Testing, reproducibility, reference fixtures | [testing.md](testing.md), [reference tools](../tools/reference/README.md), [QGIS comparison procedure](../tools/validation/qgis-comparison/README.md), [Windows validation procedure](../tools/validation/windows/README.md) |
 | Licensing and attribution | [licensing.md](licensing.md), [source provenance](../inst/upstream/PROVENANCE.md), [patch records](../inst/upstream/PATCHES.md) |
-| Outstanding release tasks | [release-checklist.md](release-checklist.md) |
 | Contributing | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Compatibility records

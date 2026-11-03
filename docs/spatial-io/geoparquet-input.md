@@ -18,7 +18,7 @@ retained, and other columns are never read.
 
 Reading needs the suggested packages `arrow (>= 25.0.0)` and `jsonlite`, plus `sf` (for CRS interpretation). rPSTool uses
 arrow's undocumented `RecordBatchReader$export_to_c()` and checks that it exists; if a required package, version or function is
-missing, the call fails with an error before any graph is created. arrow 25.0.0 is the version this has been tested with. The
+missing, the call fails with an error before any graph is created. The
 Arrow C declarations used are recorded in [`src/arrow-c-abi/PROVENANCE.md`](../../src/arrow-c-abi/PROVENANCE.md).
 
 ## 3. File contract
@@ -40,11 +40,8 @@ detect storage corruption beyond what the Parquet reader detects.
 
 ## 4. Memory
 
-Observations from one Linux x86-64 machine, not guarantees: at 5 to 10 million segments the path route peaked at roughly 180-205
-bytes per segment above the starting memory (about 1.0 GiB at 5 million segments, 1.8 GiB at 10 million). That is similar to the
-total peak of the in-memory matrix route, without needing an `sf` object or R matrix; PST's graph construction itself dominates. An
-`sf` input used about 900 bytes per feature and about 44 s per million features. Arrow's own memory depends on the row-group size
-(it roughly doubles from 65,536-row to 1,048,576-row groups) and on the allocator, and is not bounded by a scanner batch size.
+PST's graph construction dominates memory. The path route avoids an `sf` object and an R matrix. Arrow's own memory depends on the
+row-group size and on the allocator, and is not bounded by a scanner batch size.
 
 ## 5. Limitations
 
