@@ -126,6 +126,6 @@ test_that("overwrite = TRUE replaces only the colliding columns, in the new file
   expect_identical(sf::st_as_binary(sf::st_geometry(b)), sf::st_as_binary(sf::st_geometry(a)))    # geometry and order
   expect_identical(sf::st_crs(b), sf::st_crs(a))
   mem <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2))
-  expect_equal(b$ac_a_rs2_n, mem$ac_a_rs2_n, tolerance = 0)
+  expect_equal(col_named(b, "ac_a_rs2_n"), col_named(mem, "ac_a_rs2_n"), tolerance = 0)
   expect_identical(so_md5(src), before)                                                             # source unchanged
 })
