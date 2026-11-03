@@ -145,8 +145,7 @@ untouched; native owners unwind before the R error; the graph stays usable.
 
 ## 8. Memory and run time
 
-PST computation dominates the run time; normalisation and writing are negligible by comparison, and run time grows linearly with the
-number of radii. The native table holds `rows x 4 B x columns` (columns = radii x (3 + weighted + number of normalisations other
+Each radius is a separate native PST calculation, so the number of PST runs equals the number of radii; normalisation reuses a run's arrays. The native table holds `rows x 4 B x columns` (columns = radii x (3 + weighted + number of normalisations other
 than `none`) for Choice), the same per-column cost as a scalar call; for example 5 million segments, 10 radii and 2 normalisations,
 unweighted, need about 1.0 GB. PST's per-run scratch memory is released before the next radius. For a bounded footprint on a very large
 network, make several calls with different radii. A combined file stores geometry and attributes once and is therefore smaller than one

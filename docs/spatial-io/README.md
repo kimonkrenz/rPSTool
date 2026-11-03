@@ -31,8 +31,8 @@ Matrix input is the canonical interface and does not require `sf`.
 
 Results are R vectors/data frames by default. For very large results, `output_file` writes them directly from the native result
 arrays to Parquet through the Arrow C stream, and `spatial_output_file` writes a new GeoParquet/FlatGeobuf file carrying the source
-geometry and attributes plus the result columns. This reduces the retained R result and speeds up read-back; it does not lower
-peak memory at large scale, because PST's own working memory dominates. Publication guarantees (no-clobber, atomic replacement
+geometry and attributes plus the result columns. This reduces the retained R result; it does not change PST's own working
+memory. Publication guarantees (no-clobber, atomic replacement
 where the platform provides it) and what is not guaranteed are in [result files](result-files.md) §3.
 
 ## Status matrix

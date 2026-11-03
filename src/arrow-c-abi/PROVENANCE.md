@@ -33,8 +33,7 @@ exactly.
 
 The declarations are © The Apache Software Foundation, licensed under the Apache License,
 Version 2.0 (<http://www.apache.org/licenses/LICENSE-2.0>). Apache Arrow's `NOTICE.txt`
-("Apache Arrow, Copyright 2016-2026 The Apache Software Foundation") lists third-party notices
-that concern Arrow's implementation, none of which is carried here. Component licence
+reads "Apache Arrow, Copyright 2016-2026 The Apache Software Foundation". Component licence
 matrix: [licensing](../../docs/licensing.md).
 
 ## Verification

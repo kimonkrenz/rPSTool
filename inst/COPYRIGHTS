@@ -9,8 +9,7 @@ rPSTool
 The R and native code written for rPSTool (R/, src/*.c, src/*.cpp, src/*.h except the third-party
 files below, tests/, tools/) is licensed under the GNU Lesser General Public License, version 3
 or (at your option) any later version (DESCRIPTION: License: LGPL (>= 3)). Author and maintainer of
-the rPSTool code: Kimon Krenz. Copyright 2026 Kimon Krenz. rPSTool was developed independently by Kimon Krenz,
-outside university employment duties and without grant funding. The licence texts are in inst/licenses/LGPL-3.txt and
+the rPSTool code: Kimon Krenz. Copyright 2026 Kimon Krenz. The licence texts are in inst/licenses/LGPL-3.txt and
 inst/licenses/GPL-3.txt (the LGPL-3 incorporates the GPL-3 terms).
 
 Prominent notice of use: the compiled package library (rPSTool.so / rPSTool.dll) is a Combined Work
@@ -77,8 +76,7 @@ Bundled third-party components
    Licensed to the Apache Software Foundation (ASF) under the Apache License, Version 2.0; the
    original licence header is retained as the first lines of the file. The file is an
    extraction of selected declarations (not a complete copy); see src/arrow-c-abi/PROVENANCE.md.
-   Only declarations are included; rPSTool does not link libarrow. The Apache Arrow NOTICE.txt
-   concerns Arrow's implementation, none of which is included. The Apache-2.0 text is the same
+   Only declarations are included; rPSTool does not link libarrow. The Apache-2.0 text is the same
    as inst/licenses/flatbuffers-Apache-2.0.txt.
 
 Optional (Suggests) packages such as arrow, sf, jsonlite and testthat are not bundled.

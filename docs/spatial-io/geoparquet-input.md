@@ -40,7 +40,7 @@ detect storage corruption beyond what the Parquet reader detects.
 
 ## 4. Memory
 
-PST's graph construction dominates memory. The path route avoids an `sf` object and an R matrix. Arrow's own memory depends on the
+PST holds the whole graph in memory. The path route avoids an `sf` object and an R matrix. Arrow's own memory depends on the
 row-group size and on the allocator, and is not bounded by a scanner batch size.
 
 ## 5. Limitations

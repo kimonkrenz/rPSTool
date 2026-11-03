@@ -98,9 +98,9 @@ are stored bit for bit.
 ## 4. Memory and limitations
 
 * PST fills complete result arrays, so the native result is fully resident until the file is written. `output_file` is not a
-  streaming or bounded-memory computation, and it is not faster than computing and then writing with arrow.
-* Writing from the native arrays avoids building the R data frame and arrow's input copy. At large scale PST's own working
-  memory dominates, so the saving is modest.
+  streaming or bounded-memory computation.
+* Writing from the native arrays avoids building the R data frame and arrow's input copy. PST's own working memory is
+  unchanged.
 * Row identity is positional; external feature identifiers are not retained.
 
 ## 5. Not supported

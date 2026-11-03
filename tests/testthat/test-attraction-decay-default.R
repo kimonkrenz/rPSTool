@@ -1,7 +1,7 @@
 # Attraction Reach: effective decay_constant when it is not supplied.
-# Authority: engine values from the pinned C API (fixture
+# Authority: engine values from the pinned C API (evidence N, fixture
 # attraction-decay-default-direct-v3.3.2.R); default selection from the original
-# PST for QGIS wizard (attractionreachwiz.py:84-85, pow with C = 1).
+# PST for QGIS wizard (attractionreachwiz.py:84-85, pow with C = 1; evidence S).
 adr_ref <- function() dget(test_path("fixtures", "attraction-decay-default-direct-v3.3.2.R"))
 adr_graph <- function(ref) axial_graph(matrix(as.double(unlist(ref$graph$x)), ncol = 4L, byrow = TRUE))
 adr_points <- function(ref) matrix(as.double(unlist(ref$graph$points)), ncol = 2L, byrow = TRUE)

@@ -1,5 +1,5 @@
 # Static reference values for the rPSTool palettes (tests/testthat/test-palettes.R). The nested discrete sets and the two 513-point
-# curves are the approved definitions (see docs/palettes.md). `night_reference` holds the output of the original Coral Night
+# curves are the approved definitions (docs/palettes.md, evidence S). `night_reference` holds the output of the original Coral Night
 # generator (the Python reference of the approved definitions, run with numpy 2.5.3 and scipy 1.18.1) at dyadic positions
 # k / 4096, which are exactly representable in R, so no decimal parsing is involved. The fixture is development-time data only.
 palette_reference <- list(
