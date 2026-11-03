@@ -101,7 +101,7 @@ unwind; null results are checked before any field read. No native handle escapes
 and returned R arrays survive input GC, serialization and later graph release.
 Both native utilities run synchronously; their progress callback is installed only
 while console progress is active ([progress display](../progress.md)) and is otherwise
-null. No R API call occurs inside native algorithm execution or a worker thread.
+null. No R API calls occur on PST worker threads. When progress reporting is enabled, the native callback may write to the R console on the main thread.
 
 The [oracle generator](../../tools/reference/network-construction/generate-reference.py) verifies
 [153 pinned blobs](../../tools/reference/network-construction/source-blobs.json) against the
