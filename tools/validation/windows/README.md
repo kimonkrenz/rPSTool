@@ -1,13 +1,13 @@
 # Windows validation of result-file writing
 
-Result-file writing (`output_file`, `spatial_output_file`) is implemented on Windows with the Win32 API (`src/pst-fs-core.h`; design and
-guarantees in [result files](../../../docs/spatial-io/result-files.md) §5 item 6). The quick procedure and full development test suite
-passed on real Windows x86-64 at `8ead7e4`; the strict full gate rejected one documentation NOTE. See the recorded results below.
-**Windows support remains pending validation** until the remaining evidence has been reviewed.
+Result-file writing (`output_file`, `spatial_output_file`) is implemented on Windows with the Win32 API (`src/pst-fs-core.h`;
+guarantees in [result files](../../../docs/spatial-io/result-files.md)). This directory holds the procedure for checking it on a
+real Windows system: a filesystem harness (`fs-harness.cpp`) and a runner (`run-validation.R`). Validation status is in
+[KNOWN_LIMITATIONS.md](../../../KNOWN_LIMITATIONS.md).
 
 ## Requirements
 
-* Windows 10/11 x86-64, a recent R (4.3 or later; 4.6 UCRT matches earlier validation) and the matching Rtools (`g++` on `PATH` through
+* Windows 10/11 x86-64, R 4.3 or later and the matching Rtools (`g++` on `PATH` through
   Rtools, as for any package build).
 * Packages: `arrow` (>= 25.0.0), `sf`, `jsonlite`, `testthat` (>= 3.2.0); `knitr` and `rmarkdown` for the full gate.
 * Optional but recommended: **Developer Mode** (Settings, For developers) or an elevated prompt, so symbolic links can be created and the
@@ -53,33 +53,6 @@ step fails, also send the output of `Rscript -e "sessionInfo()"` and the directo
 * Tests (the runner enforces this): the test subprocess exits 0, all 16 files report a summary with tests, no failures or errors, and the only skips are the four inventoried in `tools/ci/windows-test-skips.tsv` (device/FIFO path
   checks, two `ulimit -f` tests). Symbolic-link assertions print `NOTE: symbolic-link assertions were not run` when links cannot be made.
 * With `--full`: `Local full check passed (windows)`.
-
-## Recorded results
-
-| Commit | Result |
-| --- | --- |
-| `8ead7e4` | Quick procedure passed. Full development suite passed (160,438 expectations). `R CMD check` completed with one NOTE (Rd line widths: `man/pst_result_file.Rd` examples comment wider than 100 characters); the strict full gate rejected it, so the full gate did not pass. |
-| `338a36a` | Only wraps that comment (R source and Rd). Targeted Linux checks passed (`tools::checkRd`, `\examples` line-width scan, roxygen/Rd sync). **A clean Windows check at this commit is not yet established**; the 28-minute test suite was deliberately not rerun for the wrapping alone. |
-
-### Follow-up results and merge decision (2026-10-28)
-
-The maintainer reported these additional results at `7681c0528142673e345434efb01414307eed66c8`:
-- Windows package/documentation check with `--no-tests`: exit 0, `Status: OK`. The Rd NOTE is resolved.
-  Review this alongside the 160,438-expectation Windows pass at `8ead7e4`; it is not a new strict full-gate pass.
-- macOS Arrow-enabled full gate: 160,493 expectations, `Status: OK`, exact warning policy passed
-  (17 inventoried compiler diagnostics, 0 significant diagnostics), vendor/provenance verification passed.
-
-These are user-reported console results; detailed archives remain with the maintainer and have not been independently reviewed here.
-The earlier table records the historical state at each commit; the Windows follow-up is now complete.
-
-The maintainer authorised merging PR #66 on this evidence. The Arrow-enabled Linux gate has **not run**:
-Arrow was unavailable and CRAN unreachable in the Linux environment, while GitHub Actions capacity is exhausted.
-Linux validation is deferred to the final pre-CRAN checks when Actions becomes available, rather than blocking this merge.
-No workflow was launched and no warning policy, test assertion or skip inventory was relaxed.
-
-The all-platform frozen-release matrix in [release checklist](../../../docs/release-checklist.md) item 1 remains required
-before submission. Conservative pending-validation wording and the POSIX example guard remain until final release review.
-Any subsequent code or test changes require validation appropriate to those changes.
 
 ## What is deliberately not covered
 

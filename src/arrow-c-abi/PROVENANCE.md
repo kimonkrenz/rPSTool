@@ -7,7 +7,7 @@ implementation, runtime, device, async or statistics code (see
 [GeoParquet input](../../docs/spatial-io/geoparquet-input.md)).
 
 - Upstream repository: `apache/arrow`
-- Release tag: `apache-arrow-25.0.0` (a fixed release, never a moving branch)
+- Release tag: `apache-arrow-25.0.0`
 - Source path: `cpp/src/arrow/c/abi.h`
 - Source SHA-256: `1828f1ce60368cd590d19595910fa19db09b30728f8a43b5f89933623f7a7276` (20 318 bytes; the same bytes as at the `apache-arrow-25.0.1` tag)
 - Licence of the source: Apache-2.0 (the file's original licence header is kept verbatim as the first sixteen lines of the wrapper)
@@ -27,15 +27,14 @@ close), with an rPSTool explanatory comment block inserted before `#pragma once`
 Deliberately omitted: the `ARROW_FLAG_*` constants (the decoder never reads `flags`), the
 `ARROW_STATISTICS_KEY_*` macros, the device data/stream interfaces and the async interface.
 The canonical guards `ARROW_C_DATA_INTERFACE` and `ARROW_C_STREAM_INTERFACE` are preserved
-exactly, as the Arrow specification requires of copied definitions.
+exactly.
 
 ## Attribution and notices
 
 The declarations are © The Apache Software Foundation, licensed under the Apache License,
 Version 2.0 (<http://www.apache.org/licenses/LICENSE-2.0>). Apache Arrow's `NOTICE.txt`
-("Apache Arrow, Copyright 2016-2026 The Apache Software Foundation") lists third-party notices
-that concern Arrow's implementation, none of which is carried here. **This record does not
-choose or change rPSTool's overall licence** (see [licensing](../../docs/licensing.md)).
+reads "Apache Arrow, Copyright 2016-2026 The Apache Software Foundation". Component licence
+matrix: [licensing](../../docs/licensing.md).
 
 ## Verification
 
@@ -45,5 +44,4 @@ are present with no other macro, include or type; and the wrapper's SHA-256 and 
 `tools/test-arrow-abi.R` proves the verifier rejects each kind of drift. With
 `RPST_ARROW_ABI_UPSTREAM=<path to the pristine abi.h>` the verifier additionally checks the
 source SHA-256 above and that every declaration line of the wrapper occurs, in order, in that
-file. That comparison was run when the wrapper was created against the file fetched from the
-tag above.
+file.

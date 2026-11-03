@@ -46,8 +46,8 @@ reports the total length and the area they cover. Use it to measure how much of 
 given walking distance, number of direction changes or straight-line distance.
 }
 \details{
-\strong{What is reported.} For a line origin, \code{reached_count} includes the origin line and \code{reached_length} is
-the full length of every reached line. \code{reached_area} is the area of the convex hull of the reached line
+\strong{What is reported.} For a line origin, \code{rc_...} (reached count) includes the origin line and \code{rln_...} (reached length) is
+the full length of every reached line. \code{rca_...} (reached area) is the area of the convex hull of the reached line
 endpoints, except when only a straight radius is set, where PST returns pi times the radius squared.
 Lengths and areas are in the units of the input coordinates; no rescaling takes place.
 

@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §5: publication of result files. The Parquet file is written under a unique temporary name in the
+# docs/spatial-io/result-files.md §3: publication of result files. The Parquet file is written under a unique temporary name in the
 # destination directory and published only when complete: a kernel-checked no-clobber step with overwrite = FALSE (POSIX
 # link(2); Windows MoveFileExW without replacement), a single rename with overwrite = TRUE. These tests cover existing files, symlinks, inaccessible and invalid locations,
 # write failures and interruptions (simulated at the arrow writer), races and cleanup. Failures that cannot be

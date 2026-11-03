@@ -37,7 +37,7 @@ underflow.}
 \item{angle_precision}{One whole number from 1 through 4294967295: the angular resolution in degrees used
 to rank paths (default 1). Zero is rejected.}
 
-\item{weight_outputs}{\code{TRUE} or \code{FALSE} (default). Include \code{total_weight} and \code{total_depth_weight} even
+\item{weight_outputs}{\code{TRUE} or \code{FALSE} (default). Include \code{tw_...} and \code{tdw_...} even
 when unweighted.}
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning them;
@@ -70,10 +70,10 @@ street networks, optionally weighted by segment length and with different normal
 integration, NAIN) or \code{"hillier"} normalisation; with \code{weigh_by_length = TRUE} the matching length-weighted
 form is used. All scores are computed by PST.
 
-\strong{Reached segments.} \code{node_count} includes the origin, whereas \code{total_weight} excludes it. Unweighted,
-\code{total_weight} is the number of other reached segments; weighted, it is the sum of their lengths. Total depth
+\strong{Reached segments.} \code{nc_...} (node count) includes the origin, whereas \code{tw_...} (total weight) excludes it. Unweighted,
+\code{tw_...} is the number of other reached segments; weighted, it is the sum of their lengths. Total depth
 and depth-weight sums are in syntax angle units (90 degrees is one unit). Weighted calls always include
-\code{total_weight} and \code{total_depth_weight}; \code{weight_outputs = TRUE} adds them to unweighted calls too.
+\code{tw_...} and \code{tdw_...} (total depth weight); \code{weight_outputs = TRUE} adds them to unweighted calls too.
 
 \strong{Angle settings.} Turns strictly smaller than \code{angle_threshold} degrees count as zero (a negative
 threshold has no effect, and a threshold above 180 zeroes every turn). PST rounds each remaining turn to

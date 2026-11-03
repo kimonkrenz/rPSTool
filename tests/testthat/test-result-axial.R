@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §11: direct Parquet persistence of the mask-free axial-graph analyses: Network Integration
+# docs/spatial-io/result-files.md §6: direct Parquet persistence of the mask-free axial-graph analyses: Network Integration
 # (lines), Reach (lines and supplied origins), OD Betweenness, Attraction Reach and Attraction Distance. Every
 # persisted table is compared with the existing in-memory data frame (names, order, rows, R types and the raw bytes
 # of every double) and with the pinned direct-PST references already used by the in-memory tests. The Arrow stream

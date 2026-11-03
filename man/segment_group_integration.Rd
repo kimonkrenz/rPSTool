@@ -17,7 +17,7 @@ segment_group_integration(
 \item{radius}{Walking and/or steps limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
 
 \item{output_file, overwrite}{Write the result to a Parquet file instead of returning a data frame; see
-\link{pst_result_file}. \code{integration}, \code{node_count} and \code{total_depth} are stored as nullable columns: a row is
+\link{pst_result_file}. \code{gi_...}, \code{nc_...} and \code{td_...} are stored as nullable columns: a row is
 null in all three exactly when PST wrote neither its count nor its depth, which is when the data frame
 holds \code{NA}.}
 }

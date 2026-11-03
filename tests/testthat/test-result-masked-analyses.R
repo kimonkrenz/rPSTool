@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §13: Parquet output with Arrow nulls for Segment Betweenness and Segment Group Integration.
+# docs/spatial-io/result-files.md §7: Parquet output with Arrow nulls for Segment Betweenness and Segment Group Integration.
 # Every persisted table is compared with the existing in-memory data frame (names, order, rows, R types, 8 bytes of every
 # double: so typed NA vs NaN is checked) AND with the pinned direct-PST fixtures, with the null pattern derived
 # independently from the fixture's own NA positions. A written NaN/Inf/-1/0 is a value, never a null; an unwritten

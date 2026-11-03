@@ -35,7 +35,7 @@ An \code{sf} data frame with one \code{LINESTRING} per axial line.
 \item{\code{source_local_integration}}{numeric, the supplied historical local integration value.}
 \item{\code{geometry}}{\code{LINESTRING}, EPSG:27700.}
 }
-The four \code{source_} columns are historical values retained unchanged and without recalculation. They are not rPSTool or PST results,
+The four \code{source_} columns are values supplied with the original data, unchanged and not recalculated. They are not rPSTool or PST results,
 and no rPSTool function reads them.
 }
 

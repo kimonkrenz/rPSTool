@@ -35,6 +35,3 @@ inst/upstream/build-inputs/NetworkIntegration.cpp whitespace=-blank-at-eol,-spac
 inst/upstream/build-inputs/AxialGraph.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
 inst/upstream/build-inputs/Geometry.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
 inst/upstream/build-inputs/IsovistCalculator.h whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
-
-# RFC 4180 CRLF record terminators in the parity matrix are intentional; do not flag them as trailing whitespace.
-docs/compatibility/parity/parity-matrix.csv whitespace=cr-at-eol

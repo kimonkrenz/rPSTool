@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §13: nullable columns with Arrow validity bitmaps in the shared result stream. Driven by the
+# docs/spatial-io/result-files.md §7: nullable columns with Arrow validity bitmaps in the shared result stream. Driven by the
 # synthetic producer and the scripted consumer, independent of any PST analysis. Valid native NaN/Inf must never be
 # confused with null, nulls must be exact per batch (including batches that start mid-byte), and the bitmaps must follow
 # the same shared ownership as the value arrays.

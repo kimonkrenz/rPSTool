@@ -87,8 +87,7 @@ An analysis accepts only the graph family of its PST routine; families are never
 | Isovists | `isovist_context()` | `isovist()`, `isovist_context_free()` |
 | Raster comparison | | `compare_line_results()`, `raster_data()`, `raster_to_polygons()`, `raster_free()` |
 
-Every function is documented in its help page (`help(package = "rPSTool")`). The [documentation index](docs/README.md) lists
-the developer-facing records.
+Every function is documented in its help page (`help(package = "rPSTool")`). Technical reference: [docs/](docs/README.md).
 
 ## Spatial inputs and outputs
 
@@ -108,15 +107,12 @@ base graphics, and optional ggplot2 scales are provided. Class boundaries are su
 
 The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
-* **Angular Choice** may encounter computational limitations in exceptionally deep networks with unrestricted radii; observed
-  only in artificially constructed networks. Restricting the radius avoids it.
+* **Angular Choice** with an unrestricted radius can exhaust a worker thread's stack in exceptionally deep networks and crash the R
+  session; restricting the radius avoids it.
 * Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
 * `network_integration()` accepts only step radii.
 * Coordinates must be projected. PST works in single precision around a centre point.
-* The Barnsbury example data are attributed to Hillier and Iida (2005); the coordinates were georeferenced and transformed and are not the original coordinates.
-* The test suite and `R CMD check` passed on Linux, macOS (ARM64) and Windows at commit `4119f2b`, and on macOS (ARM64) and Windows
-  in a later local run after the output-naming and progress changes (Linux has not been re-run since); results have not been
-  compared with real runs of the PST plugin for QGIS.
+* rPSTool has been tested on Linux, macOS (ARM64) and Windows; results have not been compared with real runs of the PST plugin for QGIS.
 
 Report bugs and request features at <https://github.com/kimonkrenz/rPSTool/issues>.
 
@@ -131,8 +127,6 @@ original Place Syntax approach was introduced by Ståhle, Marcus and Karlström 
 Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. The Barnsbury example
 data are derived from Hillier and Iida (2005) and are included with the authors' permission; the movement gate counts were originally
 reported by Penn, Hillier, Banister and Xu (1998).
-Development of rPSTool was supported by OpenAI's ChatGPT and Anthropic's Claude for code optimisation, review, debugging and
-documentation. All contributions were reviewed and validated by the package author, who retains responsibility for the software.
 
 ## Citation and licence
 

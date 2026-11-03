@@ -73,7 +73,7 @@ compare_line_results <- function(x, values1, values2, y = NULL,
 #'   * `dimensions`: named integer `width, height`,
 #'   * `pitch`: the row stride of PST's raster storage in bytes (informational; it is not needed to index `values`),
 #'   * `format`: the pixel type, `"float"` (copied into a double matrix) or `"byte"` (copied into an integer matrix);
-#'     comparison rasters currently have format `"float"`,
+#'     comparison rasters have format `"float"`,
 #'   * `min` and `max`: PST's comparison minimum and maximum (before normalisation in normalised mode), and
 #'   * `values`: a matrix with `height` rows and `width` columns. Rows run from maximum y towards minimum y and columns from
 #'     minimum x towards maximum x. Pixel centres are half a pixel inside the extent.

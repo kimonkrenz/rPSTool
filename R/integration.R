@@ -37,7 +37,7 @@
 #' @param junctions `TRUE` or `FALSE` (default). If `TRUE`, also return junction scores (see Value).
 #' @param junction_output `"native"` (default) or `"sf"`. Applies only to the junction table and requires
 #'   `junctions = TRUE` and the suggested package 'sf'. With `"sf"` the junctions are POINT features with
-#'   `junction_id` and `integration` columns, in PST's order and with the graph's CRS.
+#'   `junction_id` and `nj_s_<radius>` columns, in PST's order and with the graph's CRS.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning
 #'   them; see [pst_result_file]. `output_file` and `spatial_output_file` require `junctions = FALSE`.
 #' @return With `junctions = FALSE`, a data frame with one row per input line, in the order of the lines

@@ -61,14 +61,14 @@ carry through-movement in a street network, optionally within a radius and with 
 degrees count as zero, and turn costs are rounded to \code{angle_precision} degree units when PST chooses
 between paths. Reported depths and angular radii use the unrounded, thresholded angles, in syntax angle
 units (90 degrees is one unit). A negative threshold has no effect and a threshold above 180 zeroes every
-turn. \code{node_count} includes the origin. Length weighting (\code{weigh_by_length = TRUE}) uses PST's own
+turn. The node count (\code{nc_...}) includes the origin. Length weighting (\code{weigh_by_length = TRUE}) uses PST's own
 origin and destination contributions. Axmeter radii are rejected, and so are graphs with more than 32
 endpoint incidences at one coordinate (as for \code{\link[=angular_integration]{angular_integration()}}).
 
 \strong{Normalisation.} The raw choice score is always returned. \code{normalization} adds PST's \code{"standard"},
 \code{"turner"} (Angular Choice) or \code{"syntax"} (normalised angular choice, NACH) normalisation. Syntax normalisation uses the run's total depth:
 the length-weighted total depth when \code{weigh_by_length = TRUE} (as the PST for QGIS plugin does), otherwise
-\code{total_depth}.
+the total depth (\code{td_...}).
 
 \strong{Several radii and normalisations.} One radius field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values,
 and \code{normalization} may hold several names. PST then runs once per radius and each requested

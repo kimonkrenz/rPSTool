@@ -74,12 +74,11 @@ Collections, other geometry types and Z/M are rejected, and no repair or attribu
 }
 \section{Limitations}{
 
-A safeguard rejects with an error any input where PST's detail reduction would merge a chain of segments back onto its
-own starting point. This includes closed rings with no junction, which crash unmodified PST, and loops attached at a single
+Inputs where PST's detail reduction would merge a chain of segments back onto its own starting point are rejected with
+an error. This covers closed rings with no junction, which crash unmodified PST, and loops attached at a single
 junction of degree three or more (for example a cul-de-sac loop whose \code{deviation} is large relative to its vertex
-spacing), which unmodified PST completes as a degenerate zero-length self-loop. The safeguard can therefore reject inputs
-that unmodified PST would process, but it never changes a result: for every accepted input the output is that of the
-unmodified PST computation. Consequently an input containing a cycle is not guaranteed to be accepted; a smaller
+spacing), for which unmodified PST returns a degenerate zero-length self-loop. Such inputs can therefore be rejected
+although unmodified PST would process them; for every accepted input the result is that of unmodified PST. A smaller
 \code{deviation} threshold, or breaking the cycle, may avoid the error.
 }
 

@@ -1,4 +1,4 @@
-# docs/spatial-io/result-files.md §13.6: direct Parquet persistence of segment_grouping(). The grouping runs ONCE natively; the native
+# docs/spatial-io/result-files.md §7.3: direct Parquet persistence of segment_grouping(). The grouping runs ONCE natively; the native
 # zero-based buffers are moved into the Arrow stream and shifted to the public one-based convention in place; the two scalars
 # become the schema metadata keys rpst:n_groups / rpst:n_colors. Every persisted table is compared with the unchanged in-memory
 # data frame (names, order, R types, values) and with the pinned direct-PST fixture; the scalars with the in-memory attributes.

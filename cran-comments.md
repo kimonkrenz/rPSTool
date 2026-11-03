@@ -1,35 +1,26 @@
 # cran-comments.md
 
-This file records the validation completed so far. It is finalised at submission time (see `docs/release-checklist.md`); sections
-marked *pending* have no results recorded yet.
-
 ## Submission
 
 New submission of rPSTool 0.1.0. Maintainer: Kimon Krenz <k.krenz@ucl.ac.uk>.
 
 ## Test environments
 
-Validated at commit `4119f2b847bafedff84f6d6fbf357196aed77add` on GitHub Actions runners, each with R 4.6.2 and the full development
-test suite (`RPST_FULL_TESTS=true`, with `arrow` 26.0.0 and `sf` 1.1.3):
+GitHub Actions runners at commit `4119f2b847bafedff84f6d6fbf357196aed77add`, each with R 4.6.2 and the full development test suite
+(`RPST_FULL_TESTS=true`, `arrow` 26.0.0, `sf` 1.1.3):
 
 * Linux x86-64 (Ubuntu, GCC 15.2.0): 160,814 test expectations; `R CMD check` `Status: OK`.
 * macOS ARM64 (macos-15, Apple clang 17.0.0): 160,814 test expectations; `R CMD check` `Status: OK`.
-* Windows x86-64 (Windows Server 2022, Rtools GCC 14.3.0): 160,759 test expectations; `R CMD check` `Status: OK`. The count is 55 lower than on the other
-  platforms; this has not been independently explained. Four tests that need POSIX-only facilities are skipped on Windows by
-  design (`tools/ci/windows-test-skips.tsv`).
+* Windows x86-64 (Windows Server 2022, Rtools GCC 14.3.0): 160,759 test expectations; `R CMD check` `Status: OK`. The count is 55 lower than
+  on the other platforms; the difference is unexplained. Four tests that need POSIX-only facilities are skipped on Windows by design
+  (`tools/ci/windows-test-skips.tsv`).
 
-Latest local development validation (maintainer-run, tree of `96a1547`; the rebase-merged tree `c6c4ed9` was reported identical): macOS ARM64: 161,539 expectations, no failures or skips, `R CMD check` `Status: OK`; Windows x86-64: 161,484 expectations, no failures, four approved skips, `Status: OK`. The exact PST warning policy passed on both and all 121 vendored PST files were verified unchanged. This is not a GitHub Actions run and does not cover Linux or CRAN incoming checks; the figures above for `4119f2b` stay the latest Linux evidence.
+Later local development runs (tree of `96a1547`, rebase-merged as `c6c4ed9`): macOS ARM64, 161,539 expectations, no failures or skips,
+`Status: OK`; Windows x86-64, 161,484 expectations, no failures, four approved skips, `Status: OK`. These are not GitHub Actions runs and
+do not cover Linux or CRAN incoming checks. win-builder and R-hub have not been used.
 
-*Pending:* win-builder and R-hub, if used. The final tarball is to be rebuilt and re-checked from the frozen release commit.
-
-## Vignette example awaiting execution
-
-The second example in `vignettes/getting-started.Rmd` (file-backed GeoParquet analysis with `spatial_output_file`) was written after
-the `4119f2b` validation. The later macOS and Windows runs had `arrow` installed and rebuilt the vignettes, but no log was
-inspected that shows this example's chunks executing, and the vignette has since been edited (its network preparation no longer
-depends on `classInt`). Its execution with `arrow` installed is therefore still unconfirmed; the equivalent FlatGeobuf pipeline
-was run and checked. It is to be confirmed in the final CRAN validation runs. The chunks are skipped when `arrow` (>= 25.0.0),
-`jsonlite` or `sf` is missing.
+The file-backed GeoParquet example in `vignettes/getting-started.Rmd` runs only when `arrow` (>= 25.0.0), `jsonlite` and `sf` are installed;
+it has not been confirmed to have executed in the validation runs.
 
 ## R CMD check results
 
@@ -38,12 +29,11 @@ Linux, `R CMD check --as-cran` with `_R_CHECK_CRAN_INCOMING_`, `_R_CHECK_CRAN_IN
 
 * NOTE: CRAN incoming feasibility, "New submission".
 
-`R CMD check` was not run with CRAN incoming checks enabled on macOS or Windows. Items that must be explained if they remain in
-the final submission checks:
+CRAN incoming checks were run on Linux only. Further items that may appear:
 
-* Compiler diagnostics from the bundled, pinned PST C++ engine: every diagnostic that R classes as significant is removed through
-  verified build copies; the remaining non-significant diagnostics (unused variables and functions, sign comparisons) are inventoried
-  exactly (`docs/build-and-platforms.md`). The Linux run recorded none.
+* Compiler diagnostics from the bundled, pinned PST C++ engine: diagnostics that R classes as significant are removed through
+  verified build copies; the remaining non-significant ones (unused variables and functions, sign comparisons) are inventoried
+  (`docs/build-and-platforms.md`). The Linux run recorded none.
 * An installed-size NOTE may appear on some Linux toolchains: the shared library then contains debug symbols from the platform's
   default compiler flags (about 15 MB with Debian's flags, about 1 MB without); the package does not strip symbols itself.
 
@@ -54,5 +44,5 @@ the final submission checks:
 * PST creates worker threads internally. rPSTool limits them to two when `_R_CHECK_LIMIT_CORES_` is set (any non-empty value other than `false`,
   as R's parallel package does) and honours `RPST_NUM_THREADS`.
 * Result files (`output_file`, `spatial_output_file`) are written through POSIX calls on Unix-alikes and through the Win32 API
-  (`MoveFileExW`) on Windows; the Windows implementation is covered by the full test suite run above.
+  (`MoveFileExW`) on Windows.
 * `arrow`, `sf` and `jsonlite` are optional (Suggests); tests and examples that need them are skipped when they are unavailable.

@@ -1,6 +1,6 @@
 # Direct PST reference tools
 
-These development-only tools execute pinned PST exports and official ctypes
+These tools execute pinned PST exports and official ctypes
 wrappers. They do not invoke rPSTool R analyses or implement replacement algorithms.
 Installed tests consume frozen R fixtures offline; Python, a separate reference
 checkout and native diagnostic modules are not runtime dependencies.
@@ -15,7 +15,7 @@ checkout and native diagnostic modules are not runtime dependencies.
 | Diagnostic builds | `isovist/build-safety-variants.py BASELINE_DLL WORK_DIR` | Qualified pristine, assertion-enabled and adapted locally bound modules; source hashes on stdout |
 | Fixture serialization | `write-r-fixture.{R,py} INPUT_JSON OUTPUT_R` | Deterministic checked-in R fixture representation; no recalculation |
 | Source manifests | `source-blobs.json` | Frozen exact pin/blob authority, checked before native loading |
-| Evidence payloads | `*-results.json` | Frozen observations recorded when the corresponding hazard or policy was established; some inventories are smaller than today's case runner |
+| Evidence payloads | `*-results.json` | Frozen observations recorded when the corresponding hazard or policy was established |
 
 Each domain keeps its related dependencies together:
 
@@ -59,10 +59,8 @@ Rscript -e 'stopifnot(identical(dget("tests/testthat/fixtures/core-network-direc
 The core generator uses a different final closing-line layout from the committed
 fixture; the parsed R reference is identical.
 
-The pinned ctypes wrapper contains a Python invalid-escape SyntaxWarning. The
-reference-only warning filter above prevents that interpreter diagnostic from
-entering captured evidence/fixture stderr; it changes no native result or R
-validation gate. It also keeps the read-only reference checkout free of bytecode.
+The pinned ctypes wrapper raises a Python invalid-escape SyntaxWarning; the warning filter above keeps it out of captured
+stderr and changes no native result. `PYTHONDONTWRITEBYTECODE` keeps the read-only checkout free of bytecode.
 
 Repeat the same signature for the other `generate-reference.py` tools and compare
 their outputs with the corresponding frozen fixture under `tests/testthat/fixtures/`.
@@ -116,11 +114,9 @@ python3 tools/reference/raster/check-abs-overloads.py "$PINNED_ROOT" "$LIBR_PATH
 python3 tools/reference/raster/check-native-safety.py "$PINNED_ROOT" "$LIBR_PATH" "$PST_DLL" work/reference/raster-safety
 ```
 
-The floating proof compares 79 exact cases across independent math-header,
-narrow `std::abs`, sanitizer and package-export builds; all 41 Relative Percent
-controls remain identical. The abs-overload check uses the original 75-case
-inventory and retains unsafe integer-conversion evidence. `raster/native-cases.py`
-can also run a supplied DLL independently.
+The floating proof compares 79 exact cases across independent math-header, narrow `std::abs`, sanitizer and package-export
+builds; all 41 Relative Percent controls remain identical. The abs-overload check retains the unsafe integer-conversion
+evidence. `raster/native-cases.py` can also run a supplied DLL independently.
 
 ## Exact numeric serialization of direct fixtures
 
@@ -142,17 +138,11 @@ hexadecimal numeric literals, never non-integer decimals.
   numerics to hex without changing any value (each token verified). It is not an R parser: it
   accepts only what the generators emit (`#` comments and double-quoted strings are skipped) and
   raises `ValueError` on single-quoted strings, backtick names, raw strings and unterminated strings;
-  `common/test_hexify_fixture.py` covers this, including every current direct fixture. It was used to convert the committed `core-network` and `angular-controls` values before the
-  floating-point policy; those fixtures (and the other float-sensitive ones) have since been
-  regenerated under [the policy](../../docs/compatibility/floating-point-policy.md).
+  `common/test_hexify_fixture.py` covers this, including every current direct fixture.
 * `tests/testthat/test-fixture-serialization.R` fails if a generated direct fixture contains a
   non-integer decimal literal or a digit-only integer above 2**53 (integers up to and including 2**53
   are exact, matching `rnumeric.py`; the boundary is covered by mutation tests). Hand-written test numerics and the hand-transcribed
   `network-integration`/`angular-integration` upstream constants are out of its scope.
-
-Because layout is otherwise unchanged, regeneration of the other fixtures reproduces the committed
-files byte-for-byte; the committed `network-construction` fixture previously used `dput`'s default
-15 significant digits, so four native values there are now stored with their exact binary64 value.
 
 ## Evidence payloads
 
@@ -170,7 +160,7 @@ The frozen `*-results.json` files are the recorded outputs of the focused checks
 ## Fixture provenance
 
 Every generated fixture records, in its header comment, the generator that wrote it and the pinned PST source blobs it was verified
-against. Frozen `*-results.json` observations keep their original inventories and diagnostic payloads. Numbered adopted patches, build
+against. Numbered adopted patches, build
 inputs, warning inventories, upstream pins and vendor bytes are recorded in `inst/upstream/`.
 
 ## Regenerating under the floating-point policy

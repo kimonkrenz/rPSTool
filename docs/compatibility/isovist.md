@@ -1,9 +1,7 @@
-# Isovist context/results compatibility
+# Isovist
 
-Computational authority: PST v3.3.2, commit
-`63df80a2cf3dd289be95ea3d91667c3490719b75`. The complete context/calculation/release
-family uses the singular active exported API; the commented plural API is excluded.
-The failure evidence (`tools/reference/isovist/`) and the adopted safety policy are recorded below. The context uses native matrix geometry; optional [sf adapters](../spatial-io/sf-adapters.md#isovist-adapters) convert to it.
+Computed by PST v3.3.2 (commit `63df80a2cf3dd289be95ea3d91667c3490719b75`) using the singular exported isovist API. The context uses
+native matrix geometry; optional [sf adapters](../spatial-io/sf-adapters.md#isovist-adapters) convert to it.
 
 ## Public interface and native semantics
 
@@ -60,87 +58,23 @@ only if not already closed; error for fewer than three vertices, nonfinite
 coordinates or fewer than four ring coordinates). Details:
 [sf adapters](../spatial-io/sf-adapters.md#isovist-adapters).
 
-Provenance of the closure conversion: 45 direct combinations of obstacle/
-attraction-polygon geometry, origins inside and outside, and full and partial
-views gave identical native results for open rings and rings with a repeated
-terminal vertex, consistent with `IsovistCalculator.cpp` skipping zero-length
-edges. This is scoped evidence, not a general claim. The matrix
-`closed_polygon` direct fixture, which intentionally repeats a vertex, stays
-matrix-only because an sf ring cannot distinguish a repeated terminal vertex
-from its structural closure.
+An sf ring cannot distinguish a repeated terminal vertex from its structural closure, so matrix input that deliberately repeats a vertex
+should stay in matrix form. Open rings and rings with a repeated terminal vertex give identical native results.
 
-## Ownership and failures
+## Lifetime and errors
 
-The exact-tagged `rPST::isovist-context/v1` external pointer owns a native context
-plus immutable validation metadata. A finalizer frees it once. Native pointers
-cannot survive serialization or transfer to another R process.
+`isovist_context()` returns an external pointer that owns the native context; it cannot be saved, serialised or transferred to another R
+process. Use `isovist_context_free()` to release it explicitly. A dead, deserialised or wrong-family pointer is an error. Results are
+copied into R and remain valid after the context is released.
 
-Each native result holds a reference to its context and returns pooled buffers
-there on destruction. It therefore never becomes a public persistent pointer.
-The bridge protects an exact-tagged transient result owner whose protected parent
-is the context, transfers ownership immediately after publication, validates the
-native shape, then copies coordinates, area, all group counts and indices into R
-under `R_UnwindProtect`. Cleanup frees the result on success or an R allocation/
-error jump. Results remain valid after both native result and context release.
-Input temporaries unwind before any R error. Private counters and a copy-error
-hook test this architecture; neither is a public analysis API.
+PST can fail to produce a result for some unusual geometries; rPSTool then raises an R error instead of returning a partial result or
+crashing. This happens when the calculated polygon has no vertex, or too few vertices for a non-empty attraction queue: fewer than two
+for partial-view attraction points or full-circle attraction polygons, fewer than three for partial-view attraction polygons. Singleton
+results with empty queues are valid. No polygon, zero area or NA is substituted.
 
-`PSTACalculateIsovist` returns void and catches exceptions. The descriptor's point
-count/pointer/result handle begin at zero/null/null, and visibility accumulators
-begin at zero as in the official wrapper. A nonnull published result handle alone
-establishes success. No area, count or partial field is used to infer success.
-A null handle raises a controlled R error after C++ temporaries unwind.
+## Floating point
 
-The approved safety adaptation checks the **actual calculated state**:
+Polygon coordinates are computed in local floats, and system `sinf` rounding can move a polygon coordinate by one binary32 ULP between
+platforms; see [floating-point policy](floating-point-policy.md).
 
-1. Before accessing any final vertex, an empty calculated array fails safely.
-2. Only when a partial-view attraction-point queue is nonempty, fewer than two
-   calculated vertices fail before the second-vertex read.
-3. Only when a partial-view attraction-polygon edge queue is nonempty, fewer
-   than three calculated vertices fail before its unsafe indexed accesses.
-4. Only when a full-circle attraction-polygon edge queue is nonempty, fewer
-   than two calculated vertices fail before its loop iterator advances.
-
-Borrowed local storage returns before throwing; already acquired results unwind
-through native RAII. No result handle is published, and no polygon, zero area,
-visibility, NA or substitute computation is fabricated. The guards do not use
-radius/view/resolution heuristics. Every unaffected expression and algorithm
-remains pinned PST. Vendor bytes remain pristine.
-
-## Source provenance and direct oracles
-
-The reference manifest verifies 132 exact pinned blobs against the independent
-pinned GitHub tree: complete compiled core, official ctypes wrapper, upstream
-isovist test and QGIS batch/tool/geometry/UI callers. Original reproductions remain
-in `tools/reference/isovist/baseline-results.json` (58 cases). The expanded
-`tools/reference/isovist/native-cases.py` suite has 85 cases; each context is reused for two calculations
-with fresh native descriptors, freeing each result before the context. It calls native exports
-through official ctypes declarations, never an rPSTool analysis binding.
-
-All 77 unaffected controls, including all previous 74, agree **exactly** between
-pristine qualified PST, an assertion-enabled source module and the approved
-adapted installed package DLL. Comparison covers vertex order/coordinates, area,
-visibility counts/indices, empty contexts/groups, obstacles, attraction points/
-polygons, tree reordering, different origins, large world translations, winding,
-explicit ring closure, views/resolutions/radii and nearby controls. The eight unsafe
-probes produce null-handle failure instead of process termination or invalid
-access. The unchanged upstream perimeter test passes in every oracle run.
-
-Expected production values are static direct-pristine fixtures. The generator
-uses hexadecimal R numeric literals to preserve complete native double bits;
-ordinary default decimal `dput` precision is insufficient for exact comparisons.
-Tests run without Python, QGIS, network or a separately installed PST DLL.
-The guard's exact patterns, input/output checksums, reversibility, safe paths,
-mutation rejection and deterministic regeneration have separate offline gates.
-
-## Cardinality controls and regression guarantees
-
-Partial-view point processing requires two calculated vertices only when its
-native point queue is nonempty. Singleton results with empty queues remain valid.
-Full-circle polygon processing requires two vertices only when its edge queue is
-nonempty; partial-view polygon processing requires three. Origin-containing
-polygon controls and safe singleton/full-circle results remain supported.
-The reproductions of both additional cardinality cases are in `tools/reference/isovist/cardinality-results.json`. Regression tests exercise context reuse after failure,
-no published result on failure, copy-error cleanup, aliases, GC, explicit release
-and independent result lifetimes. The final direct suite contains 85 cases:
-77 exact successful controls and eight controlled failures.
+Reference fixtures: [`tools/reference/README.md`](../../tools/reference/README.md).

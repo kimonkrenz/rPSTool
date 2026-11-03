@@ -1,6 +1,6 @@
 # Output column names
 
-Every analysis names its result columns with one compact, PST-inspired scheme, built in one place (`R/naming.R`). The names are
+Every analysis names its result columns with one compact scheme. The names are
 labels: the `rpst:columns` manifest in result-file metadata (and the `rpst_manifest` attribute of multi-radius data frames) is the
 authoritative description of each column. Positional identifiers (`segment_id`, `line_id`, `origin_id`, `group_id`,
 `junction_id`) keep their names and are not part of the scheme.
@@ -24,8 +24,7 @@ multi-radius call name the same calculation identically (`ai_a_rw3000_t` either 
 | Normalisation | `t` Turner, `a` NAIN (Angular Integration `syntax`), `c` NACH (Angular Choice `syntax`), `h` Hillier, `s` standard, `f` Freeman, `y` Network Betweenness `syntax`, `n` raw. Only where normalisation is a dimension of the analysis (`ac`, `ai`, `nb`/`at`) |
 | Diagnostic | `nc` node count, `td` total depth, `tw` total weight, `tdw` total depth weight, `rc` reached count, `rln` reached length, `rca` reached area, `di` destination index; `anc`, `atd` node count and total depth of Attraction Betweenness |
 
-Network Betweenness `syntax` is `log10(score + 1) / log10(2 + total_depth)` (`PSTABetweennessSyntaxNormalize`,
-`SegmentBetweenness.cpp`). It is the same transformation as Angular Choice's NACH but is applied to an axial measure, so it has its own code.
+Network Betweenness `syntax` is `log10(score + 1) / log10(2 + total_depth)` (`PSTABetweennessSyntaxNormalize`). It is the same transformation as Angular Choice's NACH but is applied to an axial measure, so it has its own code.
 
 ## Non-default parameters
 
@@ -68,8 +67,7 @@ values, element names or arbitrary calculations, and there is no hash or anonymo
 
 Limitations: the name is the user's variable at the call. Weights forwarded through a wrapper function are named by the wrapper's
 variable (`function(w) network_betweenness(g, weights = w)` gives `ww`), and `do.call()` with evaluated values, `...` elements and
-computed column keys (`data[[col]]`) cannot be named and are errors; call with named objects instead. A name is a label only: reusing it
-for different values is not detected, and the collision rules apply when extending a spatial dataset.
+computed column keys (`data[[col]]`) cannot be named and are errors; call with named objects instead.
 
 The name is normalised automatically: lower-cased, every run of characters outside `a-z`, `0-9` and `_` becomes a single `_`, and
 leading and trailing underscores are removed. Only a name that is empty or has no letter or digit left is an error, as is a name
@@ -101,16 +99,10 @@ Successive analyses can be accumulated in one spatial dataset because their name
 `spatial_output_file`, then analyse the new file with another radius or measure and write it to a further file; the earlier
 result columns are carried along as ordinary attributes. Re-running the same analysis on its own output uses the same names.
 
-## Schema change
-
-These names replace the earlier generic ones (`integration`, `choice`, `node_count`, `total_depth`, `normalized`, `betweenness`,
-`reached_count`, …). Files written before this change keep their old names and are not reinterpreted.
-
-## Diagnostics that look alike: Network Betweenness and Attraction Betweenness
+## Network Betweenness and Attraction Betweenness diagnostics
 
 Network Betweenness (`nb`) and Attraction Betweenness (`at`) both return a node count and a total depth for the same distance
-and radius, so unqualified `nc_w_rw800` / `td_w_rw800` could have meant two things. They were compared on the actual
-calculations, not assumed:
+and radius, so the names carry a tag to keep them apart:
 
 * Without weights, and with positive line weights, `nb`'s node count and total depth equal those of the unweighted run: the
   origin set is every line, and the values do not depend on the weights. Every weighted origin whose effective weight is

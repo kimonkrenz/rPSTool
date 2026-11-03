@@ -66,15 +66,10 @@ reprojected.
 }
 \section{Naming custom weights}{
 
-Custom weights are named in the result columns (\verb{..._wo<name>_wd<name>}; the two vectors are named independently) after the R expression you
-supply, so no extra argument is needed: an object name (\code{origin_weights = population}) or a literal data-frame column (\code{destination_weights = data$jobs}
-or \code{destination_weights = data[["jobs"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
-no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
-run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
-(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
-metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
-are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
-is a label only: it does not check that the same name always means the same values.
+Custom weights are named in the result columns (\verb{..._wo<name>_wd<name>}; the two vectors are named independently) after
+the R object or literal data-frame column you pass (\code{origin_weights = population}, \code{destination_weights = data$jobs}).
+Anonymous vectors and calculations are an error; assign them to a named object first. See \link{result_column_names} for the
+naming rules.
 }
 
 \examples{

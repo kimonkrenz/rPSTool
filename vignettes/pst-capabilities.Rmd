@@ -20,14 +20,11 @@ pick <- function(x, pattern) {
 ```
 
 This vignette describes what the PST engine can do, which part of that rPSTool
-exposes, how that relates to PST for QGIS, what is not supported, and what kind
-of evidence exists for compatibility. For a first analysis on real data see
+exposes, how that relates to PST for QGIS, and what is not supported. For a first analysis on real data see
 `vignette("getting-started", package = "rPSTool")`.
 
-References to `docs/...` below are files in the rPSTool source repository,
-for example
-<https://github.com/kimonkrenz/rPSTool/blob/main/docs/pst-coverage.md>.
-Row numbers such as "row 1.6" refer to the tables in that file.
+Links to `docs/...` files point to the rPSTool source repository,
+<https://github.com/kimonkrenz/rPSTool/tree/main/docs>.
 
 ## 1. What is PST, and what is rPSTool?
 
@@ -50,43 +47,15 @@ the engine. The QGIS plugin is used as the reference for *how the original
 application drives the engine*; it does not limit what R users can ask the
 engine to do.
 
-## 2. Evidence levels
+## 2. Validation status
 
-Every statement about compatibility in this vignette and in
-`docs/pst-coverage.md` carries one of four labels. A label is never claimed
-higher than the work performed.
-
-| Label | Meaning |
-|---|---|
-| **S** | static reading of the pinned source (engine or plugin) |
-| **N** | direct execution of the pinned native engine (through its C API, or the rPSTool bridge compared with it) |
-| **E** | the plugin's Python analysis classes executed outside QGIS against the pinned engine, compared with rPSTool |
-| **Q** | a real run inside QGIS |
-
-**No Q-level comparison exists.** All E-level evidence runs the plugin's Python
-code outside QGIS; it does not establish that a QGIS installation produces the
-same numbers, nor that the QGIS user interface passes the same settings. The
-manual procedure for such a comparison is in
-`tools/validation/qgis-comparison/` in the repository.
-
-Recorded E-level results (from `docs/pst-coverage.md`; this vignette does not
-recompute them):
-
-* Angular Integration, row 1.6: E, 598 of 598 mappable result columns identical.
-* Attraction Reach, row 1.8: E and N, 61 of 63 comparisons bit-identical, one
-  differing by 1.2e-7 (recorded as thread noise) and one an intended default
-  difference.
-* Most other rows in section 1 of that file (network integration, reach,
-  betweenness, angular choice, attraction distance, OD betweenness, segment-map
-  and junction construction, graph services) are labelled E without a
-  recorded count.
-
-Consequently this vignette does not claim complete numerical equivalence with
-PST for QGIS. The statements below mean "the same engine is called with
-equivalent arguments", checked at the levels above and no higher. Results are
-compared as single-precision values, because the engine computes in `float`.
-Values the plugin derives on the Python side (for example mean depth or area
-unit conversion) are not engine outputs.
+rPSTool calls the same pinned engine as PST for QGIS. The inputs and defaults of the plugin were read from its source, and the
+plugin's Python analysis classes were run outside QGIS against the engine and compared with rPSTool for the analyses listed in section 4.
+Results have not been compared with real runs inside QGIS; the manual procedure is in
+[`tools/validation/qgis-comparison/`](https://github.com/kimonkrenz/rPSTool/tree/main/tools/validation/qgis-comparison).
+No complete numerical equivalence with PST for QGIS is claimed: the statements below mean that the same engine is called with equivalent
+arguments. Results are compared as single-precision values, because the engine computes in `float`. Values the plugin derives on the
+Python side (for example mean depth or area unit conversion) are not engine outputs.
 
 ## 3. Graph families
 
@@ -120,87 +89,64 @@ network_integration(g, radius = analysis_radius(steps = 2))
 
 ## 4. Capability map
 
-The table separates four questions: does the pinned engine implement it, does
-PST for QGIS offer it, does rPSTool expose it, and what is the evidence. The
-last column cites the row in `docs/pst-coverage.md`. "Native" means the
-implementation reads and acts on the function; a header, enum value or
-descriptor field alone is not treated as evidence.
+The tables show which analyses PST for QGIS offers, which rPSTool exposes, and where they differ.
 
 ### 4.1 Available in both PST for QGIS and rPSTool
 
-| Analysis | rPSTool | Evidence (row) | Differences and limits |
-|---|---|---|---|
-| Network Integration | `network_integration()` | E, N (1.1) | Like the QGIS dialog and its Python code, rPSTool accepts only a steps radius (or none); other radius limits are rejected before the native call (2.2). rPSTool returns `node_count` and `total_depth`; the plugin's mean-depth column is a Python-side value. |
-| Network Integration, junction scores | `network_integration(junctions = TRUE)` | E (1.2) | The corresponding plugin feature is recorded in the coverage table as failing in QGIS (undefined variable). |
-| Reach | `network_reach()` | E (1.3) | Native area in squared coordinate units; the QGIS area-unit option is a Python rescaling. Supplied origin points are accepted. |
-| Segment Betweenness | `network_betweenness()` | E (1.4) | Unnormalised and standard-normalised results are the common subset (see 4.2 for the rest). |
-| Attraction Betweenness | `network_betweenness(attraction_points = )` | E (1.5) | |
-| Angular Integration | `angular_integration()` | E (1.6; 598/598 columns) | See section 6 for normalisation. |
-| Angular Choice | `angular_choice()` | E (1.7) | See section 6 for angle settings and normalisation. |
-| Attraction Reach | `attraction_reach()` | E, N (1.8) | Default decay differs (section 7). |
-| Attraction Distance | `attraction_distance()` | E (1.9) | |
-| OD Betweenness | `od_betweenness()` | E (1.10) | |
-| Create Segment Map | `create_segment_map()` | E (1.11) | Different default for `extrude` (section 7). |
-| Create Junctions | `create_junctions()` | E (1.12) | |
-| Compare Results (normalised mode) | `compare_line_results()`, `raster_data()`, `raster_to_polygons()` | E, N (1.13) | |
-| Graph services (axial and segment graph, line lengths, crossing coordinates) | `axial_graph()`, `segment_graph()`, `axial_line_lengths()`, `axial_crossing_coords()` | E (1.14) | |
+| Analysis | rPSTool | Differences and limits |
+|---|---|---|
+| Network Integration | `network_integration()` | Like the QGIS dialog, rPSTool accepts only a steps radius (or none); other radius limits are rejected before the native call. rPSTool returns the node count and total depth; the plugin's mean-depth column is a Python-side value. |
+| Network Integration, junction scores | `network_integration(junctions = TRUE)` | The plugin's code for this feature references undefined names, so it fails in QGIS (from the plugin source; not run in QGIS). |
+| Reach | `network_reach()` | Native area in squared coordinate units; the QGIS area-unit option is a Python rescaling. Supplied origin points are accepted. |
+| Segment Betweenness | `network_betweenness()` | Unnormalised and standard-normalised results are the common subset (see 4.2 for the rest). |
+| Attraction Betweenness | `network_betweenness(attraction_points = )` | |
+| Angular Integration | `angular_integration()` | See section 6 for normalisation. |
+| Angular Choice | `angular_choice()` | See section 6 for angle settings and normalisation. |
+| Attraction Reach | `attraction_reach()` | Default decay differs (section 7). |
+| Attraction Distance | `attraction_distance()` | |
+| OD Betweenness | `od_betweenness()` | |
+| Create Segment Map | `create_segment_map()` | Different default for `extrude` (section 7). |
+| Create Junctions | `create_junctions()` | |
+| Compare Results (normalised mode) | `compare_line_results()`, `raster_data()`, `raster_to_polygons()` | |
+| Graph services (axial and segment graph, line lengths, crossing coordinates) | `axial_graph()`, `segment_graph()`, `axial_line_lengths()`, `axial_crossing_coords()` | |
 
 ### 4.2 Provided by the engine and exposed by rPSTool, restricted or not offered in PST for QGIS
 
-These rows correspond to category 2 of `docs/pst-coverage.md`. rPSTool labels
-them as native extensions beyond QGIS. The evidence for them is N or E as
-shown; it is not a comparison with QGIS, because QGIS does not offer them.
-
-| Capability | How PST for QGIS restricts it (S) | Evidence (row) |
-|---|---|---|
-| Several radius limits in one run (Reach, Network and Attraction Betweenness, OD Betweenness, Attraction Reach) | the plugin splits the ticked radius types into separate runs | N, E (2.1) |
-| Walking, straight, angular or axmeter radius for Network Integration | steps radius only; rPSTool follows this and rejects other radii | N (2.2) |
-| Network Betweenness with angular distance | the wizard offers walking, steps and axmeter | N (2.3) |
-| Freeman and syntax normalisation of Segment Betweenness | the exports are never called by the plugin | N (2.4) |
-| Unrestricted Reach and Betweenness (empty `analysis_radius()`) | with no limit ticked nothing is computed | E (2.5) |
-| OD Betweenness with a `steps` radius | the wizard offers straight, walking and angular radii | N (2.6) |
-| Diagnostic outputs (`node_count`, `total_depth`, `total_depth_weight`, `total_weight`) always returned | written only for the options a user ticks | N, E (2.7, 2.13) |
-| Attraction Distance destination indices | read internally, never written | E (2.8) |
-| Segment Grouping and Segment Group Integration | menu entries appear unreachable (S only; not run in QGIS) | E (2.9) |
-| Isovist (context, field of view, direction, perimeter, visible objects, area) | wizard commented out and map tools disabled in the plugin (S) | E, N (2.10) |
-| Compare Results in relative-percent mode | the plugin hard-codes the normalised mode | N (2.11) |
-| Graph-retained points and polygon point groups as origins and OD destinations, indexed line input, unlinks on graph and junction creation | QGIS builds points per analysis | E (2.12) |
+| Capability | How PST for QGIS restricts it |
+|---|---|
+| Several radius limits in one run (Reach, Network and Attraction Betweenness, OD Betweenness, Attraction Reach) | the plugin splits the ticked radius types into separate runs |
+| Walking, straight, angular or axmeter radius for Network Integration | steps radius only; rPSTool follows this and rejects other radii |
+| Network Betweenness with angular distance | the wizard offers walking, steps and axmeter |
+| Freeman and syntax normalisation of Segment Betweenness | never called by the plugin |
+| Unrestricted Reach and Betweenness (empty `analysis_radius()`) | with no limit ticked nothing is computed |
+| OD Betweenness with a `steps` radius | the wizard offers straight, walking and angular radii |
+| Diagnostic outputs (node count, total depth, total depth weight, total weight) always returned | written only for the options a user ticks |
+| Attraction Distance destination indices | read internally, never written |
+| Segment Grouping and Segment Group Integration | not reachable from the plugin menus (from the plugin source; not run in QGIS) |
+| Isovist (context, field of view, direction, perimeter, visible objects, area) | wizard commented out and map tools disabled in the plugin |
+| Compare Results in relative-percent mode | the plugin hard-codes the normalised mode |
+| Graph-retained points and polygon point groups as origins and OD destinations, indexed line input, unlinks on graph and junction creation | QGIS builds points per analysis |
 
 Multi-radius and multi-normalisation calls (section 8) are a convenience of
 rPSTool for the two angular analyses: each radius runs the engine once.
 
 ### 4.3 Not supported
 
-Only items recorded in section 3 of `docs/pst-coverage.md` are listed; the
-evidence is the one recorded there.
-
-| Item | Why it is not supported (evidence) | Behaviour of rPSTool |
+| Item | Why it is not supported | Behaviour of rPSTool |
 |---|---|---|
-| Fast Segment Betweenness (the plugin's "Angular Betweenness") | experimental engine routine; its header, implementation and upstream tests disagree (S, N; row 3.1) | not exposed |
-| Visual Connectivity | the engine function validates its descriptor and returns without computing (S; row 3.2) | not exposed |
-| Deprecated plural `PSTACalculateIsovists` | declaration and implementation are commented out (S; row 3.3) | not exposed |
-| `axmeter` radius in Angular Integration and Choice | the engine's angular radius setup reads straight, walking, angular and steps only (S, `AngularChoiceAlgo.cpp:449-452`); the plugin result with `axmeter = 20` equals the unrestricted result (E; row 3.4) | rejected with an error (`src/pst-graph.cpp:195-196`) |
-| `axmeter` radius in OD Betweenness | the engine implementation never reads it (S, `ODBetweenness.cpp`; N: a call with `axmeter = 0.001` is identical to no radius; row 3.10) | rejected with an error |
-| `axmeter` in Attraction Distance | not in the engine's supported mask (S; E: the QGIS option always fails; row 3.5) | rejected |
-| Segment Group Integration with straight, angular or axmeter radii | only walking and steps are tested (S; row 3.8) | rejected |
-| Segment Betweenness with `straight` or `weights` distance | the engine's whitelist is walking, steps, angular, axmeter (S; row 3.9) | rejected |
-| Attraction Distance, straight-only, point-group origins | group outputs are never written on that path (S; E: QGIS shows junk values; row 3.6) | rejected |
-| `m_ScoreAccumulationMode` in Attraction Reach | marked deprecated and never read in the engine source (S; row 3.7) | not exposed |
-| Segment graphs with more than 32 segments at one coordinate | the engine only asserts the limit (S; E: wrong node count; row 3.11) | rejected |
-| Segment-map detail reduction that would close a segment onto its own start | conservative guard (`docs/compatibility/network-construction.md`; row 3.12) | rejected |
-| Split Polylines | uses only QGIS geometry code, not a PST engine function (S; row 3.13) | not applicable |
+| Fast Segment Betweenness (the plugin's "Angular Betweenness") | experimental engine routine whose header, implementation and upstream tests disagree; its results differ from Angular Choice | not exposed |
+| Visual Connectivity | the engine function validates its descriptor and returns without computing | not exposed |
+| `axmeter` radius in Angular Integration and Choice | the engine's angular radius setup does not read it; the plugin result with an axmeter radius equals the unrestricted result | rejected with an error |
+| `axmeter` radius in OD Betweenness | the engine never reads it | rejected with an error |
+| `axmeter` in Attraction Distance | not supported by the engine | rejected |
+| Segment Group Integration with straight, angular or axmeter radii | only walking and steps are supported | rejected |
+| Segment Betweenness with `straight` or `weights` distance | the engine accepts walking, steps, angular and axmeter only | rejected |
+| Attraction Distance, straight-only, point-group origins | PST never writes the group outputs on that path | rejected |
+| Segment graphs with more than 32 segments at one coordinate | the engine does not support them and returns a wrong node count | rejected |
+| Segment-map detail reduction that would close a segment onto its own start | PST would crash or return a zero-length self-loop (`docs/compatibility/network-construction.md`) | rejected |
+| Split Polylines | uses only QGIS geometry code, not a PST engine function | not applicable |
 
-Fast Segment Betweenness is the one case where the plugin offers an analysis
-that rPSTool does not. The upstream routine is experimental; "experimental"
-describes its maturity and limits, not an approximation of Angular Choice. On a
-60-segment network its numbers differed from Angular Choice even without a
-radius (N; row 3.1). This vignette gives no example call for it.
-
-rPSTool uses PST's native progress reports internally for its console progress line,
-for the analyses and construction functions listed in `docs/progress.md`. It offers
-no public API for user-defined progress callbacks, does not support cancellation
-through the progress callback, and does not bind the native log callback (see the end
-of `docs/pst-coverage.md`).
+There is no API for user-defined progress callbacks, for cancellation, or for PST's native log callback; see `docs/progress.md`.
 
 ## 5. Radius semantics
 
@@ -225,7 +171,7 @@ of `docs/pst-coverage.md`).
 * **`axmeter`.** Accepted by the axial analyses that use it; rejected by the
   angular analyses and OD Betweenness (section 4.3).
 
-How PST for QGIS combines limits depends on the analysis (S, from
+How PST for QGIS combines limits depends on the analysis (see
 `docs/compatibility/qgis-differences.md`). It runs one analysis per ticked
 limit type for Reach, Network Betweenness, Attraction Betweenness, OD
 Betweenness, Segment Group Integration and Attraction Reach. It does not split
@@ -258,14 +204,14 @@ Network Betweenness offers `"none"`, `"standard"`, `"freeman"` and `"syntax"`.
 
 In its length-weighted Angular Choice run the plugin divides by the
 length-weighted total depth for the syntax (NACH) normalisation, and in its
-unweighted run by the plain total depth (S, `angularchoiceanalysis.py` lines
-128 and 177, recorded in `docs/compatibility/qgis-differences.md`). rPSTool makes
-the same pairing and passes `total_depth_weight` when `weigh_by_length = TRUE`
-and `total_depth` otherwise.
+unweighted run by the plain total depth (see
+`docs/compatibility/qgis-differences.md`). rPSTool makes
+the same pairing and passes the length-weighted total depth (`tdw_..._wl`) when
+`weigh_by_length = TRUE` and the total depth (`td_...`) otherwise.
 
 The chunk below is a **check**, not how rPSTool computes the values. The engine's
 exported syntax normaliser for Angular Choice is
-`log10(choice + 1) / log10(2 + TD)` (S, `AngularChoice.cpp:67-72`), and the
+`log10(choice + 1) / log10(2 + TD)`, and the
 code recomputes it in R from the returned columns to confirm the pairing:
 
 ```{r choice-weighted}
@@ -299,11 +245,9 @@ round(rbind(threshold_0 = pick(a0, "^ac_.*_c$"), threshold_15 = pick(a15, "^ac_.
 
 rPSTool applies explicitly supplied angle settings in both the weighted and the
 unweighted run. In the pinned plugin the unweighted Angular Choice branch does
-not forward them to the engine (S, `angularchoiceanalysis.py` lines 154-161),
-so the engine defaults (threshold 0, precision 1) apply there. The maintainer
-decided that rPSTool does not copy this. Evidence: N, a threshold of 10 changed
-83 of 91 values (`docs/pst-coverage.md`, differences table). To obtain the
-number that plugin run would have produced, pass the defaults explicitly:
+not forward them to the engine, so the engine defaults (threshold 0,
+precision 1) apply there; rPSTool does not copy this. To obtain the number
+that plugin run would have produced, pass the defaults explicitly:
 
 ```{r qgis-unweighted}
 plugin_like <- angular_choice(bent, weigh_by_length = FALSE,
@@ -316,8 +260,8 @@ identical(plugin_like, angular_choice(bent, weigh_by_length = FALSE,
 
 ## 7. Intentional differences from PST for QGIS
 
-The authoritative list is `docs/compatibility/qgis-differences.md`. The main
-items (S unless noted; nothing here was observed in a real QGIS run):
+Main differences from PST for QGIS; the full list is in
+`docs/compatibility/qgis-differences.md`:
 
 * **`extrude` in Create Segment Map.** The plugin always passes the snap
   distance; the engine default, and rPSTool's, is 0. Pass `extrude = snap` to
@@ -331,7 +275,7 @@ items (S unless noted; nothing here was observed in a real QGIS run):
   unchanged.
 * **Unweighted Angular Choice angle settings**, discussed in section 6.
 * **Polygon attractions with holes.** The plugin reads only the outer ring;
-  rPSTool keeps all rings (N: distance 1 versus 3 in the recorded test).
+  rPSTool keeps all rings.
 * **Reach area** and **mean depth** are Python-side values in the plugin and
   are not produced; they are one-line computations on returned columns.
 * **Validation.** Non-finite numbers, invalid angle precision, unsupported radius
@@ -373,7 +317,7 @@ decay_check
 ### Geometry
 
 Compare results only after confirming that the same geometry is submitted to
-PST. The following is documented in `docs/spatial-io/sf-adapters.md` (S): the
+PST. The following is documented in `docs/spatial-io/sf-adapters.md`: the
 adapters for axial and segment line input, graph points and attraction points
 reject multipart geometry; polygon point groups accept POLYGON and reject
 MULTIPOLYGON. `create_segment_map()` is different: with sf input, each part of
@@ -404,8 +348,7 @@ names(multi)
 For large networks, a graph can be built directly from a GeoParquet or
 FlatGeobuf path and results written straight to a Parquet file without
 building R vectors. This needs the optional packages `arrow` (>= 25.0.0, the
-version declared in `DESCRIPTION`) and, for the file input, `sf`. Windows
-support for file output is implemented but its validation is pending. The
+version declared in `DESCRIPTION`) and, for the file input, `sf`. The
 chunk runs only where a suitable `arrow` is installed:
 
 ```{r file, eval = requireNamespace("arrow", quietly = TRUE) && utils::packageVersion("arrow") >= "25.0.0"}
@@ -415,15 +358,12 @@ class(res)
 unlink(out)
 ```
 
-No claim is made here about speed relative to QGIS; no benchmark has been run.
-
 ## 9. Other limits
 
 * The engine is an in-memory graph engine. Very deep Angular Choice
-  computations on some platforms can exhaust a thread stack; see
-  `?angular_choice`.
-* Upstream behaviour is preserved rather than corrected where it is not a
-  clear defect: for example, finite straight-line Reach applies decay at the
-  radius (`docs/compatibility/attractions.md`).
+  computations on some platforms can exhaust a thread stack and crash the R
+  session; see `?angular_choice`.
+* Finite straight-radius Reach applies decay at the radius, as PST does
+  (`docs/compatibility/attractions.md`).
 * Results are data frames in native row order. Analytical columns are the
   engine's single-precision values widened to double.

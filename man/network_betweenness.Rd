@@ -35,13 +35,12 @@ underflow to zero). Supply one per line, or one per attraction point when \code{
 see \link{pst_result_file}. In a result file, the \code{NA} values described below are stored as nulls.}
 }
 \value{
-A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}, or \code{at_...} with
-\code{attraction_points}), integer node count (\code{nc_...}) and total depth (\code{td_...}), plus the normalised score
+A data frame in line order with \code{line_id}, the raw betweenness (\verb{nb_<d>_<radius>_n}), integer node count (\code{nc_...}) and total depth (\code{td_...}), plus the normalised score
 (\code{..._s}, \code{..._f} or \code{..._y}) when requested; see \link{result_column_names}. The raw score and \code{"standard"}
-normalisation are never \code{NA}. The node count and total depth are \code{NA} for origins PST skipped in weighted calls,
+normalisation are never \code{NA}. With \code{attraction_points} the columns are \code{at_..._n}, \code{anc_...} and \code{atd_...} instead. The node count and total depth are \code{NA} for origins PST skipped in weighted calls,
 and the normalised score is \code{NA} for those rows with \code{"freeman"} or \code{"syntax"}. \code{NaN} and \code{Inf} values written by PST are returned
 unchanged. With \code{output_file} or \code{spatial_output_file} the results are written to a file and an invisible
-\link{pst_result_file} descriptor is returned (\code{line_id} and \code{node_count} are stored as int32, the other
+\link{pst_result_file} descriptor is returned (\code{line_id} and the node count are stored as int32, the other
 columns as float32).
 }
 \description{
@@ -57,14 +56,14 @@ is one unit); other depths use the selected distance.
 Without \code{attraction_points}, supply one weight per line. With attraction points, PST assigns each point to
 its closest line and accumulates the weights there; supply one weight per point (omitted weights mean unit
 weights). Weighted scores include PST's endpoint and self contributions, so unit weights need not equal
-the unweighted scores. \code{node_count} includes the origin.
+the unweighted scores. The node count (\code{nc_...}, or \code{anc_...} with \code{attraction_points}) includes the origin.
 
-\strong{Normalisation.} The raw score \code{betweenness} is always returned. \code{normalization} adds PST's
-\code{"standard"}, \code{"freeman"} (Freeman betweenness) or \code{"syntax"} normalisation as the column
-\code{normalized}.
+\strong{Normalisation.} The raw score (\code{nb_..._n}, or \code{at_..._n} with \code{attraction_points}) is always returned.
+\code{normalization} adds PST's \code{"standard"}, \code{"freeman"} (Freeman betweenness) or \code{"syntax"} normalisation as a
+further column (\code{..._s}, \code{..._f} or \code{..._y}).
 
 \strong{Skipped origins.} PST skips origins whose effective line weight is not positive and writes neither their
-\code{node_count} nor their \code{total_depth}. rPSTool reports these as \code{NA}, with \code{NA} Freeman or syntax
+node count (\code{nc_...}, or \code{anc_...} with \code{attraction_points}) nor their total depth (\code{td_...}, or \code{atd_...}). rPSTool reports these as \code{NA}, with \code{NA} Freeman or syntax
 normalised values for those rows. Standard normalisation still uses all genuine raw scores.
 
 \strong{Attraction points.} Points may be a matrix or an XY POINT \code{sf}/\code{sfc} object (features used in order). Empty, non-finite,
@@ -78,15 +77,9 @@ than \code{false}), at most two are used. Invalid explicit caps are rejected bef
 }
 \section{Naming custom weights}{
 
-Custom weights are named in the result columns (\code{..._wpopulation_...}) after the R expression you supply, so no extra
-argument is needed: an object name (\code{weights = population}) or a literal data-frame column (\code{weights = data$population}
-or \code{weights = data[["population"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
-no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
-run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
-(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
-metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
-are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
-is a label only: it does not check that the same name always means the same values.
+Custom weights are named in the result columns (\code{..._wpopulation_...}) after the R object or literal data-frame column you
+pass (\code{weights = population}, \code{weights = data$population}). Anonymous vectors and calculations are an error; assign
+them to a named object first. See \link{result_column_names} for the naming rules.
 }
 
 \examples{
