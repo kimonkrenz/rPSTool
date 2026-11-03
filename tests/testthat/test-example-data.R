@@ -7,22 +7,41 @@ extdata <- function() system.file("extdata", "hillier_iida", package = "rPSTool"
 # transformed geometry), and saving with compress = "xz", version = 2 (readable by every supported R; objects verified identical).
 # The fingerprints of the axial, unlinks and gates components below (computed on the file as first supplied) are unchanged.
 supplied_md5 <- "b889d36955c7892db1c773da86471ee8"
-# Fingerprint of an sf component: MD5 of its attribute table (dput, 17 digits, NA kept), column names, CRS WKT, geometry type and the
-# well-known binary of every geometry.
+# Fingerprint of an sf component: MD5 of a canonical byte stream holding the column names, the attribute table, the CRS WKT,
+# the geometry type and the well-known binary of every geometry. The attribute values are written as bytes, never as text:
+# integers as little-endian 32-bit, doubles as the little-endian IEEE 754 bytes (exact, so one changed bit is detected),
+# strings as UTF-8, with an explicit flag per value for NA (NA payloads are not compared). A text rendering such as dput()
+# depends on the platform's floating-point formatting and is not a stable fingerprint of the values.
+canonical_column <- function(values) {
+  missing <- is.na(values)
+  flags <- writeBin(as.integer(missing), raw(), size = 4L, endian = "little")
+  if (is.double(values)) {
+    nan <- is.nan(values)
+    values[missing] <- 0
+    c(charToRaw("double"), flags, writeBin(as.integer(nan), raw(), size = 4L, endian = "little"),
+      writeBin(values, raw(), size = 8L, endian = "little"))
+  } else if (is.integer(values)) {
+    values[missing] <- 0L
+    c(charToRaw("integer"), flags, writeBin(values, raw(), size = 4L, endian = "little"))
+  } else if (is.character(values)) {
+    bytes <- lapply(enc2utf8(values[!missing]), charToRaw)
+    c(charToRaw("character"), flags, unlist(lapply(bytes, function(b)
+      c(writeBin(length(b), raw(), size = 4L, endian = "little"), b))))
+  } else stop("unsupported attribute type: ", class(values)[[1L]])
+}
 fingerprint <- function(x) {
   file <- tempfile()
   on.exit(unlink(file))
   table <- sf::st_drop_geometry(x)
-  text <- c(utils::capture.output(dput(as.list(table), control = c("keepNA", "keepInteger", "digits17"))),
-            names(table), sf::st_crs(x)$wkt, as.character(sf::st_geometry_type(x, by_geometry = FALSE)))
   connection <- file(file, "wb")
-  writeLines(text, connection, useBytes = TRUE)
+  writeLines(c(names(table), sf::st_crs(x)$wkt, as.character(sf::st_geometry_type(x, by_geometry = FALSE))), connection, useBytes = TRUE)
+  for (column in table) writeBin(canonical_column(column), connection)
   for (geometry in sf::st_as_binary(sf::st_geometry(x))) writeBin(geometry, connection)
   close(connection)
   unname(tools::md5sum(file))
 }
-component_fingerprints <- c(axial = "0bceafe50acbd1436934a00a008ca949", unlinks = "e741eb7f1e74b67db234858a68ff1373",
-                            gates = "695947c9176a8b3b8b3a81820ed6d7f1")
+component_fingerprints <- c(axial = "ab7fb65747b5daa068a5af29a5e27b95", unlinks = "e9de3cd6cc17c467a372d3ea1cca02d5",
+                            gates = "03e31b3659d2be9b94d0ea39d2918e6c")
 
 test_that("the installed package carries exactly the approved RDS file and no other data files", {
   expect_true(nzchar(extdata()))
@@ -59,6 +78,28 @@ test_that("load_example_data takes no arguments and returns the Barnsbury data w
 
 test_that("the axial, unlinks and gates components are identical to the files as first supplied", {
   expect_identical(vapply(load_example_data()[c("axial", "unlinks", "gates")], fingerprint, ""), component_fingerprints)
+})
+
+test_that("the fingerprint detects any change to attribute values, geometry, names and NA positions", {
+  data <- load_example_data()
+  base <- vapply(data[c("axial", "unlinks", "gates")], fingerprint, "")
+  expect_identical(base, component_fingerprints)
+  expect_identical(fingerprint(unserialize(serialize(data$axial, NULL))), base[["axial"]])   # a copy is unchanged
+  changed <- function(x) !identical(fingerprint(x), fingerprint(data[[attr(x, "component")]]))
+  mutate <- function(component, edit) { x <- data[[component]]; x <- edit(x); attr(x, "component") <- component; x }
+  nudge <- function(v) { v[[1L]] <- v[[1L]] + abs(v[[1L]]) * .Machine$double.eps * 2; v }   # a one-ulp-scale change in a double
+  expect_true(changed(mutate("axial", function(x) { x$source_control <- nudge(x$source_control); x })))
+  expect_true(changed(mutate("axial", function(x) { x$source_integration[10L] <- x$source_integration[10L] + 1e-9; x })))
+  expect_true(changed(mutate("axial", function(x) { x$axial_id[3L] <- x$axial_id[3L] + 1L; x })))
+  expect_true(changed(mutate("gates", function(x) { x$vehicles_per_hour[1L] <- NA_real_; x })))                # value -> NA
+  first_na <- which(is.na(data$gates$vehicles_per_hour))[[1L]]
+  expect_true(changed(mutate("gates", function(x) { x$vehicles_per_hour[first_na] <- 0; x })))                 # NA -> value
+  expect_true(changed(mutate("gates", function(x) { x$land_use[1L] <- paste0(x$land_use[1L], "x"); x })))
+  expect_true(changed(mutate("gates", function(x) { x$effective_road_width_m <- nudge(x$effective_road_width_m); x })))
+  expect_true(changed(mutate("unlinks", function(x) { x$axial_id_1[1L] <- x$axial_id_1[1L] + 1L; x })))
+  expect_true(changed(mutate("axial", function(x) { names(x)[2L] <- "renamed"; x })))
+  expect_true(changed(mutate("axial", function(x) { sf::st_geometry(x)[[1L]] <- sf::st_geometry(x)[[1L]] + c(1e-6, 0); x })))
+  expect_true(changed(mutate("axial", function(x) x[rev(seq_len(nrow(x))), ])))                                # row order
 })
 
 test_that("values, identifiers, observations, NA values and gate-42 assignments are preserved as supplied", {
