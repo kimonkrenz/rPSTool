@@ -4,9 +4,6 @@ rs_native <- function(name, ...) .Call(get(paste0("C_rpst_", name), asNamespace(
 rs_counters <- function() rs_native("result_counters")
 # Counters after collecting garbage, so objects left over from earlier tests cannot be released inside a later test.
 rs_baseline <- function() { invisible(gc()); invisible(gc()); rs_counters() }
-rs_have_arrow <- function() {
-  requireNamespace("arrow", quietly = TRUE) && utils::packageVersion("arrow") >= "25.0.0"
-}
 
 # float32 bit patterns -> raw vector (little-endian host assumed by the whole package)
 rs_bits <- function(bits) {

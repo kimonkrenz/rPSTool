@@ -161,7 +161,10 @@ test_that("weight names are normalised automatically", {
   expect_identical(bet_name(quote(Population), Population = c(1, 2)), "at_w_rw800_wpopulation_n")
   expect_identical(bet_name(as.name("Population (%)"), `Population (%)` = c(1, 2)), "at_w_rw800_wpopulation_n")
   expect_identical(bet_name(quote(wjobs_2021), wjobs_2021 = c(1, 2)), "at_w_rw800_wwjobs_2021_n")   # the prefix is always added
-  accented <- paste0("caf", intToUtf8(233L), " x")   # non-ASCII letters are not in [a-z0-9_]
+  # Non-ASCII letters are not in [a-z0-9_]. enc2native() gives the string as this session represents it (the
+  # accented letter in a UTF-8 session, R's "<U+00E9>" escape in a non-UTF-8 one), which is what a user's symbol
+  # would be; it avoids R's own as.name()/environment warning about an unrepresentable character.
+  accented <- enc2native(paste0("caf", intToUtf8(233L), " x"))
   expect_identical(bet_name(as.name(accented), env = list2env(stats::setNames(list(c(1, 2)), accented))), "at_w_rw800_wcaf_x_n")
   expect_identical(bet_name(quote(a.b.c), a.b.c = c(1, 2)), "at_w_rw800_wa_b_c_n")
   # only a name with no letter or digit left is an error, and `l` would read as length weighting

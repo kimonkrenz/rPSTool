@@ -165,7 +165,7 @@ test_that("a result column with a source column's name needs overwrite = TRUE an
     r1 <- so_read(out1, format)
     expect_identical(names(r1$attrs), c(names(attrs), "td_a_rs2"))        # in-place replacement, one appended, no duplicates
     mem <- rPSTool::angular_choice(g, radius = analysis_radius(steps = 2))
-    expect_identical(unname(r1$attrs$ac_a_rs2_n), mem$ac_a_rs2_n); expect_identical(unname(r1$attrs$nc_a_rs2), mem$nc_a_rs2)
+    expect_identical(unname(col_named(r1$attrs, "ac_a_rs2_n")), col_named(mem, "ac_a_rs2_n")); expect_identical(unname(col_named(r1$attrs, "nc_a_rs2")), col_named(mem, "nc_a_rs2"))
     expect_identical(r1$attrs$tail, attrs$tail); expect_identical(r1$attrs$osm_id, attrs$osm_id)   # unrelated columns untouched
     expect_identical(so_md5(path), before)                                  # the source file is byte-for-byte unchanged
     expect_identical(r1$wkb, so_wkb_of(path))                               # geometry and order preserved
@@ -588,8 +588,8 @@ test_that("FlatGeobuf provenance always describes the latest calculation; unrela
   expect_identical(so_read(o3, "flatgeobuf")$names,
                    c(names(so_read(src, "flatgeobuf")$attrs), "ac_a_rs2_n", "nc_a_rs2", "td_a_rs2",
                      "ai_a_rs5_t", "nc_a_rs5", "td_a_rs5", "ac_a_rs9_n", "nc_a_rs9", "td_a_rs9"))
-  expect_identical(so_read(o3, "flatgeobuf")$attrs$ac_a_rs9_n,
-                   rPSTool::angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9))$ac_a_rs9_n)
+  expect_identical(col_named(so_read(o3, "flatgeobuf")$attrs, "ac_a_rs9_n"),
+                   col_named(rPSTool::angular_choice(segment_graph(o2), radius = analysis_radius(steps = 9)), "ac_a_rs9_n"))
 
   # an rPSTool object that ALSO holds an unrelated pair: the unrelated pair survives byte for byte, rPSTool's pairs are refreshed
   patch <- function(from, to, pattern, replacement) {

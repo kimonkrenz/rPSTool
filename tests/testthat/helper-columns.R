@@ -29,8 +29,10 @@ expect_columns <- function(x, patterns) {
 }
 
 # Column values without names, for comparing results whose column names legitimately
-# differ (for example because one call names a weight and the other does not).
-unnamed <- function(x) unname(as.list(x))
+# differ (for example because one call names a weight and the other does not). Only the
+# column names are dropped: class, row names, column order, column types and values stay
+# part of the comparison.
+unnamed <- function(x) list(class = class(x), row.names = attr(x, "row.names"), columns = unname(as.list(x)))
 
 # One column of a multi-radius / multi-normalisation result, located through the
 # result's own manifest (role, 1-based radius index, optional normalisation).
@@ -38,9 +40,23 @@ unnamed <- function(x) unname(as.list(x))
 # comparison vacuously pass (NULL is identical to NULL).
 mcol <- function(x, role, radius = 1L, normalization = NA_character_) {
   m <- attr(x, "rpst_manifest")$columns
-  testthat::expect_false(is.null(m), info = "result carries no rpst_manifest")
+  if (is.null(m)) stop("result carries no rpst_manifest", call. = FALSE)
   want_norm <- if (is.na(normalization)) is.na(m$normalization) else (!is.na(m$normalization) & m$normalization %in% normalization)
   hit <- which(m$role == role & m$radius == radius & want_norm)
   if (length(hit) != 1L) stop("expected exactly one '", role, "' column for radius ", radius, ", found ", length(hit), call. = FALSE)
-  x[[m$name[[hit]]]]
+  name <- m$name[[hit]]
+  # The manifest and the names come from the same implementation, so cross-check them independently:
+  # the name must be a real column of the result, and its prefix must belong to the requested role.
+  if (sum(names(x) == name) != 1L) stop("manifest names '", name, "', which is not exactly one column of the result", call. = FALSE)
+  prefix <- c(choice = "^ac_", normalized = "^(ac|ai)_", integration = "^ai_", node_count = "^nc_", total_depth = "^td_",
+              total_weight = "^tw_", total_depth_weight = "^tdw_")[[role]]
+  if (is.na(prefix) || !grepl(prefix, name)) stop("manifest column '", name, "' does not look like a '", role, "' column", call. = FALSE)
+  x[[name]]
+}
+
+# The column called exactly `name`; fails if the result has no such column, so a literal column
+# name that is wrong can never turn a comparison into NULL == NULL.
+col_named <- function(x, name) {
+  if (sum(names(x) == name) != 1L) stop("expected exactly one column named '", name, "' in: ", paste(names(x), collapse = ", "), call. = FALSE)
+  x[[name]]
 }

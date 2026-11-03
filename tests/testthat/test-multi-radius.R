@@ -181,7 +181,7 @@ test_that("Zero radii, vector-of-length-one and requested order behave like the 
     expect_identical(mcol(m, "normalized", i, "turner"), pick(ref, re_ac_norm))
   }
   rev_m <- angular_choice(g, analysis_radius(walking = c(3, 8, 0)), normalization = c("standard", "turner"))
-  expect_identical(rev_m$ac_a_rw8_n, m$ac_a_rw8_n)
+  expect_identical(col_named(rev_m, "ac_a_rw8_n"), col_named(m, "ac_a_rw8_n"))
   expect_identical(names(rev_m)[2], "ac_a_rw3_n")
 })
 
@@ -406,7 +406,7 @@ test_that("file-backed multi-radius calls record fixed straight / steps restrict
   h <- mr_graph()
   a <- rPSTool::angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"))
   b <- rPSTool::angular_choice(h, analysis_radius(walking = c(40, 15)), normalization = c("turner", "syntax"), angle_threshold = 60, angle_precision = 9)
-  expect_false(identical(a$td_a_rw40, b$td_a_rw40_at60_ap9))
+  expect_false(identical(col_named(a, "td_a_rw40"), col_named(b, "td_a_rw40_at60_ap9")))
 })
 
 test_that("file output of the multi-result route is available on every platform", {
