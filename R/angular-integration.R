@@ -90,6 +90,7 @@ angular_integration <- function(graph, steps = NULL, radius = NULL,
   cols <- .pst_nm_angular_integration(steps, weigh_by_length, weight_outputs, normalization,
                                       angle_threshold, angle_precision)
   result_names <- .pst_nm_names(cols)   # generated names are validated before any native work
+  .pst_progress_scope(result_names[[1L]])
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
     weights <- .pst_flag(weigh_by_length, "weigh_by_length") || .pst_flag(weight_outputs, "weight_outputs")
     columns <- c("segment_id", result_names)
