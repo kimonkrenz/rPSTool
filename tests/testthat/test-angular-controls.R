@@ -145,8 +145,8 @@ test_that("length-weighted syntax Choice is identical in memory, in Parquet and 
       mem <- angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax")
       depth <- if (weighted) pick(mem, "^tdw_") else pick(mem, "^td_")
       expect_equal(pick(mem, re_ac_norm), log10(pick(mem, re_ac_raw) + 1) / log10(2 + depth), tolerance = 1e-6)
-      # the two depth arrays must differ for weighting to be observable on this network
-      expect_false(isTRUE(all.equal(pick(mem, "^td_"), pick(mem, "^tdw_"))))
+      # the two depth arrays must differ for weighting to be observable on this network (tdw_ exists only when weighted)
+      if (weighted) expect_false(isTRUE(all.equal(pick(mem, "^td_"), pick(mem, "^tdw_"))))
       pq <- file.path(dir, "r.parquet")
       angular_choice(g, radius = analysis_radius(walking = 30), weigh_by_length = weighted, normalization = "syntax",
                          output_file = pq, overwrite = TRUE)
