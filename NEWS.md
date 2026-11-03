@@ -8,7 +8,7 @@ First release.
   `ac_a_rw400_n  [##############------]   70%  Analysis 2/6` (`█`/`░` bar in UTF-8 sessions). The label is the first result column
   of the running analysis, the percentage is PST's own progress for that analysis, and `Analysis k/n` appears only when the
   operation runs several analyses (one per radius). It is on in interactive sessions, off elsewhere, and controlled by the one
-  option `options(rPSTool.progress = TRUE/FALSE)`. See `docs/progress.md`.
+  option `options(rPSTool.progress = TRUE/FALSE)`. See `docs/progress.md`. `create_junctions()` and `create_segment_map()` report PST's native progress the same way.
 
 ## Result column names
 
