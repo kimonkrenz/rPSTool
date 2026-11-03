@@ -114,7 +114,8 @@ The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNO
 * `network_integration()` accepts only step radii.
 * Coordinates must be projected. PST works in single precision around a centre point.
 * The Barnsbury example data are attributed to Hillier and Iida (2005); the coordinates were georeferenced and transformed and are not the original coordinates.
-* The test suite and `R CMD check` passed on Linux, macOS (ARM64) and Windows at the validated commit; results have not been
+* The test suite and `R CMD check` passed on Linux, macOS (ARM64) and Windows at commit `4119f2b`, and on macOS (ARM64) and Windows
+  in a later local run after the output-naming and progress changes (Linux has not been re-run since); results have not been
   compared with real runs of the PST plugin for QGIS.
 
 Report bugs and request features at <https://github.com/kimonkrenz/rPSTool/issues>.

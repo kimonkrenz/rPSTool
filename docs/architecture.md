@@ -92,7 +92,11 @@ Isovist contexts and raster comparisons are the only persistent owners besides g
 ## Threading
 
 PST worker threads never call the R API. The boundary is: R main thread → PST call → C++ workers → workers join → R main
-thread. Progress and cancellation callbacks are not bound; synchronous calls pass null callbacks.
+thread. PST's native progress reports drive the console progress line (`src/pst-progress.cpp`, [progress display](progress.md)) for
+the functions listed there; PST calls the callback on the thread that made the call, which is the R main thread, and the
+callback is installed only while console progress is active. Otherwise, and for functions without progress, descriptors keep
+null callbacks. There is no public API for user-defined progress callbacks, cancellation through the callback is not supported,
+and the native log callback is not bound.
 
 The central worker policy (`src/rpst-workers.cpp`, applied to the exposed asynchronous engines through verified build copies)
 resolves the worker count as follows. `RPST_NUM_THREADS` is an explicit positive integer cap; an invalid value fails before

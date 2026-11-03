@@ -82,6 +82,7 @@ intended scope of the allowance. No other suite has any new tolerance.
 
 Verified on Linux (Ubuntu 24.04, GCC 13.3). The same policy was exercised on native macOS
 (Apple clang, arm64) before adoption in the form of the three experiments recorded in the decision
-log. **Windows/Rtools has not been validated**: the manual cross-platform workflow could not run
+log. **Windows/Rtools had not been validated when this was written**: the manual cross-platform workflow could not run
 because of runner capacity, and the `static_assert` convention is expected to fail closed there if
-the toolchain resolves differently.
+the toolchain resolves differently. The full development suite and `R CMD check` have since passed on Windows x86-64
+(`4119f2b` on GitHub Actions; later a local run on the tree of `96a1547`, see the [release checklist](../release-checklist.md)).

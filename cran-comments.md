@@ -18,14 +18,18 @@ test suite (`RPST_FULL_TESTS=true`, with `arrow` 26.0.0 and `sf` 1.1.3):
   platforms; this has not been independently explained. Four tests that need POSIX-only facilities are skipped on Windows by
   design (`tools/ci/windows-test-skips.tsv`).
 
+Latest local development validation (maintainer-run, tree of `96a1547`; the rebase-merged tree `c6c4ed9` was reported identical): macOS ARM64: 161,539 expectations, no failures or skips, `R CMD check` `Status: OK`; Windows x86-64: 161,484 expectations, no failures, four approved skips, `Status: OK`. The exact PST warning policy passed on both and all 121 vendored PST files were verified unchanged. This is not a GitHub Actions run and does not cover Linux or CRAN incoming checks; the figures above for `4119f2b` stay the latest Linux evidence.
+
 *Pending:* win-builder and R-hub, if used. The final tarball is to be rebuilt and re-checked from the frozen release commit.
 
 ## Vignette example awaiting execution
 
 The second example in `vignettes/getting-started.Rmd` (file-backed GeoParquet analysis with `spatial_output_file`) was written after
-the validated commit and has not yet been executed with `arrow` installed; the equivalent FlatGeobuf pipeline was run and
-checked. It is to be executed in the final CRAN validation runs, where `arrow` is available. The chunks are skipped when `arrow`
-(>= 25.0.0), `jsonlite` or `sf` is missing.
+the `4119f2b` validation. The later macOS and Windows runs had `arrow` installed and rebuilt the vignettes, but no log was
+inspected that shows this example's chunks executing, and the vignette has since been edited (its network preparation no longer
+depends on `classInt`). Its execution with `arrow` installed is therefore still unconfirmed; the equivalent FlatGeobuf pipeline
+was run and checked. It is to be confirmed in the final CRAN validation runs. The chunks are skipped when `arrow` (>= 25.0.0),
+`jsonlite` or `sf` is missing.
 
 ## R CMD check results
 

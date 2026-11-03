@@ -49,7 +49,8 @@ squared-distance bounds against the complete graph extent. Weights must fit
 native floats without overflow or nonzero underflow, and match native counts
 rather than mutable R metadata. Modes and radii are validated again natively.
 Outputs are allocated before owning buffers. Exceptions are caught and owners
-unwind before raising an R error; callbacks are null and workers never call R.
+unwind before raising an R error; the progress callback is installed only while console progress is active
+([progress display](../progress.md)) and is otherwise null, and workers never call R.
 
 Verified generated copies initialize an otherwise ignored walking direction flag,
 propagate worker exceptions with `future.get()`, guard signed trace indexing and

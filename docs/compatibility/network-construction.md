@@ -99,8 +99,9 @@ successful copying or any R non-local jump. The registered finalizer is an
 idempotent fallback. C++ exceptions are captured and raised only after owners
 unwind; null results are checked before any field read. No native handle escapes
 and returned R arrays survive input GC, serialization and later graph release.
-Both native utilities run synchronously with null callbacks; no R API call occurs
-inside native algorithm execution or a worker thread.
+Both native utilities run synchronously; their progress callback is installed only
+while console progress is active ([progress display](../progress.md)) and is otherwise
+null. No R API call occurs inside native algorithm execution or a worker thread.
 
 The [oracle generator](../../tools/reference/network-construction/generate-reference.py) verifies
 [153 pinned blobs](../../tools/reference/network-construction/source-blobs.json) against the

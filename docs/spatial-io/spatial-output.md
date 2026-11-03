@@ -3,7 +3,8 @@
 `spatial_output_file` is implemented for the analyses whose result has exactly one row per source feature. It never changes a PST
 algorithm or a numerical result, and `output_file` stays the attribute-only Parquet route ([result files](result-files.md)).
 Spatial output is implemented on POSIX systems and on Windows; the full development test suite and `R CMD check` passed on
-Windows x86-64 at commit `4119f2b`.
+Windows x86-64 at commit `4119f2b` (GitHub Actions) and again in the latest local Windows development run (tree of `96a1547`,
+reported identical to `c6c4ed9`; see the [release checklist](../release-checklist.md)).
 
 ## 1. Public API
 
@@ -150,7 +151,9 @@ coordinate checksum of the source; writing back to the source; GeoPackage/Shapef
 
 Developed and tested on Linux x86-64 (R 4.3.3, GDAL 3.8.4, R `arrow` 25.0.0) and passed the complete local validation on **macOS Apple
 Silicon** (R 4.6.1). Windows: the publication and identity layer is implemented (`src/pst-fs-core.h`, see
-[result files](result-files.md) §5 item 6) and the spatial-output tests are enabled on Windows, but **the implementation has not been
-validated on a Windows machine**; the procedure is `tools/validation/windows/README.md`. Only the two `ulimit -f` tests are skipped
+[result files](result-files.md) §5 item 6) and the spatial-output tests are enabled on Windows. They passed in the full Windows development suite at `4119f2b` (GitHub
+Actions) and in the latest local Windows run (161,484 expectations, four approved skips, `R CMD check` `Status: OK`; tree of
+`96a1547`). Not yet done on Windows: `R CMD check --as-cran` with CRAN incoming checks and a check of the frozen release tarball.
+The manual procedure is still in `tools/validation/windows/README.md`. Only the two `ulimit -f` tests are skipped
 on Windows (no per-process file-size limit there). On Debian-style Linux toolchains the strict gate meets an installed-size NOTE
 caused by the platform's debug-info flags ([build and platforms](../build-and-platforms.md)).

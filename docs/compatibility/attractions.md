@@ -87,7 +87,8 @@ Negative custom distances are rejected for its non-negative shortest-path engine
 R outputs are allocated/protected and ALTREP storage materialized before owning
 C++ temporaries. C++ exceptions are captured and all native buffers unwind before
 R errors. Graph input is reused, not reconstructed or copied into R wrappers;
-outputs own independent storage. Calls are synchronous with null callbacks;
+outputs own independent storage. Calls are synchronous; the progress callback is installed only while
+console progress is active ([progress display](../progress.md)) and is otherwise null;
 workers never call R. Release/GC/serialization/wrong-family regressions apply to
 both analyses. Invalid worker caps fail safely, and graphs remain reusable.
 

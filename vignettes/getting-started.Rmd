@@ -69,26 +69,32 @@ graph must be a straight line of exactly two vertices, as in this dataset.
 ## Example 1: Angular Choice from a segment map
 
 This example builds a segment map from the axial map, calculates Angular Choice within a 3 km walking radius and draws the
-result.
+result. The segment map is also the network used by Example 2. Drawing the map needs the optional package **classInt**; the
+calculation does not.
 
-```{r choice, eval = has_sf && has_classint, warning = FALSE}
-library(rPSTool)
-
-barnsbury <- load_example_data()
-
+```{r network, warning = FALSE}
 segments <- create_segment_map(
   barnsbury$axial,
   unlinks = barnsbury$unlinks,
   output = "sf"
 )
+```
 
+```{r choice, warning = FALSE}
 graph <- segment_graph(segments$segments)
 
 choice <- angular_choice(
   graph,
   radius = analysis_radius(walking = 3000)
 )
+```
 
+```{r no-classint, echo = FALSE, eval = has_sf && !has_classint, results = "asis"}
+cat("**The classInt package is not installed, so the map of the result is not drawn.**",
+    "The Angular Choice values above are still calculated.\n")
+```
+
+```{r choice-map, eval = has_sf && has_classint}
 set.seed(1)
 breaks <- classInt::classIntervals(
   choice$ac_a_rw3000_n,
