@@ -2,6 +2,14 @@
 
 First release.
 
+## Progress display
+
+* Long analyses show a single in-place progress line once an operation has run for two seconds, for example
+  `ac_a_rw400_n  [##############------]   70%  Analysis 2/6` (`█`/`░` bar in UTF-8 sessions). The label is the first result column
+  of the running analysis, the percentage is PST's own progress for that analysis, and `Analysis k/n` appears only when the
+  operation runs several analyses (one per radius). It is on in interactive sessions, off elsewhere, and controlled by the one
+  option `options(rPSTool.progress = TRUE/FALSE)`. See `docs/progress.md`.
+
 ## Result column names
 
 * Every analysis names its result columns with one scheme that identifies the analysis, distance, radius, weighting,

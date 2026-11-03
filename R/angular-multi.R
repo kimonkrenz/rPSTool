@@ -78,6 +78,8 @@
 # the file one. Both run PST once per radius.
 .pst_multi_run <- function(graph, ptr, fn, plan, norms, spec, parameters, output_file, overwrite, spatial_output_file,
                            call_frame, call_stream) {
+  # one analysis per radius; each is labelled with its first result variable
+  .pst_progress_scope(vapply(seq_along(plan$configs), function(i) spec$name[spec$radius == i][[1L]], ""))
   if (is.null(output_file) && is.null(spatial_output_file))
     return(.pst_multi_frame(call_frame(), spec, plan))
   columns <- c("segment_id", spec$name)

@@ -70,7 +70,8 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_expr, "origin_weights", "wo")
   destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_expr, "destination_weights", "wd")
   cols <- .pst_nm_od_betweenness(radius, distance, destination_mode, origin_weight, destination_weight)
-  .pst_nm_names(cols)   # generated names are validated before any native work
+  result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
+  .pst_progress_scope(result_label)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "od_betweenness",

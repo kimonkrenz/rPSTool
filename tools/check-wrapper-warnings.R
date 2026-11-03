@@ -16,7 +16,7 @@ cxx <- config("CXX17")
 if (!length(cxx)) stop("R CMD config CXX17 returned no compiler")
 flags <- c(config("CXX17STD"), config("CXX17FLAGS"), config("--cppflags"))
 units <- c("native-smoke", "pst-construction", "pst-graph", "pst-geoparquet", "pst-result-stream", "pst-output-file",
-           "pst-arrow-test-stream", "pst-isovist", "pst-raster", "rpst-workers")
+           "pst-arrow-test-stream", "pst-isovist", "pst-raster", "rpst-workers", "pst-progress")
 if (length(args)) units <- args
 package_flags <- c("-pthread", "-ffp-contract=off", "-Ivendor/pstalgo/include", "-Ivendor/pstalgo/src/analyses",
                    "-include", "rpst-float-overloads.h", "-include", "rpst-compat.h")

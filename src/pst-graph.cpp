@@ -18,6 +18,7 @@
 #include "pst-segment-build.h"
 #include "pst-axial-build.h"
 #include "pst-result-stream.h"
+#include "pst-progress.h"
 #include "pst-arrow-owner.h"
 // AxialGraph's legacy maths header defines REAL as float. Restore R's REAL()
 // accessor after the pinned declarations have been parsed.
@@ -745,6 +746,7 @@ SEXP network_integration(SEXP pointer, SEXP steps, bool junctions, const StreamR
         desc.m_OutLineIntegration = scores.data();
         desc.m_OutLineNodeCount = counts.data();
         desc.m_OutLineTotalDepth = depths.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTANetworkIntegration(&desc)) {
             std::snprintf(error, sizeof(error), "PSTANetworkIntegration failed for the native pst_graph.");
         } else if (request) {
@@ -1140,6 +1142,7 @@ void angular_integration_run(const SegmentOwner* owner, const SPSTARadii& radii,
     desc.m_OutTotalWeights = need_weights ? d.weights.data() : nullptr;
     desc.m_OutTotalDepthWeights = need_weights ? d.depth_weights.data() : nullptr;
     ++g_angular.integration_runs;
+    rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
     if (!PSTAAngularIntegration(&desc)) throw std::runtime_error("PSTAAngularIntegration failed for the native pst_segment_graph.");
     for (R_xlen_t i = 0; i < n; ++i)
         if (d.counts[static_cast<size_t>(i)] > owner->count) throw std::runtime_error("PST returned an invalid angular node count.");
@@ -1269,6 +1272,7 @@ SEXP reach_points(SEXP pointer, SEXP radius, SEXP origins, const StreamRequest* 
         desc.m_OutReachedCount = counts.data();
         desc.m_OutReachedLength = lengths.data();
         desc.m_OutReachedArea = areas.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTAReach(&desc)) throw std::runtime_error("PSTAReach returned false");
         if (request) {
             auto table = result_new_table(args, static_cast<size_t>(n));
@@ -1382,6 +1386,7 @@ SEXP betweenness_weighted(SEXP pointer, SEXP radius, SEXP distance, SEXP normali
         desc.m_OutBetweenness = scores.data();
         desc.m_OutNodeCount = counts.data();
         desc.m_OutTotalDepth = depths.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTASegmentBetweenness(&desc)) throw std::runtime_error("PSTASegmentBetweenness returned false");
         for (R_xlen_t i = 0; i < n; ++i) {
             const bool count_written = counts[i] != missing_count;
@@ -1508,6 +1513,7 @@ void angular_choice_run(const SegmentOwner* owner, const SPSTARadii& radii, bool
     desc.m_OutTotalDepth = d.depths.data();
     desc.m_OutTotalDepthWeight = weigh_by_length ? d.depth_weights.data() : nullptr;
     ++g_angular.choice_runs;
+    rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
     if (!PSTAAngularChoice(&desc)) throw std::runtime_error("PSTAAngularChoice returned false");
 }
 
@@ -2257,6 +2263,7 @@ SEXP segment_group_integration(SEXP pointer, SEXP radius, const StreamRequest* r
         desc.m_OutIntegration = native_scores.data();
         desc.m_OutNodeCount = native_counts.data();
         desc.m_OutTotalDepth = native_depths.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTASegmentGroupIntegration(&desc))
             throw std::runtime_error("PSTASegmentGroupIntegration returned false");
         if (request) {
@@ -2544,6 +2551,7 @@ SEXP attraction_reach(SEXP pointer, SEXP radius, SEXP origin, SEXP distance,
         desc.m_AttractionValues=native_values.empty() ? nullptr : native_values.data();
         desc.m_AttractionDistributionFunc=static_cast<unsigned char>(dist); desc.m_AttractionCollectionFunc=static_cast<unsigned char>(coll);
         desc.m_OutScores=scores.data(); desc.m_OutputCount=n;
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTAAttractionReach(&desc)) throw std::runtime_error("PSTAAttractionReach failed.");
         if (request) {
             auto table=result_new_table(args,n);
@@ -2635,6 +2643,7 @@ SEXP attraction_distance(SEXP pointer, SEXP radius, SEXP origin, SEXP distance,
         desc.m_LineWeights=native_weights.empty() ? nullptr : native_weights.data(); desc.m_LineWeightCount=static_cast<unsigned int>(native_weights.size());
         desc.m_WeightPerMeterForPointEdges=cost; desc.m_OutMinDistance=results.data();
         desc.m_OutDestinationIndices=want_indices ? destinations.data() : nullptr; desc.m_OutputCount=n;
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTAAttractionDistance(&desc)) throw std::runtime_error("PSTAAttractionDistance failed.");
         if (request) {
             auto table=result_new_table(args,n);
@@ -2704,6 +2713,7 @@ SEXP od_betweenness(SEXP pointer, SEXP origins, SEXP radius, SEXP distance,
         desc.m_Radius = radii;
         desc.m_OutScores = scores.data();
         desc.m_OutputCount = static_cast<unsigned int>(n);
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
         if (!PSTAODBetweenness(&desc)) throw std::runtime_error("PSTAODBetweenness failed.");
         if (request) {
             auto table = result_new_table(args, static_cast<size_t>(n));
