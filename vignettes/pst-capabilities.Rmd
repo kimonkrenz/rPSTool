@@ -196,8 +196,11 @@ describes its maturity and limits, not an approximation of Angular Choice. On a
 60-segment network its numbers differed from Angular Choice even without a
 radius (N; row 3.1). This vignette gives no example call for it.
 
-Progress and cancellation callbacks and the native log callback are not bound
-(see the end of `docs/pst-coverage.md`).
+rPSTool uses PST's native progress reports internally for its console progress line,
+for the analyses and construction functions listed in `docs/progress.md`. It offers
+no public API for user-defined progress callbacks, does not support cancellation
+through the progress callback, and does not bind the native log callback (see the end
+of `docs/pst-coverage.md`).
 
 ## 5. Radius semantics
 

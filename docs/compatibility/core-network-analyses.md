@@ -77,8 +77,9 @@ Angular Integration calls the selected exported normalizer, including its matchi
 Reach and Network Integration loop on the caller thread. Segment Betweenness
 and both angular analyses construct worker arrays from hardware concurrency,
 launch `std::async(std::launch::async, ...)`, then wait before returning. The
-bridge uses null progress callbacks and no R logging callbacks; workers never
-call R. Output R storage is allocated/materialized before C++ buffers exist;
+bridge installs PST's progress callback only while console progress is active
+([progress display](../progress.md)), otherwise the callback is null, and it uses no
+R logging callbacks; workers never call R. Output R storage is allocated/materialized before C++ buffers exist;
 errors are raised after those buffers unwind. The .Call roots its graph owner
 and results are copied into independent R vectors.
 

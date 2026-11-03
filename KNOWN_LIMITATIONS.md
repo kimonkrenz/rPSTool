@@ -53,9 +53,11 @@ analysis rejects it before doing any work; call it once per radius instead.
 
 ### Analyses and routines not available
 
-PST's experimental Fast Segment Betweenness and its Visual Connectivity stub are not provided, and neither are PST's progress
-and logging callbacks. rPSTool does not offer progress reporting or cancellation: a running analysis completes unless the R
-process is terminated.
+PST's experimental Fast Segment Betweenness and its Visual Connectivity stub are not provided, and neither is PST's native
+logging callback. rPSTool uses PST's native progress reports internally for its console progress line, for the analyses and
+construction functions listed in [`docs/progress.md`](docs/progress.md); it does not estimate percentages and shows no progress
+for functions whose PST routine reports none. It offers no public API for user-defined progress callbacks, and a running
+analysis cannot be cancelled through the progress callback: it completes unless the R process is terminated.
 
 ## Inputs and outputs
 
@@ -85,6 +87,11 @@ The full development test suite and `R CMD check` passed at commit
 macOS ARM64 (Apple clang 17.0.0) and Windows x86-64 (GCC 14.3.0), all with R 4.6.2. This is the extent of platform testing. The
 Windows run recorded 160,759 test expectations against 160,814 on the other two platforms; the difference has not been
 independently explained.
+
+The output-naming and progress changes were later validated locally by the maintainer on the tree of `96a1547` (reported identical
+to the rebase-merged `c6c4ed9`): macOS ARM64 with 161,539 expectations and `Status: OK`, and Windows x86-64 with 161,484
+expectations, four approved skips and `Status: OK`. Linux, CRAN incoming checks and a release tarball have not been validated at
+that tree.
 
 rPSTool's inputs and defaults were checked against the code of the PST for QGIS plugin, but its results have not been compared
 with real runs of the plugin. Intentional differences are listed in

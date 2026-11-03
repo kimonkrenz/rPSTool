@@ -38,7 +38,11 @@ Bundled third-party components
    Programmer: Martin Fitger (as stated in the upstream README)
    Developed by: KTH School of Architecture, Chalmers School of Architecture (SMoG) and
    Spacescape AB (developing organisations; not asserted as copyright holders here)
-   PST for QGIS v3.3.2 plugin metadata names as authors: Alexander Ståhle, Lars Marcus, Daniel Koch,\n   Martin Fitger, Anders Karlström, Tobias Nordström, Ann Legeby, Gianna Stavroulaki,\n   Meta Berghauser Pont and Pablo Miranda. This is software authorship credit, not a\n   declaration that all named people hold copyright.\n   Acknowledged contributors (upstream README, verbatim list; acknowledgement only, no
+   PST for QGIS v3.3.2 plugin metadata names as authors: Alexander Ståhle, Lars Marcus, Daniel Koch,
+   Martin Fitger, Anders Karlström, Tobias Nordström, Ann Legeby, Gianna Stavroulaki,
+   Meta Berghauser Pont and Pablo Miranda. This is software authorship credit, not a
+   declaration that all named people hold copyright.
+   Acknowledged contributors (upstream README, verbatim list; acknowledgement only, no
    copyright or authorship role is implied): Alexander Ståhle, Lars Marcus, Daniel Koch,
    Martin Fitger, Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont, Anders Karlström,
    Pablo Miranda Carranza, Tobias Nordström.

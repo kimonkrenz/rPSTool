@@ -287,6 +287,8 @@ CNetworkIntegrationAlgo::Run initialises the BFS with DIST_LINES and TARGET_LINE
 
 Struct fields m_ProgressCallback(User) stay at the constructor's nullptr (NetworkIntegration.cpp:118-129); documented in the internal engineering rules, section 7.
 
+Update: this entry records the state when it was written. rPSTool now sets m_ProgressCallback for `network_integration` only while console progress is active (`rpst::progress_attach`, `src/pst-progress.cpp`; see `docs/progress.md`), so the "null callback" above holds when progress is off. It still offers no user-defined callback and no cancellation.
+
 ### NI-018  [G]  network_integration / struct fields left at defaults
 
 - native_support: constructor zero-initialises all optional pointers

@@ -132,9 +132,12 @@ maturity and limits, not an approximation of Angular Choice.
 
 #### Not provided: callbacks and Python-side conveniences
 
-* **Progress and cancellation callbacks** (`m_ProgressCallback` in every descriptor) and the **native log callback**
-  (`PSTARegisterLogCallback`) are not bound. The calling thread of the callbacks differs per analysis and was not audited, and
-  rPSTool never calls R from a PST worker thread. Errors already surface as R errors from the bridge.
+* **User-defined progress callbacks and cancellation** are not exposed, and the **native log callback**
+  (`PSTARegisterLogCallback`) is not bound. rPSTool does use `m_ProgressCallback` internally: while the console progress line is
+  active, the callback of the analyses and construction functions listed in [progress display](progress.md) is set to a
+  bridge function that prints PST's own reported progress (no estimates). PST calls it on the thread that made the call (the R
+  main thread), and rPSTool never calls R from a PST worker thread. Descriptors of other routines keep null callbacks, and PST
+  ignores the callback's return value, so progress cannot cancel an analysis. Errors already surface as R errors from the bridge.
 * **QGIS-side conveniences** computed in Python only (mean depth `TD/(N-1)`, Reach area units, "length weights" switch,
   attribute filtering) are not provided: they are one-line R computations on the returned columns, not PST computations
   (`QG/analyses/utils.py:242-245`, `reachanalysis.py:261-277`). Area differs from the plugin only by float32 rounding.

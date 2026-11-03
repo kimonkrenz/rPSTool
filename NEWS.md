@@ -97,7 +97,7 @@ First release.
 ## Known limitations
 
 * Angular Choice inherits a recursion-depth limit from PST: a very long chain of shortest-path steps can exhaust a worker thread's stack.
-* Fast Segment Betweenness, Visual Connectivity and progress/log callbacks are not exposed.
+* Fast Segment Betweenness and Visual Connectivity are not exposed. PST's native progress reports are used internally for the console progress line (see "Progress display"), but there is no public API for user-defined progress callbacks, no cancellation through the progress callback and no native log callback.
 * Persistence of `network_integration(junctions = TRUE)` is not offered.
 
 ## Licence

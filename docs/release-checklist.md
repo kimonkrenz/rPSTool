@@ -34,7 +34,14 @@ The incoming URL checks returned HTTP 404 because the then-intended repository U
 | 7 | Licensing items | The Barnsbury example data are included and redistributed with the authors' permission and are attributed ([licensing](licensing.md) §3, item 3). The LGPL binary redistribution, PST authorship/citation, headerless upstream files and depthmapX/ColorBrewer review items have been closed by explicit maintainer decisions recorded in [licensing](licensing.md) §3; this is not a formal legal opinion. Other licensing items remain documented there. |
 | 8 | README in the tarball | `README.md` is excluded from the tarball (`.Rbuildignore`) because it links to repository files that are not shipped. Keep the exclusion or ship a CRAN-facing README. |
 | 9 | `arrow >= 25.0.0` | Re-verify at submission that it resolves from CRAN. Tests and examples skip when it is absent; the development gate requires it. |
-| 10 | Windows result-file writing | Superseded by item 1: the full development suite and `R CMD check` passed on Windows x86-64 at `4119f2b`, including the result-file tests. History: PR #66 was merged on 2026-10-28 on the basis of earlier Windows runs at `8ead7e4` (160,438 expectations) and a package check at `7681c05`. |
+| 10 | Windows result-file writing | Superseded by item 1: the full development suite and `R CMD check` passed on Windows x86-64 at `4119f2b`, including the result-file tests, and again in the latest local Windows run on the tree of `96a1547` (see "Latest development validation"). History: PR #66 was merged on 2026-10-28 on the basis of earlier Windows runs at `8ead7e4` (160,438 expectations) and a package check at `7681c05`. |
+
+## Latest development validation (local, after PR #2)
+
+`4119f2b` (item 1) remains the last validation on GitHub Actions and the only one on Linux. Since then the output-naming and
+native progress changes were validated locally by the maintainer on the tree of `96a1547`: macOS ARM64: 161,539 expectations passed with no failures or skips and `R CMD check` `Status: OK`; Windows x86-64: 161,484 expectations passed with no failures, four approved skips and `Status: OK`. The exact PST warning policy passed on both platforms and all 121 vendored PST files were verified unchanged. The tree rebase-merged as `c6c4ed9` was reported identical to the validated tree at `96a1547`. This is separate from, and does
+not replace, the items above. **Not validated at the current tree:** Linux, CRAN incoming checks (`R CMD check --as-cran` with
+the incoming variables) on any platform, spelling and URL checks, and the frozen release tarball (items 2, 5 and 6).
 
 ## Resolved and verified
 
@@ -57,12 +64,14 @@ The incoming URL checks returned HTTP 404 because the then-intended repository U
   with an 8 MB stack: about 64,000 segments). PST's traversal is not modified; the limitation is documented in `angular_choice()`
   and [angular controls](compatibility/angular-controls.md). If CRAN requires a correction it will be addressed then with minimum
   impact on performance.
-* **Vignette GeoParquet example:** `vignettes/getting-started.Rmd`, Example 2, awaits execution with `arrow` installed in the final CRAN validation (see `cran-comments.md`).
+* **Vignette GeoParquet example:** `vignettes/getting-started.Rmd`, Example 2, has no recorded execution with `arrow` installed (see `cran-comments.md`). Its network preparation no longer depends on `classInt`.
 * **Windows file output:** implemented with the Win32 API and covered by the full development suite on Windows at `4119f2b` (item 1). On Windows a replacement with `overwrite = TRUE` fails, leaving the old file intact, while another process holds the destination open without sharing it for deletion.
 * **No Q-level evidence:** no real PST for QGIS comparison has been recorded; see
   [`tools/validation/qgis-comparison/`](../tools/validation/qgis-comparison/README.md) and
   [QGIS differences](compatibility/qgis-differences.md).
-* **Not exposed:** Fast Segment Betweenness, Visual Connectivity and progress/log callbacks ([PST coverage](pst-coverage.md)).
+* **Not exposed:** Fast Segment Betweenness, Visual Connectivity, user-defined progress callbacks, cancellation and the native log
+  callback ([PST coverage](pst-coverage.md)). The console progress line, which uses PST's native progress reports internally, is
+  described in [progress display](progress.md).
 * **Deferred I/O:** file-backed `unlinks`/`points`, explicit geometry-column selection, native GeoArrow encodings, GeoParquet 2.0,
   directories and multi-file datasets, external-ID retention, other formats, and persistence of `network_integration(junctions =
   TRUE)` ([spatial I/O](spatial-io/README.md)).
