@@ -43,6 +43,11 @@ test_that("multi-radius and multi-normalisation columns equal the direct pinned-
     for (i in seq_along(fam$values)) {
       run <- fam$runs[[i]]
       col <- function(role, norm = NA_character_) mcol(out, role, i, norm)
+      # Independent of the manifest: the radius token in the real column name must be this radius value
+      # (written with "p" for the decimal point), so a self-consistent but wrong manifest cannot pass.
+      expect_true(any(grepl(paste0("_r", c(straight = "l", walking = "w", steps = "s", angular = "a")[[fam$vary]],
+                                   sub("\\.", "p", format(fam$values[[i]], scientific = FALSE, trim = TRUE)), "(_|$)"),
+                            names(out))), info = paste(fam$vary, fam$values[[i]]))
       expect_identical(col("node_count"), as.integer(unlist(run$counts)))
       nonfinite <- nonfinite + mrd_compare(col("total_depth"), run$depths)
       if (fam$routine == "integration") {

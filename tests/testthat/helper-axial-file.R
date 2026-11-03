@@ -64,4 +64,3 @@ ax_fgb_matrix <- function(path) {
   unname(t(vapply(g, function(l) c(l[1, ], l[2, ]), numeric(4))))
 }
 ax_lifecycle <- function() ax_native("graph_lifecycle")
-ax_live <- function() { x <- ax_lifecycle(); x[[1]] - x[[2]] }

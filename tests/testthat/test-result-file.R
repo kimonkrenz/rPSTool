@@ -6,13 +6,6 @@
 skip_result_file <- function() {
   skip_if_not_installed("arrow", "25.0.0")
 }
-rf_compare <- function(actual, expected, tolerance = 3e-6) {
-  expected <- as.double(unlist(expected))
-  expect_identical(is.nan(actual), is.nan(expected))
-  expect_identical(is.infinite(actual), is.infinite(expected))
-  expect_identical(actual[!is.finite(expected)], expected[!is.finite(expected)])
-  expect_equal(actual[is.finite(expected)], expected[is.finite(expected)], tolerance = tolerance)
-}
 test_that("persisted angular results equal the in-memory results and the direct-PST reference for the selected control combinations (all of them in the full suite)", {
   skip_result_file()
   ref <- dget(test_path("fixtures", "angular-controls-direct-v3.3.2.R"))

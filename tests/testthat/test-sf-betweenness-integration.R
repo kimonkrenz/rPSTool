@@ -12,11 +12,6 @@ sb_pts <- function(m, crs = NA_integer_, ...) {
 sb_lines <- function(m, crs = NA_integer_) sf::st_sfc(lapply(seq_len(nrow(m)), function(i)
   sf::st_linestring(matrix(m[i, ], 2L, byrow = TRUE))), crs = crs)
 sb_chain <- function() cbind(0:2, 0, 1:3, 0)
-sb_near <- function(actual, expected) {
-  expect_identical(is.na(actual), is.na(expected))
-  expect_identical(is.nan(actual), is.nan(expected))
-  expect_identical(actual[!is.finite(expected)], expected[!is.finite(expected)])
-}
 
 test_that("sf attraction points reproduce the direct Betweenness fixture cases with points (all of them in the full suite)", {
   skip_if_not_installed("sf")

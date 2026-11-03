@@ -4,6 +4,8 @@ Pinned upstream: PST v3.3.2 `63df80a2cf3dd289be95ea3d91667c3490719b75` (read-onl
 
 Path note. The pinned clone has no `V/` or `QG/` directories (those are the labels used in rPST's docs). Real paths: engine headers `pstalgo/include/pstalgo/...`, engine sources `pstalgo/src/...`, ctypes wrapper `pstalgo/python/pstalgo/...`, QGIS plugin `pstqgis/src/pst/{analyses,ui/wizards,ui/pages,model}/...`. There are no Processing algorithms for these analyses (`pstqgis/src/pst/processing/` holds only OD Betweenness). The vendored copy `src/vendor/pstalgo` is byte-identical (`cmp`) to the pinned clone for every header/source in this role.
 
+Column-name note. The "Verified by run" records below were made before the result-column naming scheme (docs/output-naming.md) and use the output names of that time (`integration`, `choice`, `node_count`, `total_depth`, `total_weight`, `total_depth_weight`, `choice_standard`/`choice_turner`/`choice_syntax`). They are kept verbatim as historical observations; no calculation was re-run. Current public columns carry an analysis prefix and the radius, for example `ai_*`, `ac_*` (raw `_n`, normalised `_s`/`_t`/`_c`), `gi_*`, `nc_*`, `td_*`, `tw_*`, `tdw_*`. Numerical results, tolerances and conclusions are unchanged.
+
 ## Classification counts
 
 | class | rows |
