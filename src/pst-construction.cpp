@@ -3,6 +3,7 @@
 #include <Rinternals.h>
 #include <pstalgo/analyses/CreateJunctions.h>
 #include <pstalgo/analyses/CreateSegmentMap.h>
+#include "pst-progress.h"
 #include <cmath>
 #include <cstdio>
 #include <exception>
@@ -238,6 +239,7 @@ extern "C" SEXP rpst_create_junctions(SEXP x, SEXP ix, SEXP y, SEXP iy, SEXP unl
         desc.m_Lines1=second.indexed ? indices1.data() : nullptr; desc.m_LineCount1=static_cast<unsigned int>(second.count());
         desc.m_UnlinkCoords=uc.data(); desc.m_UnlinkCount=static_cast<unsigned int>(unlink.rows);
         desc.m_ProgressCallback=nullptr; desc.m_ProgressCallbackUser=nullptr;
+        rpst::progress_attach(desc.m_ProgressCallback,desc.m_ProgressCallbackUser);
         std::unique_ptr<IPSTAlgo> owner(PSTACreateJunctions(&desc,&out.junction));
         if (!owner) throw std::runtime_error("PSTACreateJunctions failed.");
         R_SetExternalPtrAddr(pointer,owner.release()); ++created;
@@ -298,6 +300,7 @@ extern "C" SEXP rpst_create_segment_map(SEXP coords, SEXP sections, SEXP type, S
         desc.m_PolySectionCount=static_cast<unsigned int>(sec.size());desc.m_PolyCount=static_cast<unsigned int>(bases);
         desc.m_UnlinkCoords=uc.data();desc.m_UnlinkCount=static_cast<unsigned int>(unlink.rows);
         desc.m_ProgressCallback=nullptr;desc.m_ProgressCallbackUser=nullptr;
+        rpst::progress_attach(desc.m_ProgressCallback,desc.m_ProgressCallbackUser);
         std::unique_ptr<IPSTAlgo> owner(PSTACreateSegmentMap(&desc,&out.segment));
         if (!owner) throw std::runtime_error("PSTACreateSegmentMap failed (including unsafe cyclic detail reduction).");
         R_SetExternalPtrAddr(pointer,owner.release());++created;

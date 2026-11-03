@@ -132,3 +132,41 @@ test_that("real analyses give identical results with progress on and off, and le
     options(rPSTool.progress = NULL)
   }
 })
+
+test_that("create_junctions and create_segment_map report native progress with identical results", {
+  set.seed(8); n <- 300
+  lines <- cbind(runif(n, 0, 100), runif(n, 0, 100), runif(n, 0, 100), runif(n, 0, 100))
+  other <- cbind(runif(40, 0, 100), runif(40, 0, 100), runif(40, 0, 100), runif(40, 0, 100))
+  coords <- rbind(c(0, 0), c(10, 0), c(20, 0), c(10, -5), c(10, 5))
+  runs <- list(
+    junctions = list(label = "junctions", run = function() create_junctions(lines)),
+    junctions_two_layers = list(label = "junctions", run = function() create_junctions(lines, y = other)),
+    segment_map = list(label = "segments", run = function()
+      create_segment_map(coords, c(3, 2), snap = 0, tail = 0))
+  )
+  for (name in names(runs)) {
+    off <- local({ options(rPSTool.progress = FALSE); on.exit(options(rPSTool.progress = NULL)); runs[[name]]$run() })
+    # disabled: nothing is printed, even with a clock that would cross the threshold
+    options(rPSTool.progress = FALSE); prog(0, 0); prog(3, 5)
+    expect_identical(shown(res_off <- runs[[name]]$run()), "", info = name)
+    expect_identical(res_off, off, info = name)
+    # enabled, fake clock past the threshold: drawn once labelled, erased, results identical, no counter
+    options(rPSTool.progress = TRUE); prog(0, 0); prog(3, 5)
+    text <- shown(res_on <- runs[[name]]$run())
+    expect_identical(res_on, off, info = name)
+    expect_false(.Call(rPSTool:::C_rpst_progress_active), info = name)
+    expect_true(grepl(runs[[name]]$label, text, fixed = TRUE), info = name)
+    expect_match(text, "%", fixed = TRUE, info = name)
+    expect_match(text, "\\r *\\r$", info = name)
+    expect_false(grepl("Analysis", text, fixed = TRUE), info = name)
+    # enabled, real clock: these calls finish in far less than two seconds, so the console stays empty
+    options(rPSTool.progress = TRUE); prog(0, -1); prog(3, 0)
+    expect_identical(shown(res_fast <- runs[[name]]$run()), "", info = name)
+    expect_identical(res_fast, off, info = name)
+    options(rPSTool.progress = NULL)
+  }
+  # an error inside the native call still ends progress
+  options(rPSTool.progress = TRUE); on.exit(options(rPSTool.progress = NULL), add = TRUE)
+  expect_error(create_segment_map(coords, c(3, 3)))
+  expect_false(.Call(rPSTool:::C_rpst_progress_active))
+})

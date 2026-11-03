@@ -46,6 +46,7 @@ create_junctions <- function(x, line_indices = NULL, y = NULL,
   if (is.matrix(x) && ((is.null(line_indices) && nrow(x) == 0L) ||
       (is.matrix(line_indices) && nrow(line_indices) == 0L)))
     stop("Empty first junction layer is unsupported: pinned PST succeeds without writing its result.", call. = FALSE)
+  .pst_progress_scope("junctions")
   out <- .Call(C_rpst_create_junctions, x, line_indices, y, line_indices_y, unlinks, FALSE)
   colnames(out) <- c("x", "y")
   if (output == "sf")
@@ -123,6 +124,7 @@ create_segment_map <- function(coords, sections = NULL,
   coords <- input$coords
   sections <- input$sections
   unlinks <- .pst_sf_points(unlinks, "unlinks")
+  .pst_progress_scope("segments")
   out <- .Call(C_rpst_create_segment_map, coords, sections, network_type,
                snap, tail, deviation, extrude, unlinks, FALSE)
   names(out) <- c("segments", "source_id", "unlinks")
