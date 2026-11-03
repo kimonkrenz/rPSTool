@@ -150,7 +150,8 @@ segment_group_integration <- function(graph, radius = analysis_radius(), output_
   ptr <- .pst_group_pointer(graph, "pst_segment_group_graph")
   overwrite <- .pst_flag(overwrite, "overwrite")
   cols <- .pst_nm_segment_group_integration(radius)
-  .pst_nm_names(cols)   # generated names are validated before any native work
+  result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
+  .pst_progress_scope(result_label)
   if (!is.null(output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "segment_group_integration", list(radius = .pst_radius_parameters(radius)), graph, ptr,

@@ -24,7 +24,7 @@ if (!file.exists(preserved_input) ||
 message("Verified ", length(files), " pristine vendor files and upstream provenance (offline)")
 
 sources <- inventory$path[grepl("[.]cpp$", inventory$path)]
-expected_objects <- c("init.o", "native-smoke.o", "pst-graph.o", "pst-geoparquet.o", "pst-flatgeobuf.o", "pst-result-stream.o", "pst-output-file.o", "pst-arrow-test-stream.o", "pst-construction.o", "pst-isovist.o", "pst-raster.o", "rpst-workers.o", sub("[.]cpp$", ".o",
+expected_objects <- c("init.o", "native-smoke.o", "pst-graph.o", "pst-geoparquet.o", "pst-flatgeobuf.o", "pst-result-stream.o", "pst-output-file.o", "pst-arrow-test-stream.o", "pst-construction.o", "pst-isovist.o", "pst-raster.o", "rpst-workers.o", "pst-progress.o", sub("[.]cpp$", ".o",
     sub("^src/vendor/pstalgo/src/", ".rpst-build/", sources)))
 for (makevars in c("src/Makevars", "src/Makevars.win")) {
   lines <- readLines(makevars)

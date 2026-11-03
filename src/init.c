@@ -20,6 +20,10 @@ extern SEXP rpst_angular_integration_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, S
 extern SEXP rpst_angular_choice_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_instrumentation(SEXP, SEXP);
+extern SEXP rpst_progress_begin(SEXP, SEXP, SEXP);
+extern SEXP rpst_progress_end(void);
+extern SEXP rpst_progress_active(void);
+extern SEXP rpst_progress_test(SEXP, SEXP);
 extern SEXP rpst_workers(void);
 extern SEXP rpst_reach(SEXP, SEXP);
 extern SEXP rpst_reach_points(SEXP, SEXP, SEXP);
@@ -185,6 +189,10 @@ static const R_CallMethodDef call_methods[] = {
     {"rpst_angular_choice_multi_stream", (DL_FUNC) &rpst_angular_choice_multi_stream, 11},
     {"rpst_angular_integration_multi_stream", (DL_FUNC) &rpst_angular_integration_multi_stream, 12},
     {"rpst_angular_instrumentation", (DL_FUNC) &rpst_angular_instrumentation, 2},
+    {"rpst_progress_begin", (DL_FUNC) &rpst_progress_begin, 3},
+    {"rpst_progress_end", (DL_FUNC) &rpst_progress_end, 0},
+    {"rpst_progress_active", (DL_FUNC) &rpst_progress_active, 0},
+    {"rpst_progress_test", (DL_FUNC) &rpst_progress_test, 2},
     {NULL, NULL, 0}
 };
 

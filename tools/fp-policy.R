@@ -13,7 +13,7 @@ fp_policy_violations <- function(makevars_lines, header_lines, label = "Makevars
   if (!any(makevars_lines == "PKG_CXXFLAGS = -pthread"))
     add("PKG_CXXFLAGS must stay free of floating-point flags (R CMD check portability)")
   for (w in c("native-smoke", "pst-construction", "pst-graph", "pst-geoparquet", "pst-flatgeobuf", "pst-result-stream", "pst-output-file", "pst-arrow-test-stream",
-             "pst-isovist", "pst-raster", "rpst-workers")) {
+             "pst-isovist", "pst-raster", "rpst-workers", "pst-progress")) {
     # A wrapper unit may add -I include directories before $(ALL_CPPFLAGS) (as pst-flatgeobuf does for the
     # generated FlatBuffers base.h) and extra prerequisites after its source; the flag order is unchanged.
     rule <- paste0("^\t\\$\\(CXX\\) (-I[^ ]+ )*\\$\\(ALL_CPPFLAGS\\) \\$\\(ALL_CXXFLAGS\\) \\$\\(RPST_FP_FLAGS\\) -c ", w, "[.]cpp -o \\$@$")

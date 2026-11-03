@@ -58,6 +58,7 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
   cols <- .pst_nm_network_reach(radius); result_names <- .pst_nm_names(cols)
+  .pst_progress_scope(result_names[[1L]])
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "network_reach",
@@ -159,7 +160,8 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
   overwrite <- .pst_flag(overwrite, "overwrite")
   weight <- .pst_nm_user_weight(!is.null(weights), weights_expr, "weights", "w")
   cols <- .pst_nm_network_betweenness(radius, distance, normalization, weight, !is.null(attraction_points))
-  .pst_nm_names(cols)   # generated names are validated before any native work
+  result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
+  .pst_progress_scope(result_label)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "network_betweenness",
@@ -271,6 +273,7 @@ angular_choice <- function(graph, radius = analysis_radius(), weigh_by_length = 
                                      output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_angular_choice(radius, weigh_by_length, normalization, angle_threshold, angle_precision)
   result_names <- .pst_nm_names(cols)   # generated names are validated before any native work
+  .pst_progress_scope(result_names[[1L]])
   if (!is.null(output_file) || !is.null(spatial_output_file)) {
     columns <- c("segment_id", result_names)
     rows <- .Call(C_rpst_segment_graph_info, ptr)

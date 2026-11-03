@@ -115,7 +115,8 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
   weight <- .pst_nm_user_weight(!is.null(attraction_values), values_expr, "attraction_values", "w")
   cols <- .pst_nm_attraction_reach(radius, origin, distance, weight, decay, decay_constant, distribution, collection,
                                    polygon_point_interval)
-  .pst_nm_names(cols)   # generated names are validated before any native work
+  result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
+  .pst_progress_scope(result_label)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_reach",
@@ -157,7 +158,8 @@ attraction_distance <- function(graph, attraction_points, radius = analysis_radi
   weight <- .pst_nm_user_weight(!is.null(line_weights), weights_expr, "line_weights", "w")
   cols <- .pst_nm_attraction_distance(radius, origin, distance, weight, point_edge_weight, polygon_point_interval,
                                       isTRUE(destination_indices))
-  .pst_nm_names(cols)   # generated names are validated before any native work
+  result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
+  .pst_progress_scope(result_label)
   if (!is.null(output_file) || !is.null(spatial_output_file))
     return(.pst_axial_result_file(
       output_file, overwrite, "attraction_distance",
