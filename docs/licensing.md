@@ -1,6 +1,6 @@
 # Licensing and attribution
 
-rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License: LGPL (>= 3)`). Copyright 2026 Kimon Krenz, who developed rPSTool independently, outside university employment duties and without grant funding. `DESCRIPTION` gives `cph` accordingly; notices are in `inst/COPYRIGHTS`, `inst/licenses/` and the vendored files' own headers.
+rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License: LGPL (>= 3)`). Copyright 2026 Kimon Krenz. `DESCRIPTION` lists the copyright holders (`cph`); notices are in `inst/COPYRIGHTS`, `inst/licenses/` and the vendored files' own headers.
 
 ## 1. Attribution matrix
 
@@ -16,7 +16,7 @@ rPSTool-authored code is licensed **LGPL-3.0-or-later** (`DESCRIPTION`: `License
 | Licence texts | `inst/licenses/` (LGPL-3, GPL-3, Apache-2.0, BSD-2-Clause) | FSF / ASF | n/a | no |
 | Suggests (not bundled) | arrow, sf, jsonlite, testthat | not distributed | n/a | n/a |
 
-The Arrow NOTICE concerns Arrow's implementation, none of which is included.
+No Arrow implementation library is bundled or linked; only the extracted C data/stream interface declarations are included, under Apache-2.0 with the attribution above (see `src/arrow-c-abi/PROVENANCE.md` and `inst/COPYRIGHTS`).
 
 ## 2. Combined work (LGPLv3 §4)
 

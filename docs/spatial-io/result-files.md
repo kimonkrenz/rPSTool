@@ -1,12 +1,10 @@
 # Result files: direct Parquet output
 
 `output_file` writes an analysis result directly from the native result arrays to one Parquet file, without building an R data
-frame. It is available for `angular_integration()`, `angular_choice()` (§1, §2), the axial analyses without missing values (§11),
-`network_betweenness()` and `segment_group_integration()`, which have nullable columns (§13), and `segment_grouping()` (§13.6).
-`network_integration(junctions = TRUE)` is not offered (§14). To write a new GeoParquet or FlatGeobuf file that carries the source
+frame. It is available for `angular_integration()`, `angular_choice()` (§1, §2), the axial analyses without missing values (§6),
+`network_betweenness()` and `segment_group_integration()`, which have nullable columns (§7), and `segment_grouping()` (§7.3).
+`network_integration(junctions = TRUE)` is not offered (§8). To write a new GeoParquet or FlatGeobuf file that carries the source
 geometry, use `spatial_output_file` ([spatial output](spatial-output.md)). The status of every analysis is in [spatial I/O](README.md).
-
-Section numbers are stable identifiers; sections that no longer exist are not renumbered.
 
 ## 1. Public API
 
@@ -25,7 +23,7 @@ angular_choice(graph, radius = analysis_radius(), weigh_by_length = FALSE, norma
   an invisible `pst_result_file` descriptor with `path` (absolute), `rows`, `columns` (in file order) and `format`
   (`"parquet"`). No R result vectors or data frames are built.
 * `overwrite = FALSE` (default) never replaces anything that exists at `output_file`; `TRUE` replaces the file by a single
-  rename, and the old file is untouched if anything fails (see §5).
+  rename, and the old file is untouched if anything fails (see §3).
 * `output_file` requires the suggested package `arrow (>= 25.0.0)`, including zstd support. rPSTool uses arrow's
   undocumented `RecordBatchReader$import_from_c()`; it checks at run time that the installed version meets the minimum
   and that this function exists, and fails with an error before computing anything otherwise.
@@ -62,10 +60,10 @@ are stored bit for bit.
 | `rpst:order` | row convention: native segment or line order; supplied origin order for `network_reach(origins =)`; native point/junction/line/point-group order for attraction origin kinds; group id order for group integration |
 | `rpst:float_columns` | present when the table has float32 columns |
 | `rpst:naming`, `rpst:columns` | column manifest ([output naming](../output-naming.md)) |
-| `rpst:n_groups`, `rpst:n_colors` | `segment_grouping()` only (§13.6) |
+| `rpst:n_groups`, `rpst:n_colors` | `segment_grouping()` only (§7.3) |
 | `rpst:radius_varying`, `rpst:radius_fixed`, `rpst:radius_configurations`, `rpst:normalizations` | multi-result tables only |
 
-## 5. Publication guarantees
+## 3. Publication guarantees
 
 1. The destination is validated first (one non-empty string, existing parent directory, not a directory, not existing unless
    `overwrite = TRUE`) and the arrow requirements are checked. The analysis then runs, and nothing is created on disk until it
@@ -97,7 +95,7 @@ are stored bit for bit.
      rPSTool itself closes the Parquet sources it reads before publishing and never holds the destination open.
    * The source-file identity check used by `spatial_output_file` is a check at one moment, not a lock, on every platform.
 
-## 9. Memory and limitations
+## 4. Memory and limitations
 
 * PST fills complete result arrays, so the native result is fully resident until the file is written. `output_file` is not a
   streaming or bounded-memory computation, and it is not faster than computing and then writing with arrow.
@@ -105,12 +103,12 @@ are stored bit for bit.
   memory dominates, so the saving is modest.
 * Row identity is positional; external feature identifiers are not retained.
 
-## 10. Not supported
+## 5. Not supported
 
-`network_integration(junctions = TRUE)` (§14), graph inspection outputs, Arrow IPC/Feather, a choice of compression, external
+`network_integration(junctions = TRUE)` (§8), graph inspection outputs, Arrow IPC/Feather, a choice of compression, external
 identifiers.
 
-## 11. Axial-graph analyses without missing values
+## 6. Axial-graph analyses without missing values
 
 `output_file = NULL, overwrite = FALSE` are appended to:
 
@@ -132,14 +130,14 @@ than two lines reached), `NaN` and `Inf` are ordinary values and are stored as s
 
 Metadata: `rpst:graph_type = axial`; `rpst:graph_rows` is the native line count.
 
-Memory: as in §9.
+Memory: as in §4.
 
-## 13. Nullable columns: Segment Betweenness and Segment Group Integration
+## 7. Nullable columns: Segment Betweenness and Segment Group Integration
 
 `output_file = NULL, overwrite = FALSE` are appended to `network_betweenness()` and `segment_group_integration()`. Their
 in-memory results are unchanged.
 
-### 13.1 Nullable-column contract
+### 7.1 Nullable-column contract
 
 A column is nullable or not by function and parameters, never by whether a particular run happens to contain a missing value, so
 all files of one analysis share one schema. A null means exactly "PST wrote no value for this slot". A written `NaN`, `Inf`,
@@ -163,13 +161,13 @@ For group integration, PST writes all three outputs for every group or for none 
 columns that are all-null or all-valid. An isolated group in a graph with nodes holds the written values `-1, 0, 0`, which are
 valid.
 
-### 13.3 Metadata
+### 7.2 Metadata
 
 As in §2. For betweenness, `rpst:graph_type = axial`, `rpst:graph_rows` is the native line count and `rpst:order` is native line
 order. For group integration, `rpst:graph_type = segment_group`, `rpst:graph_rows` is the native group count and `rpst:order` is
 group id order; a group graph retains no source CRS.
 
-### 13.6 Segment Grouping
+### 7.3 Segment Grouping
 
 `segment_grouping(graph, angle_threshold = 1, split_at_junctions = FALSE, output_file = NULL, overwrite = FALSE)` appends the two
 arguments; with `output_file = NULL` the data frame, including its `n_groups` and `n_colors` attributes, is unchanged.
@@ -183,7 +181,7 @@ addition to the keys of §2. They equal `max(group_id)` and `max(color)`.
 `spatial_output_file` is not offered for this family: the spatial writers carry only the R-side provenance metadata, so
 `rpst:n_groups` and `rpst:n_colors` could not be written to the spatial file.
 
-## 14. Network Integration with junctions: not offered
+## 8. Network Integration with junctions: not offered
 
 `network_integration(junctions = TRUE)` returns two tables from one native call: the lines (`line_id` plus the generated
 integration, node-count and total-depth columns) and the junctions (`junction_id`, `x`, `y` plus the generated junction-integration column, prefix `nj_`). A result file holds one table, and

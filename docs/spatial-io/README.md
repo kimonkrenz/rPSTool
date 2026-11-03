@@ -33,7 +33,7 @@ Results are R vectors/data frames by default. For very large results, `output_fi
 arrays to Parquet through the Arrow C stream, and `spatial_output_file` writes a new GeoParquet/FlatGeobuf file carrying the source
 geometry and attributes plus the result columns. This reduces the retained R result and speeds up read-back; it does not lower
 peak memory at large scale, because PST's own working memory dominates. Publication guarantees (no-clobber, atomic replacement
-where the platform provides it) and what is not guaranteed are in [result files](result-files.md) §5.
+where the platform provides it) and what is not guaranteed are in [result files](result-files.md) §3.
 
 ## Status matrix
 
@@ -57,11 +57,11 @@ where the platform provides it) and what is not guaranteed are in [result files]
 | `network_betweenness` | yes (nullable columns) | yes |
 | `segment_group_integration` | yes (nullable columns) | not offered (rows are groups, not source features) |
 | `segment_grouping` | yes (one-based ids, `rpst:n_groups`/`rpst:n_colors` metadata) | not offered (`n_groups`/`n_colors` cannot be carried into the spatial file) |
-| `network_integration(junctions = TRUE)` | **not offered**: it returns two tables, which a single result file cannot hold ([result files](result-files.md) §14) | not applicable (junction rows are not source features) |
+| `network_integration(junctions = TRUE)` | **not offered**: it returns two tables, which a single result file cannot hold ([result files](result-files.md) §8) | not applicable (junction rows are not source features) |
 | Other families (construction, isovist, raster, graph inspection) | not persisted | not applicable |
 
 Deliberately unsupported: cross-format output, reprojection, indexed FlatGeobuf output, external
 feature IDs, GeoPackage/Shapefile output, Arrow IPC/Feather.
 
 **Windows.** File publication has the same contract as on POSIX, except that a replacement fails (old file intact) while another
-process holds the destination open without sharing it for deletion ([result files](result-files.md) §5).
+process holds the destination open without sharing it for deletion ([result files](result-files.md) §3).

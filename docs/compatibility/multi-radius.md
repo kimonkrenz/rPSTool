@@ -52,8 +52,6 @@ run's arrays:
 | Choice | raw `choice`, `node_count`, `total_depth`, (`total_depth_weight` if weighted) | `standard`: choice; `turner`: choice, node_count; `syntax`: choice, **unweighted** total_depth (also when weighted) | one `float32` array |
 | Integration | `node_count`, `total_depth`, (`total_weight`, `total_depth_weight` when weighted or `weight_outputs`) | unweighted: node_count, total_depth; weighted: total_weight, total_depth_weight (the `...LengthWeight` normalisers) | one `float32` array |
 
-A test-only counter (`rpst_angular_call_counts`) records PST runs and normaliser calls; the number of PST runs equals the number of radii.
-
 ## 3. Column schema (multi-result)
 
 ### 3.1 Radius tag
@@ -135,7 +133,7 @@ from float to double. It carries an attribute `rpst_manifest` (list with the col
 
 A single rPSTool-owned `ResultTable` collects every
 radius' finished columns (each radius' PST scratch is released before the next radius runs), is exported as one Arrow C stream
-and written by the existing single writer: one temporary file, one publication (a single rename; see [result files](../spatial-io/result-files.md) §5). Source geometry and attributes are
+and written by the existing single writer: one temporary file, one publication (a single rename; see [result files](../spatial-io/result-files.md) §3). Source geometry and attributes are
 written once. Failure of any radius, normaliser or the writer returns before anything is published; an existing destination is
 untouched; native owners unwind before the R error; the graph stays usable.
 

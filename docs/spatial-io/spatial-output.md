@@ -30,7 +30,7 @@ angular_choice(g, radius = analysis_radius(steps = 3), spatial_output_file = "ro
   `network_reach(origins = NULL)`, `network_betweenness()`, `od_betweenness()`, and `attraction_reach()` /
   `attraction_distance()` with `origin = "lines"`. Rejected before anything is computed: `network_reach(origins = )`, junction
   results and other attraction origins. `segment_group_integration()` (rows are groups) and `segment_grouping()` (its group
-  counts cannot be written to the spatial file, see [result files](result-files.md) §13.6) have no `spatial_output_file`.
+  counts cannot be written to the spatial file, see [result files](result-files.md) §7.3) have no `spatial_output_file`.
 
 ## 2. Source-to-result association
 
@@ -78,7 +78,7 @@ Header metadata. GeoParquet keeps the source schema metadata and adds or replace
 
 ## 5. Safety and publication
 
-Publication follows [result files](result-files.md) §5: validation before anything is computed, an exclusive hidden temporary
+Publication follows [result files](result-files.md) §3: validation before anything is computed, an exclusive hidden temporary
 file in the destination directory, no-clobber or single-rename publication, removal of the temporary file on error or
 interrupt, and an existing valid output untouched by a failed write. The same guarantees and non-guarantees apply.
 
@@ -89,11 +89,10 @@ and every record, with 64 MiB size bounds.
 ## 6. Memory and speed
 
 * FlatGeobuf output memory is dominated by PST's own arrays.
-* GeoParquet is streamed by row group, so arrow's memory grows more slowly with size than when the whole table is held. It
-  is not the fastest option at 1 million rows.
+* GeoParquet is written by row group, so arrow does not need to hold the whole table at once.
 * GeoParquet uses zstd, like `output_file`.
 
-## 8. Not supported
+## 7. Not supported
 
 Cross-format output, reprojection or CRS inference, indexed FlatGeobuf output, writing back to the source, GeoPackage or
 Shapefile output, projecting group-level results onto segments.
