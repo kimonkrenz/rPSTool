@@ -48,7 +48,7 @@ retained unchanged; a geographic or uninterpretable CRS is rejected.
 
 ## 5. Memory
 
-Memory is dominated by PST's own graph; decoding the file adds comparatively little.
+PST retains the constructed graph in memory. FlatGeobuf records are decoded individually rather than loading the entire source file into an R object.
 
 ## 6. Not supported
 

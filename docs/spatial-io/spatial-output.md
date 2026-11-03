@@ -88,7 +88,7 @@ and every record, with 64 MiB size bounds.
 
 ## 6. Memory and speed
 
-* FlatGeobuf output memory is dominated by PST's own arrays.
+* FlatGeobuf output writes sequentially and does not reduce the memory used by PST's computation.
 * GeoParquet is written by row group, so arrow does not need to hold the whole table at once.
 * GeoParquet uses zstd, like `output_file`.
 
