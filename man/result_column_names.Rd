@@ -39,11 +39,25 @@ because PST skips origins without positive weight.
 
 For example, \code{ai_a_rw3000_t} is Angular Integration with angular distance, a 3000 walking radius and Turner
 normalisation, and \code{ac_a_rw3000_c_at12} is Angular Choice with NACH normalisation and \code{angle_threshold = 12}.
+}
+\section{Naming custom weights}{
+
+Custom weights are named in the result columns (\code{..._wpopulation_...}) after the R expression you supply, so no extra
+argument is needed: an object name (\code{weights = population}) or a literal data-frame column (\code{weights = data$population}
+or \code{weights = data[["population"]]}). An anonymous vector (\code{c(1, 2, 3)}) or a calculation (\code{data$population / 1000}) has
+no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+run of characters outside \code{a-z}, \code{0-9} and \verb{_} becomes one \verb{_}, and leading and trailing underscores are dropped
+(\code{Jobs-2021} gives \code{jobs_2021}); a name with no letter or digit left is an error. The original name is kept in the result
+metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+are named by the wrapper's variable, and \code{do.call()} with values cannot be named (pass named objects instead). The name
+is a label only: it does not check that the same name always means the same values. \code{\link[=network_betweenness]{network_betweenness()}},
+\code{\link[=attraction_reach]{attraction_reach()}}, \code{\link[=attraction_distance]{attraction_distance()}} and \code{\link[=od_betweenness]{od_betweenness()}} follow these rules for their weight arguments.
 
 The names are labels: the \code{rpst:columns} manifest in result-file metadata, and the \code{rpst_manifest} attribute of
-multi-radius data frames, describe each column authoritatively. See \code{docs/output-naming.md} in the repository for the
-full tables and examples. These names replace the earlier generic ones (\code{integration}, \code{choice}, \code{node_count}, ...).
+multi-radius data frames, describe each column authoritatively. The full tables and examples are in
+\code{docs/output-naming.md} in the repository.
 }
+
 \seealso{
 \code{\link[=angular_integration]{angular_integration()}}, \code{\link[=angular_choice]{angular_choice()}}, \code{\link[=network_betweenness]{network_betweenness()}}, \link{pst_result_file}
 }

@@ -286,9 +286,21 @@
 #' For example, `ai_a_rw3000_t` is Angular Integration with angular distance, a 3000 walking radius and Turner
 #' normalisation, and `ac_a_rw3000_c_at12` is Angular Choice with NACH normalisation and `angle_threshold = 12`.
 #'
+#' @section Naming custom weights:
+#' Custom weights are named in the result columns (`..._wpopulation_...`) after the R expression you supply, so no extra
+#' argument is needed: an object name (`weights = population`) or a literal data-frame column (`weights = data$population`
+#' or `weights = data[["population"]]`). An anonymous vector (`c(1, 2, 3)`) or a calculation (`data$population / 1000`) has
+#' no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
+#' run of characters outside `a-z`, `0-9` and `_` becomes one `_`, and leading and trailing underscores are dropped
+#' (`Jobs-2021` gives `jobs_2021`); a name with no letter or digit left is an error. The original name is kept in the result
+#' metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
+#' are named by the wrapper's variable, and `do.call()` with values cannot be named (pass named objects instead). The name
+#' is a label only: it does not check that the same name always means the same values. [network_betweenness()],
+#' [attraction_reach()], [attraction_distance()] and [od_betweenness()] follow these rules for their weight arguments.
+#'
 #' The names are labels: the `rpst:columns` manifest in result-file metadata, and the `rpst_manifest` attribute of
-#' multi-radius data frames, describe each column authoritatively. See `docs/output-naming.md` in the repository for the
-#' full tables and examples. These names replace the earlier generic ones (`integration`, `choice`, `node_count`, ...).
+#' multi-radius data frames, describe each column authoritatively. The full tables and examples are in
+#' `docs/output-naming.md` in the repository.
 #'
 #' @name result_column_names
 #' @aliases result_column_names

@@ -49,10 +49,10 @@ The perimeter is a polygon with \code{perimeter_segments} segments, corrected so
 counterclockwise from the positive x axis and is ignored for a full circle. An origin inside an obstacle causes that
 obstacle to be skipped. Geometry is single-precision, as in PST.
 
-Safeguards prevent three invalid-access states in PST: an empty calculated vertex array, and too few vertices for
-partial-view processing of attraction points or attraction polygons. They give an R error rather than a result. Small
-radii, narrow views, zero area and safely written degenerate geometry are not rejected, and successful calculations
-follow PST exactly. The returned values do not depend on the context after it has been freed.
+rPSTool raises an error where PST would otherwise access invalid memory: when the calculated vertex array is empty, and
+when there are too few vertices for partial-view processing of attraction points or attraction polygons. Small
+radii, narrow views, zero area and degenerate geometry that PST writes safely are not rejected, and successful
+calculations follow PST exactly. The returned values do not depend on the context after it has been freed.
 }
 \examples{
 ctx <- isovist_context()

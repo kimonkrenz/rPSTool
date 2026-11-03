@@ -48,15 +48,9 @@
 #'   Z/M and empty POINT features are rejected.
 #' @param radius Distance limits created by [analysis_radius()].
 #' @section Naming custom weights:
-#' Custom weights are named in the result columns (`..._wpopulation_...`) after the R expression you supply, so no extra
-#' argument is needed: an object name (`attraction_values = capacity`) or a literal data-frame column (`line_weights = costs$cost`
-#' or `line_weights = costs[["cost"]]`). An anonymous vector (`c(1, 2, 3)`) or a calculation (`data$population / 1000`) has
-#' no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
-#' run of characters outside `a-z`, `0-9` and `_` becomes one `_`, and leading and trailing underscores are dropped
-#' (`Jobs-2021` gives `jobs_2021`); a name with no letter or digit left is an error. The original name is kept in the result
-#' metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
-#' are named by the wrapper's variable, and `do.call()` with values cannot be named (pass named objects instead). The name
-#' is a label only: it does not check that the same name always means the same values.
+#' Custom weights are named in the result columns (`..._wcapacity_...`) after the R object or literal data-frame column you
+#' pass (`attraction_values = capacity`, `line_weights = costs$cost`). Anonymous vectors and calculations are an error;
+#' assign them to a named object first. See [result_column_names] for the naming rules.
 #' @param origin `"lines"`, `"junctions"`, `"points"` or `"point_groups"`. Points and point groups are those retained
 #'   when the graph was built, not newly supplied origins.
 #' @param distance The distance used, default `"steps"`. For `attraction_reach()`: `"straight"`, `"walking"`, `"steps"`,

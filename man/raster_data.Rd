@@ -16,7 +16,7 @@ A list with
 \item \code{dimensions}: named integer \verb{width, height},
 \item \code{pitch}: the row stride of PST's raster storage in bytes (informational; it is not needed to index \code{values}),
 \item \code{format}: the pixel type, \code{"float"} (copied into a double matrix) or \code{"byte"} (copied into an integer matrix);
-comparison rasters currently have format \code{"float"},
+comparison rasters have format \code{"float"},
 \item \code{min} and \code{max}: PST's comparison minimum and maximum (before normalisation in normalised mode), and
 \item \code{values}: a matrix with \code{height} rows and \code{width} columns. Rows run from maximum y towards minimum y and columns from
 minimum x towards maximum x. Pixel centres are half a pixel inside the extent.

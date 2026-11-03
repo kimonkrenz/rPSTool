@@ -12,7 +12,7 @@
 #' The movement gate counts were originally reported by Penn et al. (1998).
 #'
 #' The original data were not supplied in British National Grid. The coordinates in this package are the transformed coordinates in
-#' EPSG:27700 (metres) and must not be taken to be the original, unmodified coordinates. The LGPL (>= 3) licence applies to rPSTool's software. The Barnsbury data are included with the authors' permission and remain attributable to them.
+#' EPSG:27700 (metres); they are not the original coordinates. The LGPL (>= 3) licence applies to rPSTool's software. The Barnsbury data are included with the authors' permission and remain attributable to them.
 #'
 #' @references Hillier, B. and Iida, S. (2005). Network and Psychological Effects in Urban Movement. In Cohn, A.G. and Mark, D.M.
 #'   (eds), *Spatial Information Theory*, Lecture Notes in Computer Science 3693, pp. 475-490. Springer.

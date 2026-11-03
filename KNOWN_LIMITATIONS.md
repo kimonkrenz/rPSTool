@@ -1,8 +1,6 @@
 # Known limitations
 
-This page lists the verified restrictions of rPSTool that affect functionality, supported inputs, interpretation or
-practical use. Each entry names the affected functions, the restriction, its practical consequence and any workaround.
-The function help pages describe the same points where they apply.
+Restrictions of rPSTool that affect functionality, supported inputs, interpretation or practical use.
 
 ## Analyses
 
@@ -10,7 +8,13 @@ The function help pages describe the same points where they apply.
 
 **Affects:** `angular_choice()`, and to a lesser extent `angular_integration()`.
 
-Angular Choice may encounter computational limitations in exceptionally deep network configurations, particularly with unrestricted analysis radii. This has only been observed in artificially constructed networks with thousands of consecutively connected segments, not in real-world street networks. Restricting the analysis radius avoids the observed limitation.
+PST's Angular Choice (and, with a larger tolerance, Angular Integration) traverses shortest-path chains recursively on a worker thread, with no
+depth bound. A very long chain of shortest-path steps can exhaust the worker thread's stack, which crashes the R session. The depth reached
+depends on network topology and radius, not on network size, and the threshold depends on the platform's thread stack, the compiler and its
+flags. Measured on synthetic, unrestricted collinear chains: a crash at about 64,500 segments on Linux x86-64 (8 MB stack), and at 8,000
+segments on macOS ARM64. A radius-limited run on the same 8,000-segment chain succeeded. No realistic street network is known to reach such
+depths. rPSTool does not change PST's computation and has no guard. Workaround: restrict the analysis radius; a `steps` radius bounds the depth
+at about the number of steps plus one.
 
 ### Combined radius limits can be very slow
 
@@ -53,11 +57,9 @@ analysis rejects it before doing any work; call it once per radius instead.
 
 ### Analyses and routines not available
 
-PST's experimental Fast Segment Betweenness and its Visual Connectivity stub are not provided, and neither is PST's native
-logging callback. rPSTool uses PST's native progress reports internally for its console progress line, for the analyses and
-construction functions listed in [`docs/progress.md`](docs/progress.md); it does not estimate percentages and shows no progress
-for functions whose PST routine reports none. It offers no public API for user-defined progress callbacks, and a running
-analysis cannot be cancelled through the progress callback: it completes unless the R process is terminated.
+PST's experimental Fast Segment Betweenness and its Visual Connectivity stub are not provided, and neither is PST's native logging
+callback. There is no API for user-defined progress callbacks, and a running analysis cannot be cancelled; it completes unless the R process
+is terminated. Which functions show a console progress line is described in [`docs/progress.md`](docs/progress.md).
 
 ## Inputs and outputs
 
@@ -82,28 +84,18 @@ analysis cannot be cancelled through the progress callback: it completes unless 
 
 ## Platform validation
 
-The full development test suite and `R CMD check` passed at commit
-[`4119f2b`](https://github.com/kimonkrenz/rPSTool/commit/4119f2b847bafedff84f6d6fbf357196aed77add) on Linux x86-64 (GCC 15.2.0),
-macOS ARM64 (Apple clang 17.0.0) and Windows x86-64 (GCC 14.3.0), all with R 4.6.2. This is the extent of platform testing. The
-Windows run recorded 160,759 test expectations against 160,814 on the other two platforms; the difference has not been
-independently explained.
+The full test suite and `R CMD check` passed in GitHub Actions at commit `4119f2b` on Linux x86-64, macOS ARM64 and Windows x86-64 (R 4.6.2),
+with 160,814, 160,814 and 160,759 test expectations; the 55-expectation difference on Windows is unexplained. Later local development runs
+(tree of `96a1547`, rebase-merged as `c6c4ed9`) passed on macOS ARM64 (161,539 expectations, `Status: OK`) and Windows x86-64 (161,484
+expectations, four approved skips, `Status: OK`). Linux, CRAN incoming checks and the release tarball have not been validated at the current tree.
 
-The output-naming and progress changes were later validated locally by the maintainer on the tree of `96a1547` (reported identical
-to the rebase-merged `c6c4ed9`): macOS ARM64 with 161,539 expectations and `Status: OK`, and Windows x86-64 with 161,484
-expectations, four approved skips and `Status: OK`. Linux, CRAN incoming checks and a release tarball have not been validated at
-that tree.
-
-rPSTool's inputs and defaults were checked against the code of the PST for QGIS plugin, but its results have not been compared
-with real runs of the plugin. Intentional differences are listed in
-[QGIS differences](docs/compatibility/qgis-differences.md).
+rPSTool's inputs and defaults were checked against the code of the PST for QGIS plugin, but its results have not been compared with real
+runs of the plugin. Intentional differences are listed in [QGIS differences](docs/compatibility/qgis-differences.md).
 
 ## Example data
 
-The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement
-gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz, so the coordinates are not the original
-coordinates and the data were not originally supplied in British National Grid. The data are included and redistributed with
-permission from the authors, and the original research and data remain attributable to them. See
-[example data](docs/example-data.md).
+The Barnsbury example data (Hillier and Iida, 2005) were georeferenced and spatially transformed, so the coordinates are not the original
+coordinates. They are included with the authors' permission and remain attributable to them; see [example data](docs/example-data.md).
 
 ## Reporting problems
 

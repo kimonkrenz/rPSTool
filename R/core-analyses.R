@@ -5,8 +5,8 @@
 #' given walking distance, number of direction changes or straight-line distance.
 #'
 #' @details
-#' **What is reported.** For a line origin, `reached_count` includes the origin line and `reached_length` is
-#' the full length of every reached line. `reached_area` is the area of the convex hull of the reached line
+#' **What is reported.** For a line origin, `rc_...` (reached count) includes the origin line and `rln_...` (reached length) is
+#' the full length of every reached line. `rca_...` (reached area) is the area of the convex hull of the reached line
 #' endpoints, except when only a straight radius is set, where PST returns pi times the radius squared.
 #' Lengths and areas are in the units of the input coordinates; no rescaling takes place.
 #'
@@ -90,14 +90,14 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' Without `attraction_points`, supply one weight per line. With attraction points, PST assigns each point to
 #' its closest line and accumulates the weights there; supply one weight per point (omitted weights mean unit
 #' weights). Weighted scores include PST's endpoint and self contributions, so unit weights need not equal
-#' the unweighted scores. `node_count` includes the origin.
+#' the unweighted scores. The node count (`nc_...`) includes the origin.
 #'
-#' **Normalisation.** The raw score `betweenness` is always returned. `normalization` adds PST's
-#' `"standard"`, `"freeman"` (Freeman betweenness) or `"syntax"` normalisation as the column
-#' `normalized`.
+#' **Normalisation.** The raw score (`nb_..._n`, or `at_..._n` with `attraction_points`) is always returned.
+#' `normalization` adds PST's `"standard"`, `"freeman"` (Freeman betweenness) or `"syntax"` normalisation as a
+#' further column (`..._s`, `..._f` or `..._y`).
 #'
 #' **Skipped origins.** PST skips origins whose effective line weight is not positive and writes neither their
-#' `node_count` nor their `total_depth`. rPSTool reports these as `NA`, with `NA` Freeman or syntax
+#' node count (`nc_...`) nor their total depth (`td_...`). rPSTool reports these as `NA`, with `NA` Freeman or syntax
 #' normalised values for those rows. Standard normalisation still uses all genuine raw scores.
 #'
 #' **Attraction points.** Points may be a matrix or an XY POINT `sf`/`sfc` object (features used in order). Empty, non-finite,
@@ -120,22 +120,16 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
 #'   see [pst_result_file]. In a result file, the `NA` values described below are stored as nulls.
 #' @section Naming custom weights:
-#' Custom weights are named in the result columns (`..._wpopulation_...`) after the R expression you supply, so no extra
-#' argument is needed: an object name (`weights = population`) or a literal data-frame column (`weights = data$population`
-#' or `weights = data[["population"]]`). An anonymous vector (`c(1, 2, 3)`) or a calculation (`data$population / 1000`) has
-#' no name and is an error raised before any computation: assign it to a named object first. The name is lower-cased, every
-#' run of characters outside `a-z`, `0-9` and `_` becomes one `_`, and leading and trailing underscores are dropped
-#' (`Jobs-2021` gives `jobs_2021`); a name with no letter or digit left is an error. The original name is kept in the result
-#' metadata. Names are read from the call, never from values or element names; weights forwarded through a wrapper function
-#' are named by the wrapper's variable, and `do.call()` with values cannot be named (pass named objects instead). The name
-#' is a label only: it does not check that the same name always means the same values.
+#' Custom weights are named in the result columns (`..._wpopulation_...`) after the R object or literal data-frame column you
+#' pass (`weights = population`, `weights = data$population`). Anonymous vectors and calculations are an error; assign
+#' them to a named object first. See [result_column_names] for the naming rules.
 #' @return A data frame in line order with `line_id`, the raw betweenness (`nb_<d>_<radius>_n`, or `at_...` with
 #'   `attraction_points`), integer node count (`nc_...`) and total depth (`td_...`), plus the normalised score
 #'   (`..._s`, `..._f` or `..._y`) when requested; see [result_column_names]. The raw score and `"standard"`
 #'   normalisation are never `NA`. The node count and total depth are `NA` for origins PST skipped in weighted calls,
 #'   and the normalised score is `NA` for those rows with `"freeman"` or `"syntax"`. `NaN` and `Inf` values written by PST are returned
 #'   unchanged. With `output_file` or `spatial_output_file` the results are written to a file and an invisible
-#'   [pst_result_file] descriptor is returned (`line_id` and `node_count` are stored as int32, the other
+#'   [pst_result_file] descriptor is returned (`line_id` and the node count are stored as int32, the other
 #'   columns as float32).
 #' @seealso [angular_choice()] for segment graphs, [od_betweenness()], [analysis_radius()]
 #' @export
@@ -194,14 +188,14 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
 #' degrees count as zero, and turn costs are rounded to `angle_precision` degree units when PST chooses
 #' between paths. Reported depths and angular radii use the unrounded, thresholded angles, in syntax angle
 #' units (90 degrees is one unit). A negative threshold has no effect and a threshold above 180 zeroes every
-#' turn. `node_count` includes the origin. Length weighting (`weigh_by_length = TRUE`) uses PST's own
+#' turn. The node count (`nc_...`) includes the origin. Length weighting (`weigh_by_length = TRUE`) uses PST's own
 #' origin and destination contributions. Axmeter radii are rejected, and so are graphs with more than 32
 #' endpoint incidences at one coordinate (as for [angular_integration()]).
 #'
 #' **Normalisation.** The raw choice score is always returned. `normalization` adds PST's `"standard"`,
 #' `"turner"` (Angular Choice) or `"syntax"` (normalised angular choice, NACH) normalisation. Syntax normalisation uses the run's total depth:
 #' the length-weighted total depth when `weigh_by_length = TRUE` (as the PST for QGIS plugin does), otherwise
-#' `total_depth`.
+#' the total depth (`td_...`).
 #'
 #' **Several radii and normalisations.** One radius field of [analysis_radius()] may hold several values,
 #' and `normalization` may hold several names. PST then runs once per radius and each requested

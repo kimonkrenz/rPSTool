@@ -27,7 +27,7 @@ lowest to the highest value (or reversed).
 }
 \description{
 rPSTool ships eleven palettes for drawing network analysis results, in three groups: (1) seven colour modes reproduced from
-depthmapX v0.9.1 with their historical identities and mapping rules; (2) two white-background adaptations
+depthmapX v0.9.1 with their original names and mapping rules; (2) two white-background adaptations
 (\code{axmanesque_white}, \code{depthmapx_classic_white}) that reuse some depthmapX colours; and (3) two palettes designed for rPSTool
 (\code{coral_night}, \code{coral_day}). \code{colour_palettes()} lists them, \code{colour_palette()} returns the exact discrete colours of a
 palette, and \code{\link[=colour_map]{colour_map()}} maps numbers to colours. None of these functions needs ggplot2 and none alters an analysis result;
@@ -40,49 +40,46 @@ palette, and \code{\link[=colour_map]{colour_map()}} maps numbers to colours. No
 depthmapX v0.9.1 modes ("Equal Ranges (3-Colour)", "(3-Colour Hue Only)", "(Blue-Red)", "(Purple-Orange)", "(Greyscale)",
 "(Monochrome)" and "depthmapX Classic"). Their colour values are reproduced from depthmapX (\code{salalib/pafcolor.cpp}, tag
 v0.9.1; GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis) and the Classic band mapping was reimplemented in R. They
-are included for historical fidelity and are unchanged. The first six are
+are unchanged. The first six are
 \emph{equal ranges} palettes with 10, 10, 7, 7, 7 and 7 native bands, so their continuous mapping is a band lookup, not a
 gradient. \code{monochrome} shares the greyscale colours; depthmapX also uses it to vary line thickness, which a colour mapping does
 not reproduce. \code{depthmapx_classic} has no discrete colours: it is a piecewise calculated rainbow with its landmarks at
 \verb{0, .05, .10, .55, 1} (blue, cyan, green, yellow, red), channels quantised to sixteen levels. It is not a gradient with equally
 spaced stops.}
-\item{\code{axmanesque_white}, \code{depthmapx_classic_white}}{White-background adaptations (designs "A, pale cyan start" and "F,
-clearer yellow transition"), each defined by nine anchor colours. Some anchors reuse depthmapX colours: seven of the nine
+\item{\code{axmanesque_white}, \code{depthmapx_classic_white}}{White-background adaptations, each defined by nine anchor colours. Some anchors reuse depthmapX colours: seven of the nine
 \code{axmanesque_white} anchors (3 to 9) are colours of the depthmapX Equal Ranges (3-Colour) array, and the \code{depthmapx_classic_white}
 anchors at the cyan, green and red landmarks are the depthmapX Classic landmark colours (\verb{#00FFFF}, \verb{#00FF00}, \verb{#FF0000}). The
 remaining anchors (the pale cyan start colours, the intermediate Classic hues and the adjusted Classic yellow) are not
 depthmapX values. They are additional palettes: the native ten-band Axmanesque and the native Classic mapping are separate
 identifiers and are unchanged.}
 \item{\code{coral_night}}{Coral Night, designed for rPSTool: a rainbow-style scale for a black or dark background.}
-\item{\code{coral_day}}{Coral Day, designed for rPSTool (the selected "H, earlier warmth" design): a scale for a white or light
-background.}
+\item{\code{coral_day}}{Coral Day, designed for rPSTool: a scale for a white or light background.}
 }
-The four non-historical palettes have nine anchors at \code{seq(0, 1, length.out = 9)} and the nested discrete variants of 3 colours
+The four palettes that are not depthmapX modes have nine anchors at \code{seq(0, 1, length.out = 9)} and the nested discrete variants of 3 colours
 (anchors 1, 5, 9), 5 colours (1, 3, 5, 7, 9) and 9 colours (all). Their continuous designs are: for the two Coral palettes the
-selected curves (Coral Day: nearest-index lookup of the selected 513-point table, \code{round(t * 512)} with ties to even; Coral
-Night: the original generator, evaluated at the requested position), and for the two white adaptations piecewise linear
+Coral curves (Coral Day: nearest-index lookup of a 513-point table, \code{round(t * 512)} with ties to even; Coral
+Night: a generating function evaluated at the requested position), and for the two white adaptations piecewise linear
 interpolation of the encoded sRGB channels through the nine anchors, rounded to the nearest integer with ties to even (no
 other colour space is used). Continuous positions outside \verb{[0, 1]} are clipped.
 }
 
-\section{Intended backgrounds and what is claimed}{
+\section{Intended backgrounds}{
 
 \code{coral_night} is intended for a black or dark background; \code{coral_day}, \code{axmanesque_white} and \code{depthmapx_classic_white} for a white
-or light one; the historical modes carry no stated background. The \code{background} column of \code{colour_palettes()} records this
+or light one; the depthmapX modes carry no stated background. The \code{background} column of \code{colour_palettes()} records this
 intention. \strong{No function in rPSTool changes a plot's background}: choosing a palette never alters the theme.
 
-These are visual design aims, not demonstrated properties. The Coral palettes were designed to give an overall dark-to-light (Night)
-or light-to-dark (Day) progression of values with visibly distinct colour transitions; the anchors are ordered in lightness but small
-lightness dips occur along the continuous curves. The white adaptations aim to reduce the visual weight of dark blues and strong
-reds on white while retaining recognisable legacy hue sequences, and still contain bright cyan and green and uneven lightness. No
-palette has been observer-tested, and rPSTool does not claim colour-blind safety, perceptual uniformity or improved reading accuracy
-for any of them. The depthmapX source comments describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe;
-rPSTool neither verifies nor repeats that claim.
+The Coral palettes give an overall dark-to-light (Night) or light-to-dark (Day) progression of values with visibly distinct
+colour transitions; the anchors are ordered in lightness, with small lightness dips along the continuous curves. The white
+adaptations reduce the visual weight of dark blues and strong reds on white while retaining recognisable depthmapX hue
+sequences; they still contain bright cyan and green and uneven lightness. No palette has been tested with observers, and
+colour-blind safety, perceptual uniformity and reading accuracy have not been assessed. The depthmapX source comments
+describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe; rPSTool has not verified this.
 
-Provenance, source files and the decisions behind these definitions are in the repository's palette documentation
+Provenance and source files are documented in the repository's palette documentation
 (\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md}). The Blue-Red and
 Purple-Orange colour values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.); ColorBrewer's
-licence terms were not verified.
+licence terms have not been checked.
 }
 
 \examples{

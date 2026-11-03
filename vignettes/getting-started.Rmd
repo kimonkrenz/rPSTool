@@ -22,9 +22,8 @@ library(rPSTool)
 
 rPSTool is an R interface to the C++ analysis engine of the *Place Syntax Tool* (PST). The package compiles a pinned copy of
 the engine (PST v3.3.2) and calls it directly, so installing it needs neither QGIS nor a separate PST installation. This
-vignette is a practical introduction. It uses the Barnsbury example network for two workflows: an in-memory analysis with
-`sf` objects, and a file-backed analysis that reads a network from a GeoParquet file and writes a spatial result file. It does
-not reproduce the analyses of Hillier and Iida (2005).
+vignette uses the Barnsbury example network for two workflows: an in-memory analysis with
+`sf` objects, and a file-backed analysis that reads a network from a GeoParquet file and writes a spatial result file.
 
 The example data are `sf` objects, so the code below needs the package **sf**, an optional dependency. If it is not
 installed, the code chunks are skipped.
@@ -56,7 +55,7 @@ vapply(barnsbury, nrow, integer(1))
 ```
 
 * `axial` is the **axial map**, one straight line per axial line. The four `source_*` columns (connectivity, control,
-  integration, local integration) are historical values supplied with the data, kept unchanged. They are not rPSTool or PST
+  integration, local integration) are historical values supplied with the data. They are not rPSTool or PST
   results, and no rPSTool function reads them. `axial_id` is the original line identifier; identifiers are unique but are not
   row numbers.
 * `unlinks` are the points where two axial lines cross without being connected (for example where one street passes over
@@ -124,9 +123,7 @@ plot(
 * `classInt::classIntervals(style = "fisher")` divides the values into nine classes. rPSTool does not classify values itself;
   the breaks are passed to `colour_map()`. `classInt` samples large data sets for Fisher breaks, so `set.seed(1)` makes the
   classes, and so the map, repeatable.
-* Coral Day is the rPSTool palette for light backgrounds (Coral Night is for dark ones).
 * Drawing in ascending order of choice puts the highest-choice segments on top.
-* The classification and colours affect only the picture, not the Angular Choice values.
 
 A graph lives in native memory: it cannot be saved with `saveRDS()` or sent to another R process, so rebuild it when needed.
 The same segment graph serves every segment analysis, for example `angular_integration()`.

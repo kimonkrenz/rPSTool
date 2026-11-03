@@ -2,16 +2,15 @@ Copyright and licence notices for rPSTool
 ======================================
 
 This file is an attribution summary, not legal advice or a formal compliance statement.
-Detailed matrix and assessment: docs/licensing.md in the source repository.
+Component matrix: docs/licensing.md in the source repository.
 
 rPSTool
 ----
 The R and native code written for rPSTool (R/, src/*.c, src/*.cpp, src/*.h except the third-party
 files below, tests/, tools/) is licensed under the GNU Lesser General Public License, version 3
 or (at your option) any later version (DESCRIPTION: License: LGPL (>= 3)). Author and maintainer of
-the rPSTool code: Kimon Krenz. Copyright 2026 Kimon Krenz. The maintainer has confirmed that rPSTool is an
-independently developed personal project, written in his free time, outside university employment
-duties and without grant funding. The licence texts are in inst/licenses/LGPL-3.txt and
+the rPSTool code: Kimon Krenz. Copyright 2026 Kimon Krenz. rPSTool was developed independently by Kimon Krenz,
+outside university employment duties and without grant funding. The licence texts are in inst/licenses/LGPL-3.txt and
 inst/licenses/GPL-3.txt (the LGPL-3 incorporates the GPL-3 terms).
 
 Prominent notice of use: the compiled package library (rPSTool.so / rPSTool.dll) is a Combined Work
@@ -20,14 +19,11 @@ together with rPSTool code. The complete corresponding source is the rPSTool sou
 rebuild with a modified PST/pstalgo, modify the sources under src/vendor/pstalgo/ (and see
 inst/upstream/PATCHES.md for the build-time adaptations) and reinstall with R CMD INSTALL.
 
-Note on source checks: rPSTool officially uses the pinned PST v3.3.2 source. Its normal build verifies exact
-source hashes to preserve reproducibility and numerical fidelity. These checks are safeguards for the
-official build, not restrictions on users who modify the LGPL-covered PST code. The distributed source
-package contains the PST source, the rPSTool wrappers, the build scripts and the documented build-time
-adaptations. Someone developing a modified PST-based version may deliberately adapt the relevant hash
-expectations, patch rules and build scripts to compile their modified engine. Such a custom build is
-separate from the officially validated rPSTool configuration; it is not claimed that arbitrary modified PST
-code will build or behave correctly without further adaptation.
+Note on source checks: official builds verify exact hashes of the pinned PST v3.3.2 source to preserve
+reproducibility. These checks do not restrict users who modify the LGPL-covered PST code: the source
+package contains the PST source, the rPSTool wrappers, the build scripts and the documented adaptations,
+and a modified PST may require adapting the hash expectations, patch rules and build scripts. Arbitrary
+modified PST code is not guaranteed to build or behave correctly without such adaptation.
 
 Bundled third-party components
 ------------------------------
@@ -48,9 +44,7 @@ Bundled third-party components
    Pablo Miranda Carranza, Tobias Nordström.
    Licensed under the GNU Lesser General Public License, version 3 or (at your option) any
    later version. The licence text is in inst/upstream/PST_LICENSE and inst/licenses/LGPL-3.txt;
-   the upstream README is in inst/upstream/PST_README.txt (it names Meta Berghauser Pont as
-   copyright owner and lists the developing institutions: KTH School of Architecture, Chalmers
-   School of Architecture (SMoG) and Spacescape AB). The source is vendored byte-for-byte in
+   the upstream README is in inst/upstream/PST_README.txt. The source is vendored byte-for-byte in
    src/vendor/pstalgo/ with its original headers (two upstream files, CMakeLists.txt and
    include/pstalgo/utils/Concurrency.h, carry no header of their own; they are part of the
    same distribution). rPSTool applies narrow, documented compatibility, ownership, allocation
@@ -94,16 +88,15 @@ Other bundled material
 - Colour palettes (eleven, in three groups; docs/palettes.md in the source repository):
   (1) Seven colour modes reproduced from depthmapX v0.9.1 (salalib/pafcolor.cpp and salalib/displayparams.h, tag v0.9.1;
   GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis): the colour values, and the depthmapX Classic mapping, which was
-  reimplemented in R to reproduce depthmapX behaviour. The maintainer has decided to retain the package licence LGPL (>= 3) and this
-  attribution; that is a maintainer decision, not a legal opinion or a formally verified clearance (docs/licensing.md, open item 6:
-  whether the reproduction of depthmapX colour values and behaviour in an LGPL-3-or-later package needs further review).
+  reimplemented in R to reproduce depthmapX behaviour. The reuse of depthmapX colour values and behaviour in an LGPL (>= 3) package
+  has not been legally reviewed.
   (2) Two white-background adaptations (Axmanesque White, depthmapX Classic White): rPSTool adaptations that reuse some depthmapX
   colours (seven Axmanesque White anchors are entries of the depthmapX Equal Ranges (3-Colour) array; three depthmapX Classic White
   anchors equal the Classic cyan, green and red landmark colours); the other anchors are not depthmapX values. The depthmapX
   attribution above applies to the reused colours.
   (3) Two palettes designed for rPSTool (Coral Night, Coral Day).
   The depthmapX Blue-Red and Purple-Orange values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
-  ColorBrewer's licence terms were not verified (docs/licensing.md, open item 9).
+  ColorBrewer's licence terms were not verified.
 - Example data (inst/extdata/hillier_iida/): the Barnsbury example data are derived from Hillier, B. and Iida, S. (2005), Network and
   Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), and include the axial network, unlinks and
   observed movement gate counts; the original data were obtained from https://discovery.ucl.ac.uk/id/eprint/1232/. The geometries

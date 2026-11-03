@@ -1,13 +1,12 @@
-# Manual QGIS run (evidence level Q) - NOT YET PERFORMED
+# Manual comparison with PST for QGIS
 
-**No Q-level validation has been performed.** This is the procedure for it. Until a maintainer has run it and archived the exports, the record of
-settings and the comparison output, nobody may write "rPSTool matches PST for QGIS".
+No comparison inside QGIS has been run yet. This is the procedure for it.
 
 ## 1. Record the environment
 
 Use Windows or macOS (the plugin's bundled engine library exists only for those; the plugin does not run on Linux). Record: QGIS version and the Python/GDAL/GEOS/PROJ versions
 (Help > About), OS and architecture, plugin name and version (must read 3.3.2) and how it was installed, `packageVersion("rPSTool")` and the rPSTool git commit
-(the build must include the weighted-Choice correction and, for the decay default, the decay-default change if you extend the cases), and this repository's commit.
+and this repository's commit.
 Save these in `tools/validation/qgis-comparison/qgis-exports/run-info.txt` (create the folder).
 
 ## 2. Prepare the data
@@ -42,5 +41,4 @@ say why in the record and give the maximum difference the comparer printed.
 
 ## 5. What to archive
 
-`run-info.txt`, the CSV exports, the `rpst/` CSVs, the comparer output, any plugin warnings, and a short note listing every deviation from this procedure. Only then may the result be
-described as a Q-level comparison, and only for the cases and settings actually run.
+`run-info.txt`, the CSV exports, the `rpst/` CSVs, the comparer output, any plugin warnings, and a short note listing every deviation from this procedure. The result applies only to the cases and settings actually run.

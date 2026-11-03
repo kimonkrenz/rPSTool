@@ -28,7 +28,7 @@ non-\code{NULL} \code{steps}.}
 
 \item{junction_output}{\code{"native"} (default) or \code{"sf"}. Applies only to the junction table and requires
 \code{junctions = TRUE} and the suggested package 'sf'. With \code{"sf"} the junctions are POINT features with
-\code{junction_id} and \code{integration} columns, in PST's order and with the graph's CRS.}
+\code{junction_id} and \verb{nj_s_<radius>} columns, in PST's order and with the graph's CRS.}
 
 \item{output_file, overwrite, spatial_output_file}{Write the results to a file instead of returning
 them; see \link{pst_result_file}. \code{output_file} and \code{spatial_output_file} require \code{junctions = FALSE}.}

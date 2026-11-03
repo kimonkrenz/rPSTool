@@ -9,10 +9,10 @@
 #' integration, NAIN) or `"hillier"` normalisation; with `weigh_by_length = TRUE` the matching length-weighted
 #' form is used. All scores are computed by PST.
 #'
-#' **Reached segments.** `node_count` includes the origin, whereas `total_weight` excludes it. Unweighted,
-#' `total_weight` is the number of other reached segments; weighted, it is the sum of their lengths. Total depth
+#' **Reached segments.** `nc_...` (node count) includes the origin, whereas `tw_...` (total weight) excludes it. Unweighted,
+#' `tw_...` is the number of other reached segments; weighted, it is the sum of their lengths. Total depth
 #' and depth-weight sums are in syntax angle units (90 degrees is one unit). Weighted calls always include
-#' `total_weight` and `total_depth_weight`; `weight_outputs = TRUE` adds them to unweighted calls too.
+#' `tw_...` and `tdw_...` (total depth weight); `weight_outputs = TRUE` adds them to unweighted calls too.
 #'
 #' **Angle settings.** Turns strictly smaller than `angle_threshold` degrees count as zero (a negative
 #' threshold has no effect, and a threshold above 180 zeroes every turn). PST rounds each remaining turn to
@@ -43,7 +43,7 @@
 #'   underflow.
 #' @param angle_precision One whole number from 1 through 4294967295: the angular resolution in degrees used
 #'   to rank paths (default 1). Zero is rejected.
-#' @param weight_outputs `TRUE` or `FALSE` (default). Include `total_weight` and `total_depth_weight` even
+#' @param weight_outputs `TRUE` or `FALSE` (default). Include `tw_...` and `tdw_...` even
 #'   when unweighted.
 #' @param output_file,overwrite,spatial_output_file Write the results to a file instead of returning them;
 #'   see [pst_result_file].

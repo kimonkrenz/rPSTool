@@ -131,7 +131,7 @@ print.pst_segment_group_graph <- function(x, ...) {
 #' @param graph A segment-group graph created by [segment_group_graph()].
 #' @param radius Walking and/or steps limits created by [analysis_radius()].
 #' @param output_file,overwrite Write the result to a Parquet file instead of returning a data frame; see
-#'   [pst_result_file]. `integration`, `node_count` and `total_depth` are stored as nullable columns: a row is
+#'   [pst_result_file]. `gi_...`, `nc_...` and `td_...` are stored as nullable columns: a row is
 #'   null in all three exactly when PST wrote neither its count nor its depth, which is when the data frame
 #'   holds `NA`.
 #' @return A data frame in group order with `group_id` (integer), `gi_<radius>` (integration, double), `nc_<radius>`

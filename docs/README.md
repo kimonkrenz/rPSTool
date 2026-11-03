@@ -6,20 +6,21 @@
 | Worked example with the Barnsbury data | [Getting started vignette](../vignettes/getting-started.Rmd) |
 | Restrictions that affect use and interpretation | [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md) |
 | Public API and usage | [api.md](api.md) |
+| Result column names | [output-naming.md](output-naming.md) |
+| Progress display | [progress.md](progress.md) |
 | Architecture, native ownership, threading, pinned upstream source | [architecture.md](architecture.md) |
 | PST surface bound by rPSTool, relation to PST for QGIS, exclusions | [pst-coverage.md](pst-coverage.md) |
 | Numerical and semantic compatibility with PST, per analysis family | [compatibility/](compatibility/) |
-| Design decisions and intentional differences | [design-decisions.md](design-decisions.md) |
 | Spatial file input and output, `sf` adapters | [spatial-io/](spatial-io/README.md) |
 | Colour palettes and ggplot2 scales | [palettes.md](palettes.md) |
 | Bundled Barnsbury example data (Hillier-Iida) | [example-data.md](example-data.md) |
-| Build, platforms, compiler diagnostics, CI | [build-and-platforms.md](build-and-platforms.md), [exact warning policy](../tools/ci/README.md) |
-| Testing, reproducibility, reference fixtures | [testing.md](testing.md), [reference tools](../tools/reference/README.md), [QGIS comparison procedure](../tools/validation/qgis-comparison/README.md) |
+| Build, platforms, compiler diagnostics | [build-and-platforms.md](build-and-platforms.md), [exact warning policy](../tools/ci/README.md) |
+| Testing, reproducibility, reference fixtures | [testing.md](testing.md), [reference tools](../tools/reference/README.md), [QGIS comparison procedure](../tools/validation/qgis-comparison/README.md), [Windows validation procedure](../tools/validation/windows/README.md) |
 | Licensing and attribution | [licensing.md](licensing.md), [source provenance](../inst/upstream/PROVENANCE.md), [patch records](../inst/upstream/PATCHES.md) |
-| Release readiness | [release-checklist.md](release-checklist.md) |
+| Outstanding release tasks | [release-checklist.md](release-checklist.md) |
 | Contributing | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
-### Compatibility records
+## Compatibility records
 
 | Family | Record |
 | --- | --- |

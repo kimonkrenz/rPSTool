@@ -1,9 +1,8 @@
 # Public R API
 
-All 33 exported functions are listed below; the first 25 call a PST routine (given), the palette functions and the example-data loader
-at the end do not touch the engine. Names are idiomatic R names that retain PST
-terminology; arguments are documented in the help pages (`?angular_choice`, ...). New optional arguments are appended to
-signatures, never inserted. Native graph families are exact: an analysis accepts only the graph family of its PST descriptor.
+The 33 exported functions are listed below with the PST routine each binds; the palette functions and the example-data loader
+do not use the engine. Names are idiomatic R names that retain PST terminology; arguments are documented in the help pages
+(`?angular_choice`, ...). An analysis accepts only the graph family of its PST descriptor.
 
 | Group | Function | PST routine | Graph |
 | --- | --- | --- | --- |
@@ -28,14 +27,13 @@ signatures, never inserted. Native graph families are exact: an analysis accepts
 | | `scale_colour_rpst_c()`, `scale_fill_rpst_c()`, `scale_colour_rpst_b()`, `scale_fill_rpst_b()` | none (optional ggplot2) | none |
 | Example data (R only) | `load_example_data()` | none | none; see [example data](example-data.md) |
 
-The exported S3 classes are `pst_graph`, `pst_segment_graph`, `pst_segment_group_graph`, `pst_radius`, `pst_isovist_context`,
+The S3 classes are `pst_graph`, `pst_segment_graph`, `pst_segment_group_graph`, `pst_radius`, `pst_isovist_context`,
 `pst_raster` and `pst_result_file` (the invisible value of file-writing calls); `print` methods exist for the graphs and result
 files. Compatibility contracts per family are in [compatibility](compatibility/).
 
 ## Radius and distance semantics
 
-PST has several distinct distance concepts (straight, walking, steps, angular, axmeter, and weights where applicable); rPSTool does
-not collapse them into one generic radius. `analysis_radius()` keeps all five independent fields:
+`analysis_radius()` has five independent fields: `straight`, `walking`, `steps`, `angular` and `axmeter`.
 
 ```r
 analysis_radius(walking = 800, steps = NULL, angular = NULL)
@@ -55,12 +53,7 @@ be a vector and `normalization` may name several methods; see [multi-radius](com
 * Analyses that support it accept `output_file`/`overwrite` and `spatial_output_file`.
 * No silent reordering, snapping, splitting, merging, unit conversion, deduplication, imputation, reprojection or clamping.
   Geographic CRS is rejected when known; mixed `sf` inputs must share a CRS.
-* Validation problems and native failures become informative R errors naming the offending input. One known exception is the network-depth limitation of `angular_choice()`; see [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
-
-## Scope
-
-rPSTool is not a generic graph library: it adds no generic routing, igraph replacement, custom centralities or unrelated GIS
-preprocessing beyond what is needed to expose PST faithfully or to prepare explicitly valid PST input.
+* Validation problems and native failures become informative R errors naming the offending input. The exception is the network-depth limitation of `angular_choice()` (see [angular controls](compatibility/angular-controls.md)); other limitations are in [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
 
 ## Example
 

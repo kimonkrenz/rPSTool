@@ -2,9 +2,9 @@
 
 **Development-only; not part of the installed package.** No QGIS, Python or `reticulate` is, or becomes, a dependency of rPSTool.
 
-**Status: no Q-level validation has been performed.** This folder provides the means for the maintainer to run PST for QGIS (v3.3.2, the plugin
+**Status: no comparison inside QGIS has been run.** This folder provides the means to run PST for QGIS (v3.3.2, the plugin
 in `pstqgis/` of the pinned PST commit `63df80a2cf3dd289be95ea3d91667c3490719b75`) by hand on a small network, export the result tables, and compare
-them with rPSTool. Until such a run has been done and archived, nobody may state that rPSTool matches PST for QGIS in QGIS. Source-level evidence is in [MAPPING.md](MAPPING.md) and
+them with rPSTool. The results of this procedure would be the first such evidence. The plugin-side mapping is in [MAPPING.md](MAPPING.md) and
 [QGIS differences](../../../docs/compatibility/qgis-differences.md).
 
 ## Files
@@ -12,7 +12,7 @@ them with rPSTool. Until such a run has been done and archived, nobody may state
 | File | Purpose |
 |---|---|
 | `GUI-PROCEDURE.md` | The manual protocol: what to record, how to load the data, how to run each case, how to export, how to compare |
-| `MAPPING.md` | Corrected map of QGIS analyses/options to the plugin's engine calls, rPSTool calls and output columns; column-name rules |
+| `MAPPING.md` | Map of QGIS analyses/options to the plugin's engine calls, rPSTool calls and output columns; column-name rules |
 | `make-test-network.R` | Writes `data/pst-qgis-test.gpkg` deterministically (axial lines, segment map, polylines, points, regions, obstacles; ids deliberately differ from row numbers) |
 | `data/pst-qgis-test.manifest.tsv` | Expected layer names, feature counts, id fields and content hashes; `make-test-network.R` compares the generated network with it and fails on any difference |
 | `cases/cases.json` | Five small cases: the QGIS settings in words, and the exact R code for the rPSTool side |
@@ -28,7 +28,7 @@ Convention: **run every command from the repository root.** Generated and export
 
 ```sh
 Rscript tools/validation/qgis-comparison/make-test-network.R          # needs sf; fails if the content hashes differ from the tracked manifest
-Rscript tools/validation/qgis-comparison/run-rpst-cases.R             # needs rPSTool (a build that includes the weighted-Choice correction), sf, jsonlite
+Rscript tools/validation/qgis-comparison/run-rpst-cases.R             # needs rPSTool, sf, jsonlite
 # ... run the cases in QGIS and export CSVs to tools/validation/qgis-comparison/qgis-exports/<case id>.csv  (see GUI-PROCEDURE.md) ...
 Rscript tools/validation/qgis-comparison/compare-exports.R --qgis-dir tools/validation/qgis-comparison/qgis-exports --rpst-dir tools/validation/qgis-comparison/rpst --cases tools/validation/qgis-comparison/cases/cases.json
 Rscript tools/validation/qgis-comparison/selftest/smoke-test.R        # checks the comparer itself
@@ -40,7 +40,7 @@ Maintenance only: `Rscript tools/validation/qgis-comparison/make-test-network.R 
 
 | Case | Probes |
 |---|---|
-| C01 | Angular Choice, weighted and unweighted, four normalisations; `ACwlC` uses `total_depth_weight` in the plugin and, since the weighted-Choice correction, in rPSTool |
+| C01 | Angular Choice, weighted and unweighted, four normalisations; `ACwlC` uses `total_depth_weight` in both the plugin and rPSTool |
 | C02 | Weighted Angular Choice with a walking radius and non-default angle threshold/precision (forwarded by the plugin in the weighted branch) |
 | C03 | Unweighted Angular Choice with non-default angle settings: the source reading says the plugin does not forward them; the case compares against threshold 0 / precision 1. A mismatch here would mean the source reading is wrong and must be reported |
 | C04 | Network Integration, steps radius 2, node count and total depth |
