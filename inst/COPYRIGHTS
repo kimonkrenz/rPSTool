@@ -29,18 +29,16 @@ Bundled third-party components
 
 1. PST / pstalgo (Place Syntax Tool), version 3.3.2
    https://github.com/SMoG-Chalmers/PST  (commit 63df80a2cf3dd289be95ea3d91667c3490719b75)
-   Copyright 2019 Meta Berghauser Pont (copyright owner, as stated in the upstream README)
-   Programmer: Martin Fitger (as stated in the upstream README)
+   Copyright 2019 Meta Berghauser Pont
+   Programmer: Martin Fitger
    Developed by: KTH School of Architecture, Chalmers School of Architecture (SMoG) and
    Spacescape AB (developing organisations; not asserted as copyright holders here)
    PST for QGIS v3.3.2 plugin metadata names as authors: Alexander Ståhle, Lars Marcus, Daniel Koch,
    Martin Fitger, Anders Karlström, Tobias Nordström, Ann Legeby, Gianna Stavroulaki,
    Meta Berghauser Pont and Pablo Miranda. This is software authorship credit, not a
    declaration that all named people hold copyright.
-   Acknowledged contributors (upstream README, verbatim list; acknowledgement only, no
-   copyright or authorship role is implied): Alexander Ståhle, Lars Marcus, Daniel Koch,
-   Martin Fitger, Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont, Anders Karlström,
-   Pablo Miranda Carranza, Tobias Nordström.
+   The upstream PST README also acknowledges these contributors, 
+   identifying Pablo Miranda by his full name, Pablo Miranda Carranza.
    Licensed under the GNU Lesser General Public License, version 3 or (at your option) any
    later version. The licence text is in inst/upstream/PST_LICENSE and inst/licenses/LGPL-3.txt;
    the upstream README is in inst/upstream/PST_README.txt. The source is vendored byte-for-byte in
@@ -49,17 +47,17 @@ Bundled third-party components
    same distribution). rPSTool applies narrow, documented compatibility, ownership, allocation
    and worker-safety changes only to generated build copies (not to the vendored files); these
    modifications are described in inst/upstream/PATCHES.md and the patch files in
-   inst/upstream/patches/. Those build copies are therefore modified versions of PST files,
-   modified by the rPSTool authors in 2026 (git history of the rPSTool repository is the dated record).
+   inst/upstream/patches/. Those build copies are therefore modified versions of PST files, 
+   modified by Kimon Krenz in 2026 (the rPSTool Git history provides the dated record).
 
 2. FlatBuffers (C++ header-only library), version 24.12.23
    https://github.com/google/flatbuffers  (tag v24.12.23, commit a2cd1ea3b6d3fee220106b5fed3f7ce8da9eb757)
-   Copyright Google Inc. (as stated in the file headers)
+   Copyright Google Inc.
    Licensed under the Apache License, Version 2.0. A copy of the licence is in
    inst/licenses/flatbuffers-Apache-2.0.txt. The vendored headers are unmodified; the compiler
    sees a generated build copy of base.h from which four complete diagnostic-suppression
    conditional blocks (14 lines) are deleted, as recorded in src/vendor/flatbuffers/PROVENANCE.md
-   (modification by the rPSTool authors, 2026). The FlatBuffers project distributes no NOTICE file
+   (modification by Kimon Krenz, 2026). The FlatBuffers project distributes no NOTICE file
    for this version.
 
 3. FlatGeobuf schema and flatc-generated headers
@@ -73,11 +71,9 @@ Bundled third-party components
 
 4. Apache Arrow C data/stream interface declarations (src/arrow-c-abi/arrow_c_abi.h)
    https://github.com/apache/arrow  (tag apache-arrow-25.0.0, file cpp/src/arrow/c/abi.h)
-   Licensed to the Apache Software Foundation (ASF) under the Apache License, Version 2.0; the
-   original licence header is retained as the first lines of the file. The file is an
-   extraction of selected declarations (not a complete copy); see src/arrow-c-abi/PROVENANCE.md.
-   Only declarations are included; rPSTool does not link libarrow. The Apache-2.0 text is the same
-   as inst/licenses/flatbuffers-Apache-2.0.txt.
+   Licensed under the Apache License, Version 2.0. The file contains selected C data/stream 
+   interface declarations from Apache Arrow; see src/arrow-c-abi/PROVENANCE.md for details. 
+   rPSTool does not link libarrow. The Apache-2.0 licence text is provided in inst/licenses/flatbuffers-Apache-2.0.txt.
 
 Optional (Suggests) packages such as arrow, sf, jsonlite and testthat are not bundled.
 
