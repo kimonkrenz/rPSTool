@@ -7,15 +7,14 @@ Authors@R: c(
     person("Meta", "Berghauser Pont", role = "cph",
            comment = "Copyright holder of the bundled PST/pstalgo C++ engine (LGPL-3-or-later)"),
     person("Martin", "Fitger", role = "ctb",
-           comment = "Programmer of the bundled PST/pstalgo C++ engine (as named in the upstream PST README)"),
+           comment = "Programmer of the bundled PST/pstalgo C++ engine"),
     person("Google Inc.", role = "cph",
            comment = "Copyright holder of the bundled FlatBuffers headers (Apache-2.0)"),
     person("Björn", "Harrtell", role = "cph",
            comment = "Copyright holder of the bundled FlatGeobuf schema and generated headers (BSD-2-Clause)"),
     person("The Apache Software Foundation", role = "cph",
            comment = "Apache Arrow C data/stream interface declarations (Apache-2.0)"))
-Description: Native interface to the spatial network analysis engine ('pstalgo') of the 'Place Syntax Tool' ('PST'), bundled at the pinned version 3.3.2. Axial (crossing-aware line) and endpoint-connected segment graphs are built once in native memory and reused for 'PST' network integration, reach, betweenness, angular, attraction, segment-group, isovist and raster analyses. Inputs can be numeric matrices, 'sf' objects or, with the suggested packages, 'GeoParquet' and 'FlatGeobuf' files. The package also bundles colour palettes (the 'depthmapX' colour modes, white-background adaptations and the Coral palettes, with optional 'ggplot2' scales) and the Barnsbury example network (axial map, unlinks and gate observations) from Hillier and Iida (2005) <doi:10.1007/11556114_30>.
-License: LGPL (>= 3)
+Description: Native interface to the spatial network analysis engine ('pstalgo') of the 'Place Syntax Tool' ('PST'), bundled at the pinned version 3.3.2. Axial (crossing-aware line) and endpoint-connected segment graphs are built once in native memory and reused for 'PST' network integration, reach, betweenness, angular, attraction, segment-group, isovist and raster analyses. Inputs can be numeric matrices, 'sf' objects or, with the suggested packages, 'GeoParquet' and 'FlatGeobuf' files. The package also bundles colour palettes (historical 'Axman' and 'Depthmap' colour modes, white-background adaptations and the Coral palettes, with optional 'ggplot2' scales) and a Barnsbury example network (axial map, unlinks and gate observations) adapted from Hillier and Iida (2005) <doi:10.1007/11556114_30>, with movement observations originally reported by Penn et al. (1998) <doi:10.1068/b250059>.License: LGPL (>= 3)
 URL: https://github.com/kimonkrenz/rPSTool
 BugReports: https://github.com/kimonkrenz/rPSTool/issues
 Copyright: inst/COPYRIGHTS
