@@ -9,10 +9,10 @@ First release.
 
 ## Result column names
 
-* Every analysis names its result columns with one scheme that identifies the analysis, distance, radius, weighting,
-  normalisation and non-default analytical parameters: for example `ai_a_rw3000_t` (Angular Integration, angular distance,
-  walking radius 3000, Turner normalisation), `ac_a_rw3000_n` (raw Angular Choice) and `nc_a_rw3000` (node count). Scalar and
-  multi-radius calls name a calculation identically. See `?result_column_names` and `docs/output-naming.md`.
+* Network-analysis measures and diagnostics use a consistent result-column naming scheme identifying the analysis, distance, radius,
+  weighting, normalisation and non-default analytical parameters: for example `ai_a_rw3000_t` (Angular Integration, angular distance,
+  walking radius 3000, Turner normalisation), `ac_a_rw3000_n` (raw Angular Choice) and `nc_a_rw3000` (node count).
+  Scalar and multi-radius calls name a calculation identically. See `?result_column_names` and `docs/output-naming.md`.
 * Custom weights are named after the R object or literal data-frame column passed (`weights = population`, `weights = data$population`);
   anonymous vectors and calculations are errors raised before any calculation. See `?result_column_names`.
 * Result-column collisions with existing spatial-output source columns are checked before calculation. An exact-name collision requires
@@ -21,7 +21,8 @@ First release.
   because readers match fields case-insensitively.
 * Parquet and GeoParquet outputs for analyses using the generated result-column naming scheme include an `rpst:columns` metadata manifest.
   FlatGeobuf outputs include it when the source has no header metadata or contains a flat, string-valued JSON metadata object with existing
-  `rpst:*` keys. Otherwise, existing FlatGeobuf header metadata is preserved unchanged.
+  `rpst:*` keys. In the latter case, previous `rpst:*` entries are replaced while unrelated metadata is retained. Other source metadata is
+  preserved unchanged, without adding a manifest.
 
 ## Engine
 
@@ -40,8 +41,8 @@ First release.
   graph.
 * Network construction (`create_junctions()`, `create_segment_map()`), isovists (`isovist_context()`, `isovist()`,
   `isovist_context_free()`) and raster comparison (`compare_line_results()`, `raster_data()`, `raster_to_polygons()`, `raster_free()`).
-* `analysis_radius()` keeps PST's straight, walking, steps, angular and axmeter limits distinct. Normalised scores are computed by PST's
-  exported normalisers; raw scores are always kept.
+* `analysis_radius()` keeps PST's straight, walking, steps, angular and axmeter limits distinct. Normalisation uses PST's exported routines;
+  analyses with a separate raw score retain it alongside normalised outputs.
 * `analysis_radius()` accepts a vector in one field, and `normalization` accepts several methods, for `angular_choice()` and
   `angular_integration()`: PST runs once per radius and one combined result is returned or written.
 
