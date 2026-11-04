@@ -18,8 +18,11 @@ at commit `39c0d66d2529cf6d4d4ff51a4f7ee5e6f3fa37af`:
   expectations passed; `R CMD check --as-cran` Status: OK.
 * Windows x86-64 (Windows Server 2022, Rtools GCC 14.3.0):
   161,484 test expectations passed; `R CMD check --as-cran`
-  Status: OK. Four tests requiring POSIX-only facilities are
-  intentionally skipped (`tools/ci/windows-test-skips.tsv`).
+  Status: OK. This is 55 fewer expectations than on Linux
+  and macOS. Four tests requiring POSIX-only facilities are
+  intentionally skipped (`tools/ci/windows-test-skips.tsv`);
+  the complete accounting of the expectation-count difference
+  has not been independently verified.
 
 All three platform runs completed successfully on 4 November 2026.
 The results apply to the commit identified above. Validation will
@@ -42,6 +45,12 @@ Results: 0 errors, 0 warnings, 1 NOTE.
 * NOTE: CRAN incoming feasibility, "New submission".
 
 CRAN incoming checks were run on Linux only.
+
+An installed-size NOTE may occur with Debian-style compiler flags 
+because debug symbols increase the shared library size. This NOTE 
+was not observed in the reported Linux CI check. The package does 
+not strip debug symbols or override the platform's compiler flags; 
+see `docs/build-and-platforms.md`.
 
 ## Notes for the reviewer
 
