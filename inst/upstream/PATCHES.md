@@ -9,10 +9,9 @@ Build-only compatibility declarations live in `src/rpst-compat.h` (force-include
 - Original input: `src/vendor/pstalgo/src/analyses/CalculateIsovists.cpp`.
 - Generated build input: `src/.rpst-build/analyses/CalculateIsovists.cpp`.
 - Patch record: `patches/0001-qualify-isovist-result.patch`.
-- Application: `src/Makevars` and `src/Makevars.win` invoke `src/portability/qualify-isovist.R`, which changes exactly one line so that the return type is qualified as `CIsovistContext::Result&`.
+- Application: The return-type qualification is incorporated into `src/portability/harden-isovist.R`, invoked by `src/Makevars` and `src/Makevars.win` as part of the combined 0009 transformation.
 - Reason: GCC 14 rejects `Result& Result()` because the method name changes the meaning of the unqualified nested type name (`-Wchanges-meaning`).
 - Effects: no method names, ABI, storage, control flow or numerical expressions change.
-- Production builds use the combined transformation of 0009, which supersedes 0001.
 
 ## Windows aligned allocation adapter
 
@@ -31,7 +30,7 @@ Build-only compatibility declarations live in `src/rpst-compat.h` (force-include
 
 ## 0003 — central worker cap for the exposed asynchronous engines
 
-`src/portability/limit-workers.R` transforms only the pinned `AngularChoiceAlgo.cpp` and `SegmentBetweenness.cpp` into generated `.rpst-build/analyses/` sources. The preserved `inst/upstream/build-inputs/` copies match the vendor bytes exactly (AngularChoiceAlgo has no final newline). Original/generated MD5 pairs: `f518e8c71d6c1607723564238692de62` / `c60ee85a2bf676f718b8b4a14b743597` and `287ec62e7e28f9955740e89545b11b13` / `6fc7be945c0774e4f932974c290d115d` (the transformer is the checksum authority; the current generated checksums include 0007 and 0011). Patch record: `patches/0003-central-worker-limit.patch`.
+`src/portability/limit-workers.R` generates build copies for the pinned `AngularChoiceAlgo.cpp`, `SegmentBetweenness.cpp`, `SegmentGroupIntegration.cpp`, `AttractionReach.cpp`, `AttractionDistance.cpp` and `ODBetweenness.cpp`. The changes to the first two sources are recorded in `patches/0003-central-worker-limit.patch`; the additional modifications are documented in sections 0004–0007. The preserved `inst/upstream/build-inputs/` copies match the vendor bytes exactly (`AngularChoiceAlgo.cpp` has no final newline). Original/generated MD5 pairs for the initial 0003 transformation: `f518e8c71d6c1607723564238692de62` / `c60ee85a2bf676f718b8b4a14b743597` and `287ec62e7e28f9955740e89545b11b13` / `6fc7be945c0774e4f932974c290d115d`. The current generated checksums incorporate the additional modifications in 0007 and 0011; the transformer verifies the final output checksums.
 
 Each copy substitutes the single hardware concurrency call with the central `rpst_worker_count()` function.
 
@@ -107,7 +106,7 @@ Pristine and adapted PST structural outputs are byte-identical for 124 supported
 - A nonempty attraction-polygon edge queue in a partial view requires at least three calculated vertices before frustum/indexed iterator accesses.
 - A full-circle view with a nonempty polygon-edge queue requires at least two vertices before its loop iterator advances.
 
-No algorithm, epsilon, clipping, ordering or numerical expression is changed; safely written degenerate outputs remain native. A failed check throws; the borrowed local vector returns to its pool first, the C-export exception handling leaves the result handle null, and the R binding checks publication, copies every successful output while owned, then frees the result.
+The guards preserve PST's calculations and numerical results for unaffected cases. If a guard fails, temporary resources are released and the R interface reports an error without returning a partial result. Successful outputs are copied into R-managed memory before the native result is freed.
 
 `src/portability/harden-isovist.R` verifies pristine MD5 `42c16aa243ccc11e2b2e95692407ebb7` and the complete output MD5 `f03bb50a1abf2111af63e626940267d7` (later `fd1f956a159c1d136bae53acf75227bc` with 0011). See `docs/compatibility/isovist.md` and `tools/reference/isovist/`.
 
@@ -122,7 +121,7 @@ No algorithm, epsilon, clipping, ordering or numerical expression is changed; sa
 | utils/Arr2d.h | `18a0ede6363657c22c9b7bf86b7e6cb6` | `4e38f713f232f19820c5aa60fad4df75` |
 | analyses/CreateBufferPolygons.cpp | `856c3252a9b756f7717161ce174f6879` | `3c24aa86b332ed2a38b69a68f654ed94` |
 
-Numerical policy: the only comparison change is `std::max(abs(min), abs(max))` to `std::max(std::abs(min), std::abs(max))`. This implements PST's existing formula using floating absolute values consistently across toolchains; it is not preservation of the prior Linux integer-overload result. No other comparison arithmetic changes, and zero float denominators retain native floating behaviour.
+Numerical policy: Raster normalisation replaces `std::max(abs(min), abs(max))` with `std::max(std::abs(min), std::abs(max))` to ensure consistent floating-point calculations across toolchains. This may produce different results from unmodified PST where the original call resolves to an integer overload. All other comparison arithmetic remains unchanged, and zero denominators retain PST's native floating-point behaviour.
 
 Raster allocation guards pitch/byte overflow and malloc failure. Blur replaces kernel `alloca` with a scoped vector, selects the central worker cap and calls `future get()` instead of `wait()` to propagate worker exceptions. The generated header overlay is selected only for the comparison translation unit; `FlipY` returns before zero/single-row pointer arithmetic and checks its row buffer before mutation. These changes preserve successful numerical and structural results: 79 direct cases cover the floating contract and all 41 Relative Percent controls remain exact. See `docs/compatibility/raster.md` and `tools/reference/raster/`.
 
