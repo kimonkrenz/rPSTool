@@ -1,8 +1,6 @@
 # rPSTool: Space Syntax and Spatial Network Analysis in R
 
-rPSTool brings the spatial network analysis engine of the **Place Syntax Tool (PST)** to R. It builds street-network graphs from
-line geometry and runs PST analyses such as network integration, reach, betweenness and angular choice from R scripts, returning
-the results as ordinary data frames. No separate PST, QGIS or Python installation is needed.
+Developed by **Kimon Krenz**, rPSTool brings the spatial network analysis engine of the [**Place Syntax Tool (PST)**](https://smog.chalmers.se/projects/pst-plugin-for-qgis/) to R. The original PST software was developed by KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB. rPSTool provides an independent R interface to this engine, building street-network graphs from line geometry and running analyses such as network integration, reach, betweenness and angular choice, with results returned as ordinary data frames. No separate PST, QGIS or Python installation is needed.
 
 ## What rPSTool does
 
@@ -95,7 +93,7 @@ Every function is documented in its help page (`help(package = "rPSTool")`). Tec
 * **`sf` objects** are accepted by the graph constructors. A known geographic CRS is rejected, and rPSTool never reprojects, snaps,
   splits or reorders geometry.
 * **Files:** `segment_graph()` and `axial_graph()` also read one GeoParquet or FlatGeobuf path.
-* **Result files:** `output_file` and `spatial_output_file` write results to Parquet, GeoParquet or FlatGeobuf (needs `arrow`).
+* **Result files:** `spatial_output_file` writes a new GeoParquet or FlatGeobuf file containing source geometry, attributes and results. The graph must have been constructed from a corresponding spatial file.
 
 ## Colour palettes
 
@@ -105,14 +103,13 @@ base graphics, and optional ggplot2 scales are provided. Class boundaries are su
 
 ## Limitations
 
-The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
+The main restrictions are summarised below. See [Known limitations](KNOWN_LIMITATIONS.md) for further details.
 
-* **Angular Choice** with an unrestricted radius can exhaust a worker thread's stack in exceptionally deep networks and crash the R
-  session; a `steps` radius bounds the recursion depth.
-* Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
-* `network_integration()` accepts only step radii.
-* Coordinates must be projected. PST works in single precision around a centre point.
-* rPSTool has been tested on Linux, macOS (ARM64) and Windows; results have not been compared with real runs of the PST plugin for QGIS.
+* **Combined radius limits:** Combining walking, angular or axmeter limits with other limits, without a `steps` restriction, can substantially increase computation time and memory use.
+* **Network Integration:** `network_integration()` supports unrestricted analysis or a `steps` radius only.
+* **Coordinates:** Input coordinates must use a projected coordinate system where a CRS is specified. PST operates in single precision relative to a centre point.
+
+rPSTool has been validated on Linux, macOS (ARM64) and Windows. Its numerical results have been extensively tested against direct calls to the original PST v3.3.2 engine.
 
 Report bugs and request features at <https://github.com/kimonkrenz/rPSTool/issues>.
 
@@ -128,9 +125,13 @@ Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whos
 is derived from Hillier and Iida (2005); the movement gate-count observations are redistributed with the authors' permission, and the
 counts were originally reported by Penn, Hillier, Banister and Xu (1998).
 
+Development of rPSTool was supported by OpenAI's ChatGPT and Anthropic's Claude for code optimisation, review, debugging and documentation. 
+All contributions were reviewed and validated by the package author, who retains responsibility for the software.
+
 ## Citation and licence
 
-Please credit PST when you use rPSTool. Run `citation("rPSTool")` for the package and PST references.
+If you use rPSTool in your research, please cite **Krenz, K. (2026). rPSTool: Space Syntax and Spatial Network Analysis in R. R package, version 0.1.0**, 
+alongside the original **Place Syntax Tool (PST)** software on which its analyses are based. Run `citation("rPSTool")` for the recommended references.
 
 rPSTool is licensed under the **GNU Lesser General Public License, version 3 or later** (`LGPL (>= 3)`). It compiles the PST/pstalgo
 engine (Copyright 2019 Meta Berghauser Pont, LGPL-3-or-later) and some other third-party components, whose attribution is recorded in
