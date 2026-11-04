@@ -210,7 +210,7 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
 #' **Network depth.** Angular Choice may encounter computational limitations in exceptionally deep network
 #' configurations, particularly with unrestricted analysis radii. This has only been observed in artificially
 #' constructed networks with thousands of consecutively connected segments, not in real-world street networks.
-#' Restricting the analysis radius avoids the observed limitation.
+#' A `steps` radius bounds the recursion depth; an `angular` radius does not.
 #' [angular_integration()] shares part of this behaviour with a larger tolerance. See `KNOWN_LIMITATIONS.md` in the
 #' repository.
 #'

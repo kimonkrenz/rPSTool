@@ -18,11 +18,11 @@ is needed. Their layout is described in \link{hillier_iida}.
 }
 \section{Source of the data}{
 
-The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz. The data are included and redistributed with permission from the authors. The original research and data remain attributable to their respective authors.
+The Barnsbury example is derived from Hillier and Iida (2005). The movement gate-count observations are redistributed with the authors' permission. The axial network and unlinks are adapted from the source material, with geometries georeferenced and spatially transformed by Kimon Krenz. The original research and data remain attributable to their respective authors.
 The movement gate counts were originally reported by Penn et al. (1998).
 
 The original data were not supplied in British National Grid. The coordinates in this package are the transformed coordinates in
-EPSG:27700 (metres); they are not the original coordinates. The LGPL (>= 3) licence applies to rPSTool's software. The Barnsbury data are included with the authors' permission and remain attributable to them.
+EPSG:27700 (metres); they are not the original coordinates. The LGPL (>= 3) licence applies to rPSTool's software and does not relicense the example data.
 }
 
 \examples{

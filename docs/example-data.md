@@ -12,7 +12,7 @@ The list holds `axial` (1915 axial lines), `unlinks` (2) and `gates` (109 gate o
 
 ## Attribution
 
-The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed movement gate counts. The geometries were georeferenced to British National Grid (EPSG:27700) and spatially transformed (best-fit transformation) by Kimon Krenz; **the coordinates are therefore not the original coordinates.** The data are included and redistributed with permission from the authors, and the original research and data remain attributable to them. The movement gate counts were originally reported by Penn et al. (1998). Only the Barnsbury network is distributed.
+The Barnsbury example is derived from Hillier and Iida (2005). The movement gate-count observations are redistributed with the authors' permission. The axial network and unlinks are adapted from the source material, with geometries georeferenced and spatially transformed by Kimon Krenz. **The coordinates are therefore not the original coordinates.** The original research and data remain attributable to their respective authors. The movement gate counts were originally reported by Penn et al. (1998). The LGPL licence of rPSTool's software does not relicense the example data. Only the Barnsbury network is distributed.
 
 The LGPL (>= 3) licence applies to rPSTool's software, not to these data, which are not relicensed ([licensing](licensing.md)).
 

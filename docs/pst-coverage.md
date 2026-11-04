@@ -61,7 +61,8 @@ run inside QGIS; a manual procedure is in [`tools/validation/qgis-comparison/`](
 
 ### Intentional differences
 
-The computation is the same engine; the interface or a plugin defect differs.
+The computation is the same engine; the interface or a plugin defect differs. The complete list with the R equivalents is in
+[QGIS differences](compatibility/qgis-differences.md).
 
 | Difference | QGIS | rPSTool |
 | --- | --- | --- |

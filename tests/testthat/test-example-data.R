@@ -2,10 +2,10 @@
 skip_if_not_installed("sf")
 
 extdata <- function() system.file("extdata", "hillier_iida", package = "rPSTool")
-# MD5 sum of the installed RDS file. The file as first supplied had ad53f36e...; the authorised changes since are the added Penn et al.
-# (1998) sentence and the later rewording of the metadata attribute for the Barnsbury-only dataset (georeferenced and spatially
-# transformed geometry), and saving with compress = "xz", version = 2 (readable by every supported R; objects verified identical).
-# The fingerprints of the axial, unlinks and gates components below (computed on the file as first supplied) are unchanged.
+# MD5 sum of the installed RDS file (saved with compress = "xz", version = 2, readable by every supported R). The metadata attribute
+# describes the Barnsbury-only dataset, its georeferenced and spatially transformed geometry and the Penn et al. (1998) source.
+# The fingerprints of the axial, unlinks and gates components below pin the supplied data themselves and are independent of the
+# metadata text and the compression.
 supplied_md5 <- "b889d36955c7892db1c773da86471ee8"
 # Fingerprint of an sf component: MD5 of a canonical byte stream holding the column names, the attribute table, the CRS WKT,
 # the geometry type and the well-known binary of every geometry. The attribute values are written as bytes, never as text:
@@ -134,8 +134,8 @@ test_that("the descriptive metadata is stored with the loaded list", {
   expect_match(metadata, "georeferenced to British National Grid (EPSG:27700) using a best-fit spatial transformation", fixed = TRUE)
   expect_match(metadata, "not the original, unmodified coordinates", fixed = TRUE)
   expect_false(grepl("Clerkenwell|Kensington|Calthorpe|Brompton|SKMuseum|Knightsbridge", metadata))
-  # Source attribution of the movement observations (verified by the maintainer against the supplied README and Hillier and Iida
-  # 2005, Section 5): one sentence directly after the opening Hillier-Iida reference, and no more than the observations.
+  # Source attribution of the movement observations (the supplied README and Hillier and Iida 2005, Section 5): one sentence
+  # directly after the opening Hillier-Iida reference, and no more than the observations.
   penn <- paste0("The pedestrian and vehicular movement observations were originally used in Penn, A., Hillier, B., Banister, D. ",
                  "and Xu, J. (1998), Configurational modelling of urban movement networks, Environment and Planning B: Planning ",
                  "and Design, 25(1), pp. 59")

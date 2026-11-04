@@ -49,13 +49,12 @@ engine to do.
 
 ## 2. Validation status
 
-rPSTool calls the same pinned engine as PST for QGIS. The inputs and defaults of the plugin were read from its source, and the
-plugin's Python analysis classes were run outside QGIS against the engine and compared with rPSTool for the analyses listed in section 4.
+rPSTool calls the same pinned engine as PST for QGIS. The inputs and defaults of the plugin were read from its source.
 Results have not been compared with real runs inside QGIS; the manual procedure is in
 [`tools/validation/qgis-comparison/`](https://github.com/kimonkrenz/rPSTool/tree/main/tools/validation/qgis-comparison).
-No complete numerical equivalence with PST for QGIS is claimed: the statements below mean that the same engine is called with equivalent
-arguments. Results are compared as single-precision values, because the engine computes in `float`. Values the plugin derives on the
-Python side (for example mean depth or area unit conversion) are not engine outputs.
+No numerical equivalence with PST for QGIS is claimed: the statements below mean that the same engine is called with equivalent
+arguments. The engine computes in single precision (`float`). Values the plugin derives on the Python side (for example mean
+depth or area unit conversion) are not engine outputs.
 
 ## 3. Graph families
 
@@ -325,9 +324,9 @@ a MULTILINESTRING becomes a separate section and no edge connects separate
 parts. Polygon attractions keep all rings. rPSTool does not reproject geometry,
 and known geographic coordinate reference systems are rejected.
 
-## 8. Efficient workflows in R
+## 8. Reusing graphs and file-based workflows
 
-Because the graph persists, repeated analyses cost only the analysis itself:
+The graph persists in native memory, so repeated analyses reuse it instead of rebuilding it:
 
 ```{r reuse}
 radii <- list(steps_2 = analysis_radius(steps = 2), steps_3 = analysis_radius(steps = 3),
@@ -345,9 +344,8 @@ multi <- angular_choice(sg, radius = analysis_radius(walking = c(20, 30)),
 names(multi)
 ```
 
-For large networks, a graph can be built directly from a GeoParquet or
-FlatGeobuf path and results written straight to a Parquet file without
-building R vectors. This needs the optional packages `arrow` (>= 25.0.0, the
+A graph can be built directly from a GeoParquet or FlatGeobuf path and
+results written to a Parquet file without building R vectors. This needs the optional packages `arrow` (>= 25.0.0, the
 version declared in `DESCRIPTION`) and, for the file input, `sf`. The
 chunk runs only where a suitable `arrow` is installed:
 

@@ -20,8 +20,8 @@ rPSTool offers eleven colour palettes for drawing ordered numerical results. Pal
 
 The palettes fall into three groups:
 
-1. **Seven reproduced depthmapX v0.9.1 colour modes** (`axmanesque`, `axmanesque_hue`, `blue_red`, `purple_orange`, `greyscale`, `monochrome`, `depthmapx_classic`): values reproduced unchanged from depthmapX `salalib/pafcolor.cpp` (GPL-3.0-or-later). The Classic band mapping was reimplemented in R.
-2. **Two white-background adaptations** (`axmanesque_white`, `depthmapx_classic_white`): rPSTool palettes, not depthmapX modes, that reuse some depthmapX colours (see below). They never replace the native modes.
+1. **Seven historical colour modes** (`axmanesque`, `axmanesque_hue`, `blue_red`, `purple_orange`, `greyscale`, `monochrome`, `depthmapx_classic`): fixed hexadecimal values; the Classic band mapping is implemented in R.
+2. **Two white-background adaptations** (`axmanesque_white`, `depthmapx_classic_white`): rPSTool palettes, not depthmapX modes, that reuse some of the historical colours (see below). They never replace the native modes.
 3. **Two palettes designed for rPSTool** (`coral_night`, `coral_day`).
 
 The four palettes of groups 2 and 3 each have nine anchors at positions `seq(0, 1, length.out = 9)` and nested discrete variants: the 3-colour variant is anchors 1, 5, 9, the 5-colour variant anchors 1, 3, 5, 7, 9, the 9-colour variant all nine. Any other size is an error: colours are never interpolated to fill a requested size.
@@ -31,13 +31,13 @@ The four palettes of groups 2 and 3 each have nine anchors at positions `seq(0, 
 - **Coral Day**: nearest-index lookup in the 513-point curve, `round(t * 512)` with ties to even, after clipping `t` to `[0, 1]`.
 - **Coral Night** (`R/palette-mapping.R`): a monotone piecewise cubic Hermite (PCHIP, Fritsch-Butland derivatives) lightness curve and a hue-ordered rainbow dimmed in linear light at the target luminance, with a local orange correction centred on `t = 0.875`, rounded to even. The 513-point curve and 160 dyadic positions used as test fixtures are in `tests/testthat/fixtures/palette-reference.R`.
 - **White adaptations**: piecewise linear interpolation of the encoded 8-bit sRGB channels between neighbouring anchors, `t` clipped, rounded to the nearest integer with ties to even in double arithmetic. No Lab, LCh, HSV or linear-light interpolation is used.
-- **Historical modes** follow depthmapX v0.9.1 `salalib/pafcolor.cpp` (arrays at lines 22-77, dispatch in `makeColor` lines 91-148, band lookup lines 154-184, Classic lines 188-250) and `salalib/displayparams.h`. Equal-range modes use band index `int((field - 1e-9) * bands)`: truncation towards zero with an epsilon of `1e-9`, so band `k` covers `((k-1)/bands, k/bands]` (plus `1e-9`) and the first band includes 0. Classic is `makeDepthmapClassic` with `htmlByte`, i.e. `trunc((c + 0.0333) * 15) * 17` per channel (sixteen levels), with landmarks blue at 0, cyan at 0.05, green at 0.10, yellow at 0.55 and red at 1.
+- **Historical modes** reproduce the colour behaviour of Axman and Depthmap; depthmapX v0.9.1 served as the numerical reference. Equal-range modes use band index `int((field - 1e-9) * bands)`: truncation towards zero with an epsilon of `1e-9`, so band `k` covers `((k-1)/bands, k/bands]` (plus `1e-9`) and the first band includes 0. Classic is `makeDepthmapClassic` with `htmlByte`, i.e. `trunc((c + 0.0333) * 15) * 17` per channel (sixteen levels), with landmarks blue at 0, cyan at 0.05, green at 0.10, yellow at 0.55 and red at 1.
 
-### Values reused from depthmapX
+### Historical colours reused
 
-- `axmanesque_white` anchors 3 to 9 (`#22CCDD`, `#22CCBB`, `#22DD88`, `#BBCC22`, `#DDCC22`, `#DD8833`, `#DD3333`) are entries of depthmapX's `g_nicecolor` array (the `axmanesque` palette: its entries 3, 4, 5, 7, 8, 9 and 10 in 1-based order); the array's entry `#88DD22` is not used. Anchors 1 and 2 (`#C4F0F4`, `#79DFE8`) are not depthmapX values.
-- `depthmapx_classic_white` anchors 3, 5 and 9 (`#00FFFF`, `#00FF00`, `#FF0000`) equal the colours of Classic's cyan, green and red landmarks. Anchors 4, 6 and 8 (`#00FF77`, `#77FF00`, `#FF7700`) are saturated intermediate hues, not the output of the Classic mapping at those positions (at t = 0.375, 0.625 and 0.875 it gives `#99FF00`, `#FFCC00` and `#FF4400`). Anchor 7 (`#DFD33A`) is a darkened yellow replacing Classic's `#FFFF00` for visibility on white; anchors 1 and 2 are pale cyans. Neither is a depthmapX value. The anchors are equally spaced, unlike Classic's landmarks (`0, .05, .10, .55, 1`).
-- The Blue-Red and Purple-Orange arrays are reproduced from depthmapX. Their values coincide with the 7-class ColorBrewer RdYlBu (`#D73027 #FC8D59 #FEE090 #FFFFBF #E0F3F8 #91BFDB #4575B4`) and PuOr (`#B35806 #F1A340 #FEE0B6 #F7F7F7 #D8DAEB #998EC3 #542788`) schemes (Brewer et al.), in reversed order. The depthmapX source comments do not mention ColorBrewer. ColorBrewer's licence terms were not verified.
+- `axmanesque_white` anchors 3 to 9 (`#22CCDD`, `#22CCBB`, `#22DD88`, `#BBCC22`, `#DDCC22`, `#DD8833`, `#DD3333`) are entries 3, 4, 5, 7, 8, 9 and 10 (1-based) of the `axmanesque` palette; its entry `#88DD22` is not used. Anchors 1 and 2 (`#C4F0F4`, `#79DFE8`) are not historical values.
+- `depthmapx_classic_white` anchors 3, 5 and 9 (`#00FFFF`, `#00FF00`, `#FF0000`) equal the colours of Classic's cyan, green and red landmarks. Anchors 4, 6 and 8 (`#00FF77`, `#77FF00`, `#FF7700`) are saturated intermediate hues, not the output of the Classic mapping at those positions (at t = 0.375, 0.625 and 0.875 it gives `#99FF00`, `#FFCC00` and `#FF4400`). Anchor 7 (`#DFD33A`) is a darkened yellow replacing Classic's `#FFFF00` for visibility on white; anchors 1 and 2 are pale cyans. Neither is a historical value. The anchors are equally spaced, unlike Classic's landmarks (`0, .05, .10, .55, 1`).
+- The Blue-Red and Purple-Orange arrays are historical modes. Their values coincide with the 7-class ColorBrewer RdYlBu (`#D73027 #FC8D59 #FEE090 #FFFFBF #E0F3F8 #91BFDB #4575B4`) and PuOr (`#B35806 #F1A340 #FEE0B6 #F7F7F7 #D8DAEB #998EC3 #542788`) schemes (Brewer et al.), in reversed order. The colours are attributed to ColorBrewer (Cynthia Brewer) ([licensing](licensing.md#4-palettes)).
 
 ## Mapping rules (`colour_map()` and the scales)
 
@@ -78,12 +78,18 @@ The intended backgrounds are in `colour_palettes()$background` and the help page
 * Coral Day: light to dark (pale blue to dark coral) for white backgrounds. Its pale-blue endpoint `#DFF0FF` can be faint for thin lines on white.
 * White adaptations: reduce the emphasis of dark blues and strong reds on white while keeping recognisable legacy hue sequences; bright cyan and green and uneven lightness remain. Classic White's yellow is darkened for visibility.
 
-No palette has been tested with observers or evaluated for colour-vision deficiency; colour-blind safety, perceptual uniformity and improved reading accuracy are not claimed. The depthmapX source comments describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe; rPSTool does not verify that statement.
+No palette has been tested with observers or evaluated for colour-vision deficiency; colour-blind safety, perceptual uniformity and reading accuracy are not claimed. The depthmapX source comments describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe; rPSTool does not verify that statement.
 
 ## Licensing and attribution
 
-rPSTool is licensed LGPL (>= 3). The historical colour modes and the Classic mapping reproduce depthmapX v0.9.1 (`salalib/pafcolor.cpp` and `salalib/displayparams.h`, tag `v0.9.1`; GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis), credited in the help pages, here and in `inst/COPYRIGHTS`. The implementation follows the depthmapX source (colour values, equations and branch structure). The reuse of depthmapX colour values and behaviour in an LGPL (>= 3) package has not been legally reviewed ([licensing](licensing.md)). The Coral palettes are rPSTool designs; the white adaptations reuse some depthmapX colours as described above, so the same attribution applies to those colours.
+rPSTool is licensed LGPL (>= 3). The historical colour palettes follow the colour conventions of Axman and Depthmap (Dalton, 1988; Turner, 2001). The Axmanesque palette takes its name from Axman. rPSTool implements the palettes in R using hexadecimal colour values and independently written colour mapping functions. The Coral palettes are rPSTool designs; the white adaptations reuse some of the historical colours. The coinciding Blue-Red and Purple-Orange values are attributed to ColorBrewer (Cynthia Brewer). See [licensing](licensing.md#4-palettes).
+
+**References**
+
+Dalton, N. (1988). Axman [software]. University College London.
+
+Turner, A. (2001). Depthmap: a program to perform visibility graph analysis. *Proceedings of the 3rd International Symposium on Space Syntax*, Atlanta, 31.1-31.9.
 
 ## Validation
 
-`tests/testthat/test-palettes.R` checks exact anchors of all palettes, nested sets, curves, ties, band boundaries, Classic landmarks, limits, reversal, NA and out-of-range handling, class boundaries and error handling. `tests/testthat/test-palette-scales.R` checks that built colours equal `colour_map()`, that legend steps equal the exact class colours, and that background and theme are untouched. The scale tests have been run with ggplot2 3.4.4 and, on macOS ARM64 with R 4.6.1, ggplot2 4.0.3; intermediate versions were not tested.
+`tests/testthat/test-palettes.R` checks exact anchors of all palettes, nested sets, curves, ties, band boundaries, Classic landmarks, limits, reversal, NA and out-of-range handling, class boundaries and error handling. `tests/testthat/test-palette-scales.R` checks that built colours equal `colour_map()`, that legend steps equal the exact class colours, and that background and theme are untouched. The scale tests need the suggested package ggplot2 and are skipped when it is not installed.

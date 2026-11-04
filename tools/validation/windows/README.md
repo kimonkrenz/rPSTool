@@ -2,7 +2,8 @@
 
 Result-file writing (`output_file`, `spatial_output_file`) is implemented on Windows with the Win32 API (`src/pst-fs-core.h`;
 guarantees in [result files](../../../docs/spatial-io/result-files.md)). This directory holds the procedure for checking it on a
-real Windows system: a filesystem harness (`fs-harness.cpp`) and a runner (`run-validation.R`). Validation status is in
+real Windows system: a filesystem harness (`fs-harness.cpp`) and a runner (`run-validation.R`). The Windows skip inventory is in
+[testing](../../../docs/testing.md#windows); the file-replacement limitation is in
 [KNOWN_LIMITATIONS.md](../../../KNOWN_LIMITATIONS.md).
 
 ## Requirements

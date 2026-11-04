@@ -99,7 +99,7 @@ Every function is documented in its help page (`help(package = "rPSTool")`). Tec
 
 ## Colour palettes
 
-`colour_palettes()` lists eleven palettes: seven reproduced depthmapX v0.9.1 colour modes, two white-background adaptations and
+`colour_palettes()` lists eleven palettes: seven historical colour modes (following Axman and Depthmap), two white-background adaptations and
 two designed for rPSTool (`coral_night` for dark and `coral_day` for light backgrounds). `colour_map()` maps values to colours in
 base graphics, and optional ggplot2 scales are provided. Class boundaries are supplied by you. See `?colour_palettes`.
 
@@ -108,7 +108,7 @@ base graphics, and optional ggplot2 scales are provided. Class boundaries are su
 The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 * **Angular Choice** with an unrestricted radius can exhaust a worker thread's stack in exceptionally deep networks and crash the R
-  session; restricting the radius avoids it.
+  session; a `steps` radius bounds the recursion depth.
 * Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
 * `network_integration()` accepts only step radii.
 * Coordinates must be projected. PST works in single precision around a centre point.
@@ -125,8 +125,8 @@ metadata for version 3.3.2 credits Alexander Ståhle, Lars Marcus, Daniel Koch, 
 Ann Legeby, Gianna Stavroulaki, Meta Berghauser Pont and Pablo Miranda, and the upstream README names Pablo Miranda Carranza. The
 original Place Syntax approach was introduced by Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with
 Axial Lines in GIS*. We gratefully acknowledge the original PST developers, whose work makes rPSTool possible. The Barnsbury example
-data are derived from Hillier and Iida (2005) and are included with the authors' permission; the movement gate counts were originally
-reported by Penn, Hillier, Banister and Xu (1998).
+is derived from Hillier and Iida (2005); the movement gate-count observations are redistributed with the authors' permission, and the
+counts were originally reported by Penn, Hillier, Banister and Xu (1998).
 
 ## Citation and licence
 
@@ -134,5 +134,5 @@ Please credit PST when you use rPSTool. Run `citation("rPSTool")` for the packag
 
 rPSTool is licensed under the **GNU Lesser General Public License, version 3 or later** (`LGPL (>= 3)`). It compiles the PST/pstalgo
 engine (Copyright 2019 Meta Berghauser Pont, LGPL-3-or-later) and some other third-party components, whose attribution is recorded in
-`inst/COPYRIGHTS`. The LGPL applies to rPSTool's software. The Barnsbury example data are derived from Hillier and Iida (2005), included with
-the authors' permission, and remain attributable to them. See [example data](docs/example-data.md) and [licensing](docs/licensing.md).
+`inst/COPYRIGHTS`. The LGPL applies to rPSTool's software. The Barnsbury example is derived from Hillier and Iida (2005); the movement gate-count observations are redistributed with the
+authors' permission, and the data remain attributable to their authors. The LGPL does not relicense the example data. See [example data](docs/example-data.md) and [licensing](docs/licensing.md).

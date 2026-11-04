@@ -91,7 +91,7 @@ runs of the plugin. Intentional differences are listed in [QGIS differences](doc
 ## Example data
 
 The Barnsbury example data (Hillier and Iida, 2005) were georeferenced and spatially transformed, so the coordinates are not the original
-coordinates. They are included with the authors' permission and remain attributable to them; see [example data](docs/example-data.md).
+coordinates. The movement gate-count observations are redistributed with the authors' permission, and the data remain attributable to their authors; see [example data](docs/example-data.md).
 
 ## Reporting problems
 

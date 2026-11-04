@@ -231,7 +231,7 @@ test_that("a zero-row result (no junctions or points of the requested origin kin
 })
 
 test_that("public signatures append output_file/overwrite/spatial_output_file and leave every earlier formal untouched", {
-  # the weight names of the output-naming scheme are inferred from the call: no argument was added for them
+  # the weight names of the output-naming scheme are inferred from the call: there is no naming argument
   expect_identical(names(formals(rPSTool::network_integration)),
                    c("graph", "steps", "radius", "junctions", "junction_output", "output_file", "overwrite", "spatial_output_file"))
   expect_identical(names(formals(rPSTool::network_reach)), c("graph", "radius", "origins", "output_file", "overwrite", "spatial_output_file"))

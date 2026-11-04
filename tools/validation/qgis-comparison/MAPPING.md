@@ -41,8 +41,8 @@ Notation: `P` = the plugin `props` dict (the keys the wizards set); "dtype" = ty
 | Segment Group Integration (same: **no menu entry**; the wizard `segmentgroupintegrationwiz.py` forces at least one radius, so the silent no-op below is GUI-unreachable) | `SegmentGroupIntegrationAnalysis` | `SegmentGrouping`, `CreateSegmentGroupGraph`, `SegmentGroupIntegration` | `segment_grouping` → `pst_segment_group_graph` → `segment_group_integration` | segment → group graph |
 | Create Junctions | `CreateJunctionsAnalysis` | `CreateJunctions` | `create_junctions(x, y, unlinks)` | – |
 | Create Segment Map | `CreateSegmentMapAnalysis` | `CreateSegmentMap` | `create_segment_map(coords, sections, network_type, snap, tail, deviation, extrude, unlinks)` | – |
-| Compare Results | `CompareResultsAnalysis` | `CompareResults` (+ raster/polygon creation) | `compare_line_results`, `pst_raster_*` | – |
-| Isovist (no menu entry, map tool disabled in v3.3.2) | `IsovistAnalysis` | `CreateIsovistContext`, `CalculateIsovist` | `pst_isovist_context`, `isovist`, `isovist_context_free` | – |
+| Compare Results | `CompareResultsAnalysis` | `CompareResults` (+ raster/polygon creation) | `compare_line_results`, `raster_data`, `raster_to_polygons`, `raster_free` | – |
+| Isovist (no menu entry, map tool disabled in v3.3.2) | `IsovistAnalysis` | `CreateIsovistContext`, `CalculateIsovist` | `isovist_context`, `isovist`, `isovist_context_free` | – |
 | Split Polylines (menu entry commented out) | `SplitPolylinesAnalysis` | none (pure QGIS) | none (rPSTool never splits lines) | – |
 
 ## 2. Per-analysis detail: options → arguments → output columns
