@@ -15,9 +15,13 @@ First release.
   multi-radius calls name a calculation identically. See `?result_column_names` and `docs/output-naming.md`.
 * Custom weights are named after the R object or literal data-frame column passed (`weights = population`, `weights = data$population`);
   anonymous vectors and calculations are errors raised before any calculation. See `?result_column_names`.
-* Existing result columns in a spatial-output source are detected before the native calculation starts: a clash needs
-  `overwrite = TRUE` (replacing the column in the new file only), and a clash differing only by letter case is always an error.
-* The metadata of every result file carries a `rpst:columns` manifest describing each column.
+* Result-column collisions with existing spatial-output source columns are checked before calculation. An exact-name collision requires
+  `overwrite = TRUE`, which replaces the column in the new file only. A source column differing from a result column only by letter case
+  is always rejected, regardless of `overwrite`. FlatGeobuf sources with existing column names that differ only by case are also rejected
+  because readers match fields case-insensitively.
+* Parquet and GeoParquet outputs for analyses using the generated result-column naming scheme include an `rpst:columns` metadata manifest.
+  FlatGeobuf outputs include it when the source has no header metadata or contains a flat, string-valued JSON metadata object with existing
+  `rpst:*` keys. Otherwise, existing FlatGeobuf header metadata is preserved unchanged.
 
 ## Engine
 
