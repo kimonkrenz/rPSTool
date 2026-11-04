@@ -4,17 +4,6 @@ Restrictions of rPSTool that affect functionality, supported inputs, interpretat
 
 ## Analyses
 
-### Angular Choice: network depth
-
-**Affects:** `angular_choice()`, and to a lesser extent `angular_integration()`.
-
-PST's Angular Choice (and, to a lesser extent, Angular Integration) follows shortest-path chains recursively on worker threads, with no
-depth bound. A very long chain of shortest-path steps can exhaust a worker thread's stack, which terminates the R process. How deep the
-chain gets depends on the network's topology and on the radius, not on its size; the point at which the stack runs out depends on the
-platform and build. A radius restriction reduces the risk: a `steps` radius bounds the depth roughly by the step limit, and walking and
-straight limits shrink the reachable area, while an angular limit does not bound runs of near-collinear segments. rPSTool does not
-change PST's computation and has no guard.
-
 ### Combined radius limits can be very slow
 
 **Affects:** `network_reach()`, `attraction_reach()` and other analyses that accept several limits at once.
@@ -41,6 +30,17 @@ because PST ignores or cannot evaluate them. `segment_group_integration()` accep
 
 Only `angular_choice()` and `angular_integration()` accept an `analysis_radius()` with several values in one field. Every other
 analysis rejects it before doing any work; call it once per radius instead.
+
+### Angular Choice: network depth
+
+**Affects:** `angular_choice()`, and to a lesser extent `angular_integration()`.
+
+PST's Angular Choice (and, to a lesser extent, Angular Integration) follows shortest-path chains recursively on worker threads, with no
+depth bound. A very long chain of shortest-path steps can exhaust a worker thread's stack, which terminates the R process. How deep the
+chain gets depends on the network's topology and on the radius, not on its size; the point at which the stack runs out depends on the
+platform and build. A radius restriction reduces the risk: a `steps` radius bounds the depth roughly by the step limit, and walking and
+straight limits shrink the reachable area, while an angular limit does not bound runs of near-collinear segments. rPSTool does not
+change PST's computation and has no guard.
 
 ### Graph and construction restrictions
 
