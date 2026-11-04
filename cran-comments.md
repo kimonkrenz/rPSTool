@@ -15,7 +15,7 @@ at commit `4119f2b847bafedff84f6d6fbf357196aed77add`:
   on the other platforms; the cause has not been identified. Four tests that need POSIX-only facilities are skipped on Windows by design
   (`tools/ci/windows-test-skips.tsv`).
 
-These runs are of the commit named above. win-builder and R-hub were not used.
+These runs are of the commit named above. win-builder and R-hub were not used. The results are refreshed at the release commit (see `docs/release-checklist.md`).
 
 The file-backed GeoParquet example in `vignettes/getting-started.Rmd` runs only when `arrow` (>= 25.0.0), `jsonlite` and `sf` are installed.
 

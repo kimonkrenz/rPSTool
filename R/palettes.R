@@ -50,7 +50,7 @@
 #' Provenance and source files are documented in the repository's palette documentation
 #' (<https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md>). The Blue-Red and
 #' Purple-Orange colour values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
-#' the terms on which the coinciding values may be redistributed have not been established for this package.
+#' the colours are attributed to ColorBrewer (Cynthia Brewer) as well as to depthmapX.
 #'
 #' @param palette A palette identifier: one of `colour_palettes()$palette`.
 #' @param n The number of discrete colours. `NULL` (the default) returns the palette's native set: 10, 10, 7, 7, 7 and 7 for the

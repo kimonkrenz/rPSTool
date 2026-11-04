@@ -1,6 +1,8 @@
 # Release checklist (rPSTool 0.1.0)
 
-Test environments and check results for CRAN are in `cran-comments.md`.
+Test environments and check results for CRAN are in `cran-comments.md`. The results recorded there are historical results for
+the commit they name; the items below are performed at the release gate and are separate from the editorial state of the
+documentation.
 
 ## Before submission
 
@@ -19,5 +21,5 @@ Test environments and check results for CRAN are in `cran-comments.md`.
   development gate requires it.
 * **README.** `README.md` is excluded from the tarball (`.Rbuildignore`) because it links to repository files that are not
   shipped. Keep the exclusion or ship a CRAN-facing README.
-* **Licensing.** Resolve the open licensing questions listed in [licensing](licensing.md) (section 4, palettes) and confirm the
-  permission under which the Barnsbury example data are redistributed ([example data](example-data.md)).
+* **Attribution.** Check that [licensing](licensing.md), `inst/COPYRIGHTS` and `inst/CITATION` are consistent with the files
+  being released.
