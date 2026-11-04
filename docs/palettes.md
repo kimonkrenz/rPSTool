@@ -88,7 +88,7 @@ rPSTool is licensed LGPL (>= 3). The historical colour palettes follow the colou
 
 Dalton, N. (1988). Axman [software]. University College London.
 
-Turner, A. (2001). Depthmap: a program to perform visibility graph analysis. *Proceedings of the 3rd International Symposium on Space Syntax*, Atlanta.
+Turner, A. (2001). Depthmap: a program to perform visibility graph analysis. *Proceedings of the 3rd International Symposium on Space Syntax*, Atlanta, 31.1-31.9.
 
 ## Validation
 

@@ -86,7 +86,7 @@ Other bundled material
 - Colour palettes (eleven, in three groups; docs/palettes.md in the source repository): the historical colour palettes follow the
   colour conventions of Axman and Depthmap (Dalton, N. (1988), Axman [software], University College London; Turner, A. (2001),
   Depthmap: a program to perform visibility graph analysis, Proceedings of the 3rd International Symposium on Space Syntax,
-  Atlanta). The Axmanesque palette takes its name from Axman. rPSTool implements the palettes in R using hexadecimal colour values
+  Atlanta, 31.1-31.9). The Axmanesque palette takes its name from Axman. rPSTool implements the palettes in R using hexadecimal colour values
   and independently written colour mapping functions; no depthmapX source code is included. Two white-background adaptations
   (Axmanesque White, depthmapX Classic White) reuse some of the historical colours; two palettes (Coral Night, Coral Day) were
   designed for rPSTool. The Blue-Red and Purple-Orange values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and
