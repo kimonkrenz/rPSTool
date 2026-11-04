@@ -6,21 +6,18 @@ New submission of rPSTool 0.1.0. Maintainer: Kimon Krenz <k.krenz@ucl.ac.uk>.
 
 ## Test environments
 
-GitHub Actions runners at commit `4119f2b847bafedff84f6d6fbf357196aed77add`, each with R 4.6.2 and the full development test suite
-(`RPST_FULL_TESTS=true`, `arrow` 26.0.0, `sf` 1.1.3):
+GitHub Actions runners, each with R 4.6.2, the full development test suite (`RPST_FULL_TESTS=true`), `arrow` 26.0.0 and `sf` 1.1.3,
+at commit `4119f2b847bafedff84f6d6fbf357196aed77add`:
 
 * Linux x86-64 (Ubuntu, GCC 15.2.0): 160,814 test expectations; `R CMD check` `Status: OK`.
 * macOS ARM64 (macos-15, Apple clang 17.0.0): 160,814 test expectations; `R CMD check` `Status: OK`.
 * Windows x86-64 (Windows Server 2022, Rtools GCC 14.3.0): 160,759 test expectations; `R CMD check` `Status: OK`. The count is 55 lower than
-  on the other platforms; the difference is unexplained. Four tests that need POSIX-only facilities are skipped on Windows by design
+  on the other platforms; the cause has not been identified. Four tests that need POSIX-only facilities are skipped on Windows by design
   (`tools/ci/windows-test-skips.tsv`).
 
-Later local development runs (tree of `96a1547`, rebase-merged as `c6c4ed9`): macOS ARM64, 161,539 expectations, no failures or skips,
-`Status: OK`; Windows x86-64, 161,484 expectations, no failures, four approved skips, `Status: OK`. These are not GitHub Actions runs and
-do not cover Linux or CRAN incoming checks. win-builder and R-hub have not been used.
+These runs are of the commit named above. win-builder and R-hub were not used.
 
-The file-backed GeoParquet example in `vignettes/getting-started.Rmd` runs only when `arrow` (>= 25.0.0), `jsonlite` and `sf` are installed;
-it has not been confirmed to have executed in the validation runs.
+The file-backed GeoParquet example in `vignettes/getting-started.Rmd` runs only when `arrow` (>= 25.0.0), `jsonlite` and `sf` are installed.
 
 ## R CMD check results
 

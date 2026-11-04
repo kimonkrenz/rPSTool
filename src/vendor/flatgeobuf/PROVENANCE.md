@@ -1,6 +1,6 @@
 # Provenance of the vendored FlatGeobuf schema and generated headers
 
-Vendored **unmodified** for rPST's FlatGeobuf input; see
+Vendored **unmodified** for rPSTool's FlatGeobuf input; see
 [FlatGeobuf input](../../../docs/spatial-io/flatgeobuf-input.md) for the current interface and format requirements.
 
 - Upstream repository: `flatgeobuf/flatgeobuf`
@@ -11,9 +11,9 @@ Vendored **unmodified** for rPST's FlatGeobuf input; see
   `LICENSE`
 - Licence: BSD 2-Clause, "Copyright (c) 2018, Björn Harrtell" (`LICENSE`)
 - The generated headers `static_assert` FlatBuffers 24.12.23 and must stay paired with `../flatbuffers` (same pin).
-  rPST did not run `flatc`; the generated files are upstream's committed output, vendored pristine and hash-pinned.
+  rPSTool did not run `flatc`; the generated files are upstream's committed output, vendored pristine and hash-pinned.
 
-## Licence obligations (established for this set)
+## Licence obligations
 
 * Source redistribution must retain the copyright notice, the conditions and the disclaimer. The generated headers carry
   **no** copyright line (only "automatically generated … do not modify"), so `LICENSE` ships beside them.

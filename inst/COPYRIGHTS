@@ -64,7 +64,7 @@ Bundled third-party components
 
 3. FlatGeobuf schema and flatc-generated headers
    https://github.com/flatgeobuf/flatgeobuf  (commit d8b6d6afcfe25b7898ddd721be0cb85c3be276ea)
-   Copyright (c) 2018, Bjorn Harrtell
+   Copyright (c) 2018, Björn Harrtell
    Licensed under the BSD 2-Clause licence reproduced in inst/licenses/flatgeobuf-BSD-2-Clause.txt:
    Redistribution and use in source and binary forms, with or without modification, are permitted
    provided that the conditions in that file are met (retain the copyright notice, conditions and
@@ -86,15 +86,15 @@ Other bundled material
 - Colour palettes (eleven, in three groups; docs/palettes.md in the source repository):
   (1) Seven colour modes reproduced from depthmapX v0.9.1 (salalib/pafcolor.cpp and salalib/displayparams.h, tag v0.9.1;
   GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis): the colour values, and the depthmapX Classic mapping, which was
-  reimplemented in R to reproduce depthmapX behaviour. The reuse of depthmapX colour values and behaviour in an LGPL (>= 3) package
-  has not been legally reviewed.
+  reimplemented in R to reproduce depthmapX behaviour. Whether including these depthmapX values and behaviour is compatible with
+  distributing the package under LGPL (>= 3) is an open licensing question (docs/licensing.md).
   (2) Two white-background adaptations (Axmanesque White, depthmapX Classic White): rPSTool adaptations that reuse some depthmapX
   colours (seven Axmanesque White anchors are entries of the depthmapX Equal Ranges (3-Colour) array; three depthmapX Classic White
   anchors equal the Classic cyan, green and red landmark colours); the other anchors are not depthmapX values. The depthmapX
   attribution above applies to the reused colours.
   (3) Two palettes designed for rPSTool (Coral Night, Coral Day).
-  The depthmapX Blue-Red and Purple-Orange values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
-  ColorBrewer's licence terms were not verified.
+  The depthmapX Blue-Red and Purple-Orange values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.); the terms on which the
+  coinciding values may be redistributed have not been established for this package.
 - Example data (inst/extdata/hillier_iida/): the Barnsbury example data are derived from Hillier, B. and Iida, S. (2005), Network and
   Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), and include the axial network, unlinks and
   observed movement gate counts; the original data were obtained from https://discovery.ucl.ac.uk/id/eprint/1232/. The geometries

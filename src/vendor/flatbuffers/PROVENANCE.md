@@ -1,6 +1,6 @@
 # Provenance of the vendored FlatBuffers headers
 
-Vendored **unmodified** (byte-for-byte) for rPST's FlatGeobuf input; see
+Vendored **unmodified** (byte-for-byte) for rPSTool's FlatGeobuf input; see
 [FlatGeobuf input](../../../docs/spatial-io/flatgeobuf-input.md) for the current interface and format requirements.
 Only the header-only C++ library files that the FlatGeobuf-generated headers transitively include are carried
 (16 headers); no sources, no `flatc`, no tests. FlatBuffers 24.12.23 remains the parser source authority.
@@ -29,15 +29,15 @@ verified fail-closed; it is not an independent fork.
 - Why this version: the FlatGeobuf generated headers `static_assert` FlatBuffers 24.12.23 exactly; the two must be
   pinned together.
 
-## Licence obligations (established for this set)
+## Licence obligations
 
 * Apache-2.0 section 4(a): recipients receive a copy of the licence (`LICENSE`, shipped with the headers).
 * 4(b): modified files must carry change notices. **No file is modified.**
 * 4(c): notices in the files are retained as shipped. 15 of the 16 headers carry an Apache licence header; `base.h`
   carries none and is covered by `LICENSE`.
 * 4(d): the upstream repository has **no `NOTICE` file** at this tag (`git ls-files`), so there is no NOTICE text to reproduce.
-* rPST's own licence is not decided or constrained here beyond preserving these notices. The package-level
-  third-party notice is in `inst/COPYRIGHTS`.
+* The package-level third-party notice is in `inst/COPYRIGHTS`; the licence of rPSTool's own code is stated in
+  `docs/licensing.md`.
 
 ## Verification
 

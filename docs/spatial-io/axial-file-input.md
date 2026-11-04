@@ -43,8 +43,8 @@ caller's responsibility. See the [CRS policy](sf-adapters.md#crs-policy).
 
 ## 5. Memory
 
-PST needs the complete line set in memory. The file route removes the input representation but not PST's own graph, and it does
-not hold an extra R matrix copy, so the saving is largest compared with an `sf` LINESTRING layer.
+PST needs the complete line set in memory. The file route builds the graph without an intermediate `sf` object or R coordinate
+matrix; PST's own graph is held in memory as for any other input.
 
 ## 6. Not supported
 

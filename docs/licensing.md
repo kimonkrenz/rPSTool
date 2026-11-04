@@ -28,11 +28,15 @@ rPSTool compiles all of PST/pstalgo into the package's single shared library, so
 
 ## 3. PST authorship and citation
 
-The PST software citation and README acknowledgement credit the ten authors named in the PST for QGIS v3.3.2 `metadata.txt`; the upstream README's fuller spelling "Pablo Miranda Carranza" is preserved in `inst/COPYRIGHTS`. Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with Axial Lines in GIS*, introduced the approach. `inst/CITATION` has the rPSTool entry and a PST v3.3.2 reference (commit `63df80a2cf3dd289be95ea3d91667c3490719b75`, repository SMoG-Chalmers/PST), dated `n.d.` because the README's 2019 is the copyright year, not a release date. It is constructed by rPSTool and is not an officially endorsed upstream citation.
+The PST software citation and README acknowledgement credit the ten authors named in the PST for QGIS v3.3.2 `metadata.txt`; the upstream README's fuller spelling "Pablo Miranda Carranza" is preserved in `inst/COPYRIGHTS`. Ståhle, Marcus and Karlström (2005), *Place Syntax: Geographic Accessibility with Axial Lines in GIS*, introduced the approach. `inst/CITATION` has the rPSTool entry and a PST v3.3.2 reference (commit `63df80a2cf3dd289be95ea3d91667c3490719b75`, repository SMoG-Chalmers/PST), carrying no year (`n.d.`): upstream gives 2019 only as the copyright year. The entry is compiled by the rPSTool maintainers from the upstream metadata and is not a citation endorsed by the PST authors.
 
 ## 4. Palettes
 
-The historical palette colour values and the depthmapX Classic mapping reproduce depthmapX v0.9.1 `salalib/pafcolor.cpp` and `displayparams.h` (tag `v0.9.1`; GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis), reimplemented in R and attributed in `inst/COPYRIGHTS` and [palettes](palettes.md). The reuse of depthmapX values and behaviour in an LGPL (>= 3) package has not been legally reviewed. The depthmapX Blue-Red and Purple-Orange values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (reversed order); ColorBrewer's licence terms were not verified.
+Seven palettes reproduce colour values, and the depthmapX Classic mapping, from depthmapX v0.9.1 (`salalib/pafcolor.cpp` and `displayparams.h`, tag `v0.9.1`). Those source files are licensed GPL-3.0-or-later ("Copyright (C) 2011-2012, Tasos Varoudis"). The mapping is reimplemented in R, and the attribution is in `inst/COPYRIGHTS` and [palettes](palettes.md).
+
+*Open licensing question.* Whether the inclusion of these depthmapX values and behaviour is compatible with distributing the package under LGPL (>= 3) has not been determined.
+
+The depthmapX Blue-Red and Purple-Orange values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.); depthmapX's source does not mention ColorBrewer. The terms on which the coinciding ColorBrewer values may be redistributed have not been established for this package.
 
 ## 5. Example data
 

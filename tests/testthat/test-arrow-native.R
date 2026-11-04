@@ -344,7 +344,7 @@ test_that("offsets, data buffers and addressability fail closed", {
 
 test_that("the whole offsets element must lie within a non-aligned lowered limit", {
   # Index physical_end (n) is the last offset read; its bytes end at (n + 1) * width. With
-  # limit 62: width 4 admits n <= 14, width 8 admits n <= 6 (the old index-only check let one more through).
+  # limit 62: width 4 admits n <= 14, width 8 admits n <= 6 (an index-only check would admit one more).
   with_address_limit(62, {
     expect_rejects("Row 2: the WKB value end offset 82 is not addressable", valid_rows(14))
     expect_rejects("offsets buffer index 15 is not addressable", valid_rows(15))

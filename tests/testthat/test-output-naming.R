@@ -192,7 +192,7 @@ test_that("all four custom-weight APIs infer names, and origin and destination a
   `!!` <- 1
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = `!!`, destination_weights = jobs), "origin_weights")
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = population, destination_weights = `!!`), "destination_weights")
-  # the naming arguments of the earlier design no longer exist
+  # there are no naming arguments: weight names are inferred from the call
   expect_error(rPSTool::network_betweenness(a, r, weights = population, weight_name = "x"), "unused argument")
   expect_error(rPSTool::od_betweenness(a, o, r, origin_weights = population, origin_weight_name = "x"), "unused argument")
 })

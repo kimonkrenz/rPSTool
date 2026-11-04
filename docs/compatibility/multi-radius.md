@@ -54,32 +54,27 @@ run's arrays:
 
 ## 3. Column schema (multi-result)
 
-### 3.1 Radius tag
+### 3.1 Radius component
 
-The tag identifies the radius of a column: `<code><value>` for the varying dimension, no tag when no dimension varies.
+Column names follow the scheme of [output naming](../output-naming.md). The radius component of a column name encodes the complete
+five-field configuration of its radius: every active restriction in the order straight, walking, steps, angular, axmeter
+(`rl`, `rw`, `rs`, `ra`, `ram` followed by the value), or `rg` when none is set. A value is the shortest decimal (1 to 9
+significant digits) that reads back to the same **native float** as the supplied number, written in plain fixed notation with `.`
+replaced by `p` (never an exponent, never a sign; `-0` is `0`); steps are exact integers. Examples: walking `500` gives `rw500`,
+`0.5` gives `rw0p5`, `0.1+0.2` gives `rw0p3`, steps `3` gives `rs3`, walking `12` with a fixed angular limit of `180` gives
+`rw12_ra180`.
 
-| dimension | code | | dimension | code |
-|---|---|---|---|---|
-| straight | `s` | | angular | `a` |
-| walking | `w` | | axmeter | `x` (not used by the angular engines) |
-| steps | `n` | | | |
-
-`<value>` is the shortest decimal (1 to 9 significant digits) that reads back to the same **native float** as the supplied
-number, written in plain fixed notation with `.` replaced by `p` (never an exponent, never a sign; `-0` is `0`). Steps are
-exact integers. Examples: `500`→`w500`, `0.5`→`w0p5`, `0.1+0.2`→`w0p3`, `1e20`→`w100000000000000000000`, steps `3`→`n3`.
-Values that collapse to one native float (or `0`/`-0`) are rejected earlier (§1.1), so tags are unique within a table
-(verified by an internal check on all names). The tag is a convenience; the authoritative mapping is the `rpst:columns`
-manifest (§4), which matters for downstream tools that truncate or recode column names (for example 10-character
-Shapefile fields).
-
-Fixed restrictions do not appear in the names (they are identical for every column); they are recorded in the metadata.
+Fixed restrictions therefore appear in every column name as well as in the metadata, and the names of two radii differ only in the
+varying field. Values that collapse to one native float (or `0`/`-0`) are rejected earlier (§1.1), so the names are unique within a
+table. The names are labels; the authoritative mapping is the `rpst:columns` manifest (§4), which matters for downstream tools that
+truncate or recode column names (for example 10-character Shapefile fields).
 
 ### 3.2 Names and order
 
 `segment_id` first (once; one-based native segment position, as in the scalar schema). Then radius-major, in the requested
 radius order; within a radius, in this order:
 
-Angular Choice (`<t>` = `_<tag>` or empty):
+Angular Choice (`<radius>` = the radius component of 3.1):
 
 1. `ac_a_<radius>[_wl]_n` — raw score
 2. `nc_a_<radius>`, `td_a_<radius>`
@@ -112,12 +107,13 @@ Common keys (`rpst:version`, `rpst:pst_version`, `rpst:pst_commit`,
 * `rpst:radius_fixed` — JSON object of the non-NULL fixed restrictions.
 * `rpst:radius_configurations` — JSON array, in order, of the full five-field scalar configuration of each radius.
 * `rpst:normalizations` — JSON array of the requested names in requested order.
-* `rpst:columns` — JSON array of `{"name","role","radius","normalization"}` objects, one per result column in table order
-  (`radius` is the 1-based index into `rpst:radius_configurations`; `normalization` is `null` for diagnostics/raw).
+* `rpst:columns` — JSON array with one object per result column in table order. Each object has `name`, `role`, `radius` (the
+  1-based index into `rpst:radius_configurations`) and `radius_tag` (the radius component of the name), `normalization`
+  (`null` for diagnostics and raw scores), and, where they apply, `code`, `distance`, `weight` and `parameters`.
   Roles: `choice`, `normalized`, `integration`, `node_count`, `total_depth`, `total_depth_weight`, `total_weight`.
 
-`rpst:schema` distinguishes the layouts; schema 1 files carry no `rpst:columns`. The
-manifest lists only this run's columns: a source attribute that happens to share a name is replaced (reported in
+`rpst:schema` distinguishes the layouts. Schema 1 tables also carry `rpst:naming` and `rpst:columns`; their entries hold the same
+components, with the radius component itself in `radius` and empty components omitted. The manifest lists only this run's columns: a source attribute that happens to share a name is replaced (reported in
 `replaced`), while columns of an earlier run with other radii remain ordinary attributes; nothing is dropped silently.
 
 Weighting and angle controls (`weigh_by_length`, `angle_threshold`, `angle_precision`, `weight_outputs`), the PST
@@ -148,8 +144,7 @@ untouched; native owners unwind before the R error; the graph stays usable.
 Each radius is a separate native PST calculation, so the number of PST runs equals the number of radii; normalisation reuses a run's arrays. The native table holds `rows x 4 B x columns` (columns = radii x (3 + weighted + number of normalisations other
 than `none`) for Choice), the same per-column cost as a scalar call; for example 5 million segments, 10 radii and 2 normalisations,
 unweighted, need about 1.0 GB. PST's per-run scratch memory is released before the next radius. For a bounded footprint on a very large
-network, make several calls with different radii. A combined file stores geometry and attributes once and is therefore smaller than one
-file per radius. Parquet and GeoParquet output uses the same single-table writers as scalar calls; it needs `arrow` (>= 25.0.0).
+network, make several calls with different radii. A combined file stores geometry and attributes once rather than once per radius. Parquet and GeoParquet output uses the same single-table writers as scalar calls; it needs `arrow` (>= 25.0.0).
 
 ## 9. Other radius-bearing analyses
 

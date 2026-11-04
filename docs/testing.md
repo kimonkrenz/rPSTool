@@ -71,7 +71,7 @@ The full suite takes much longer than CRAN mode.
 
 ## Optional dependencies in tests
 
-`arrow`, `sf`, `jsonlite` and `ggplot2` are suggested packages. The minimum supported `arrow` is 25.0.0, the release the Arrow C declarations in `src/arrow-c-abi` were taken from; the recorded CRAN-comment runs used a newer release (see `cran-comments.md`). Tests and examples that need them skip when they are
+`arrow`, `sf`, `jsonlite` and `ggplot2` are suggested packages. The minimum supported `arrow` is 25.0.0, the release the Arrow C declarations in `src/arrow-c-abi` were taken from. Tests and examples that need them skip when they are
 absent, except that the local development gate requires them, so a full validation exercises every path. The native Arrow
 boundary tests (`test-arrow-native.R`) need no Arrow.
 

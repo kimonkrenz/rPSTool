@@ -35,9 +35,9 @@ cat("**The sf package is not installed, so the code chunks in this vignette",
 
 ## Installation
 
-rPSTool is not on CRAN yet, so install it from GitHub. Installation compiles the bundled engine and needs a C++17 toolchain
-(Rtools on Windows, the Xcode command-line tools on macOS, `g++` or `clang++` on Linux). The first installation takes a few
-minutes. This chunk is shown, not run:
+Installing rPSTool compiles the bundled engine and needs a C++17 toolchain (Rtools on Windows, the Xcode command-line tools on
+macOS, `g++` or `clang++` on Linux). The first installation takes a few minutes. To install the development version from GitHub
+(this chunk is shown, not run):
 
 ```{r install, eval = FALSE}
 install.packages(c("pak", "sf", "classInt"))
@@ -190,8 +190,8 @@ Points to know:
   mutually exclusive, and `overwrite = TRUE` replaces an existing file.
 * Spatial output needs a graph built from a supported file path (not from an `sf` object or matrix), and the source file must
   stay unchanged while the analysis runs. Some analyses restrict it to one result per line.
-* This reduces what R holds, which helps with large networks. It does not remove the memory the engine needs for the graph
-  and the analysis itself, so it is not out-of-core processing.
+* This reduces what R holds. It does not remove the memory the engine needs for the graph and the analysis itself, so it is
+  not out-of-core processing.
 * A FlatGeobuf (`.fgb`) network works the same way where supported: pass its path to `segment_graph()` and write
   `spatial_output_file` with a `.fgb` extension. It needs only `sf`.
 

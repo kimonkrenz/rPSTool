@@ -172,8 +172,7 @@
 # GeoParquet: row group by row group through R arrow's incremental ParquetFileWriter. The source row groups are decoded one at a
 # time (peak = one source row group); the result columns are zero-copy slices of the table imported from the native stream; the
 # geometry column and the 'geo' metadata pass through unchanged, so CRS, bbox and covering stay valid.
-# zstd, as for output_file. A faster codec (snappy) was profiled once at about twice the write speed for ~12% larger files, but
-# interleaved repeats were inconclusive under machine noise (docs/spatial-io/spatial-output.md §6), so no unproven speed claim is built in.
+# zstd, as for output_file.
 .pst_spatial_parquet_codec <- "zstd"
 .pst_spatial_gc_groups <- 4L   # collect garbage every this many source row groups
 .pst_spatial_write_geoparquet <- function(src, stream, temp, result_names, metadata, rows) {
@@ -231,7 +230,7 @@
       writer$WriteTable(do.call(arrow("Table")$create, c(columns, list(schema = out_schema))), chunk_size = m)
       offset <- offset + m
       # Arrow row groups and tables are small R objects over large C++ buffers, so R's collector does not run in step with the
-      # Arrow pool: collect every few row groups so that dead ones cannot pile up (observed in docs/spatial-io/spatial-output.md §6).
+      # Arrow pool: collect every few row groups so that dead ones cannot pile up.
       rm(part, columns)
       groups_written <- groups_written + 1L
       if (groups_written %% .pst_spatial_gc_groups == 0L) invisible(gc(verbose = FALSE))

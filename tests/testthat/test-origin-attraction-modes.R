@@ -250,7 +250,7 @@ test_that("optional results and graphs have independent lifetime and reusable st
   rm(g,ptr,lines,points,weights); gc()
   expect_identical(serialize(list(reach,weighted,attraction),NULL),saved)
   expect_identical(origin_native("graph_lifecycle")-before,c(1,1,0))
-  # NULL modes are identical to the old native entry points, including bytes.
+  # NULL modes are identical to the unmoded native entry points, including bytes.
   g <- axial_graph(origin_chain())
   expect_identical(serialize(network_reach(g),NULL),serialize(network_reach(g,origins=NULL),NULL))
   expect_identical(unname(as.list(network_reach(g)[-1])),origin_native("reach",g$ptr,analysis_radius()))

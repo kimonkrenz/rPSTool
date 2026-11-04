@@ -78,8 +78,8 @@ describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe; r
 
 Provenance and source files are documented in the repository's palette documentation
 (\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md}). The Blue-Red and
-Purple-Orange colour values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.); ColorBrewer's
-licence terms have not been checked.
+Purple-Orange colour values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
+the terms on which the coinciding values may be redistributed have not been established for this package.
 }
 
 \examples{

@@ -85,7 +85,7 @@ restrictions apply to every radius and are recorded in the result's metadata (\v
 \strong{Network depth.} Angular Choice may encounter computational limitations in exceptionally deep network
 configurations, particularly with unrestricted analysis radii. This has only been observed in artificially
 constructed networks with thousands of consecutively connected segments, not in real-world street networks.
-Restricting the analysis radius avoids the observed limitation.
+A \code{steps} radius bounds the recursion depth; an \code{angular} radius does not.
 \code{\link[=angular_integration]{angular_integration()}} shares part of this behaviour with a larger tolerance. See \code{KNOWN_LIMITATIONS.md} in the
 repository.
 }

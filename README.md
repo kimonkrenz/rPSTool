@@ -108,7 +108,7 @@ base graphics, and optional ggplot2 scales are provided. Class boundaries are su
 The main restrictions are listed here, and in full in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 * **Angular Choice** with an unrestricted radius can exhaust a worker thread's stack in exceptionally deep networks and crash the R
-  session; restricting the radius avoids it.
+  session; a `steps` radius bounds the recursion depth.
 * Combining a walking, angular or axmeter limit with another limit but no `steps` limit can make some analyses very slow.
 * `network_integration()` accepts only step radii.
 * Coordinates must be projected. PST works in single precision around a centre point.

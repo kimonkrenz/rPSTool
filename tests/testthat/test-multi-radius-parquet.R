@@ -56,7 +56,7 @@ test_that("attribute-only Parquet: one combined table, schema 2 metadata, exact 
     expect_equal(params$angle_threshold, 15); expect_equal(params$angle_precision, 3)
     expect_identical(md[["rpst:pst_commit"]], unname(rPSTool:::.pst_engine_pin()[["pst_commit"]]))
   }
-  # a scalar call keeps schema 1; it now carries the same column manifest as the multi-result schema
+  # a scalar call has schema 1 and carries a column manifest like the multi-result schema
   scalar <- file.path(dir, "scalar.parquet")
   angular_choice(g, analysis_radius(walking = 25), normalization = "syntax", output_file = scalar)
   expect_identical(mp_meta(scalar)[["rpst:schema"]], "1")

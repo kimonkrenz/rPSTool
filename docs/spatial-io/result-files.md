@@ -110,10 +110,9 @@ identifiers.
 
 ## 6. Axial-graph analyses without missing values
 
-`output_file = NULL, overwrite = FALSE` are appended to:
-
-Columns follow the positional id, in data-frame order. Names are generated (prefix, then distance, radius and parameters; see
-[output naming](../output-naming.md)); the prefix and an example name are given for each quantity.
+`output_file = NULL, overwrite = FALSE` are appended to the functions below. Columns follow the positional id, in data-frame
+order. Names are generated (prefix, then distance, radius and parameters; see [output naming](../output-naming.md)); the prefix
+and an example name are given for each quantity.
 
 | Function | File route | Positional id | Quantities (prefix, example name, type) |
 | --- | --- | --- | --- |
