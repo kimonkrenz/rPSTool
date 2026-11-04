@@ -43,9 +43,9 @@ First release.
 
 ## Palettes and example data
 
-* `colour_palettes()`, `colour_palette()` and `colour_map()` provide eleven palettes in three groups: seven colour modes reproduced from depthmapX v0.9.1
+* `colour_palettes()`, `colour_palette()` and `colour_map()` provide eleven palettes in three groups: seven historical colour modes
   (Equal Ranges 3-Colour, 3-Colour Hue Only, Blue-Red, Purple-Orange, Greyscale, Monochrome and depthmapX Classic) with their historical
-  band and Classic mappings; two white-background adaptations (Axmanesque White and depthmapX Classic White) that reuse some depthmapX
+  band and Classic mappings; two white-background adaptations (Axmanesque White and depthmapX Classic White) that reuse some of the historical
   colours; and two palettes designed for rPSTool (Coral Night and Coral Day). The four non-historical palettes have nested 3/5/9 colour
   variants. The Blue-Red and Purple-Orange values coincide with the 7-class ColorBrewer RdYlBu and PuOr schemes (see `?colour_palettes`). `scale_colour_rpst_c()`, `scale_fill_rpst_c()`, `scale_colour_rpst_b()` and `scale_fill_rpst_b()`
   are optional ggplot2 scales; binned scales take user-supplied class boundaries and show the exact class colours in the legend. No

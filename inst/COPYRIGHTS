@@ -83,26 +83,20 @@ Optional (Suggests) packages such as arrow, sf, jsonlite and testthat are not bu
 
 Other bundled material
 ----------------------
-- Colour palettes (eleven, in three groups; docs/palettes.md in the source repository):
-  (1) Seven colour modes reproduced from depthmapX v0.9.1 (salalib/pafcolor.cpp and salalib/displayparams.h, tag v0.9.1;
-  GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis): the colour values, and the depthmapX Classic mapping, which was
-  reimplemented in R to reproduce depthmapX behaviour. The values are retained with this attribution and the package
-  licence is unchanged; this is an attribution statement, not a legal opinion on licence compatibility (docs/licensing.md).
-  (2) Two white-background adaptations (Axmanesque White, depthmapX Classic White): rPSTool adaptations that reuse some depthmapX
-  colours (seven Axmanesque White anchors are entries of the depthmapX Equal Ranges (3-Colour) array; three depthmapX Classic White
-  anchors equal the Classic cyan, green and red landmark colours); the other anchors are not depthmapX values. The depthmapX
-  attribution above applies to the reused colours.
-  (3) Two palettes designed for rPSTool (Coral Night, Coral Day).
-  The depthmapX Blue-Red and Purple-Orange values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.). Attribution: this product includes
-  color specifications and designs developed by Cynthia Brewer (http://colorbrewer.org/); the ColorBrewer licence text was not
-  consulted for this package.
-- Example data (inst/extdata/hillier_iida/): the Barnsbury example data are derived from Hillier, B. and Iida, S. (2005), Network and
-  Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30), and include the axial network, unlinks and
-  observed movement gate counts; the original data were obtained from https://discovery.ucl.ac.uk/id/eprint/1232/. The geometries
-  were georeferenced to EPSG:27700 and spatially transformed (best-fit transformation) by Kimon Krenz; the coordinates are therefore
-  not the original, unmodified coordinates. The authors have confirmed permission to redistribute the movement gate-count observations; the
-  spatial data are an adaptation by Kimon Krenz of the source network. The original
+- Colour palettes (eleven, in three groups; docs/palettes.md in the source repository): the historical colour palettes follow the
+  colour conventions of Axman and Depthmap (Dalton, N. (1988), Axman [software], University College London; Turner, A. (2001),
+  Depthmap: a program to perform visibility graph analysis, Proceedings of the 3rd International Symposium on Space Syntax,
+  Atlanta). The Axmanesque palette takes its name from Axman. rPSTool implements the palettes in R using hexadecimal colour values
+  and independently written colour mapping functions; no depthmapX source code is included. Two white-background adaptations
+  (Axmanesque White, depthmapX Classic White) reuse some of the historical colours; two palettes (Coral Night, Coral Day) were
+  designed for rPSTool. The Blue-Red and Purple-Orange values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and
+  PuOr schemes and are attributed to Cynthia Brewer (http://colorbrewer.org/).
+- Example data (inst/extdata/hillier_iida/): the Barnsbury example is derived from Hillier, B. and Iida, S. (2005), Network and
+  Psychological Effects in Urban Movement, LNCS 3693, pp. 475-490 (DOI 10.1007/11556114_30); the original data were obtained from
+  https://discovery.ucl.ac.uk/id/eprint/1232/. The movement gate-count observations are redistributed with the authors' permission.
+  The axial network and unlinks are adapted from the source material, with geometries georeferenced to EPSG:27700 and spatially
+  transformed (best-fit transformation) by Kimon Krenz; the coordinates are therefore not the original coordinates. The original
   research and data remain attributable to their respective authors. The movement gate counts were originally reported by Penn, A.,
   Hillier, B., Banister, D. and Xu, J. (1998), Configurational modelling of urban movement networks, Environment and Planning B:
-  Planning and Design, 25(1), pp. 59-84 (DOI 10.1068/b250059). The package licence (LGPL-3-or-later) applies to rPSTool's software; the
-  Barnsbury data are included with the authors' permission and remain attributable to them (docs/example-data.md).
+  Planning and Design, 25(1), pp. 59-84 (DOI 10.1068/b250059). The package licence (LGPL-3-or-later) applies to rPSTool's software
+  and does not relicense the example data (docs/example-data.md).

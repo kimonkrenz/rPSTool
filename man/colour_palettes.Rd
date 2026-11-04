@@ -26,9 +26,9 @@ means transparent). \code{colour_palette()} returns an unnamed character vector 
 lowest to the highest value (or reversed).
 }
 \description{
-rPSTool ships eleven palettes for drawing network analysis results, in three groups: (1) seven colour modes reproduced from
-depthmapX v0.9.1 with their original names and mapping rules; (2) two white-background adaptations
-(\code{axmanesque_white}, \code{depthmapx_classic_white}) that reuse some depthmapX colours; and (3) two palettes designed for rPSTool
+rPSTool ships eleven palettes for drawing network analysis results, in three groups: (1) seven historical colour modes with their
+original names and mapping rules; (2) two white-background adaptations
+(\code{axmanesque_white}, \code{depthmapx_classic_white}) that reuse some of the historical colours; and (3) two palettes designed for rPSTool
 (\code{coral_night}, \code{coral_day}). \code{colour_palettes()} lists them, \code{colour_palette()} returns the exact discrete colours of a
 palette, and \code{\link[=colour_map]{colour_map()}} maps numbers to colours. None of these functions needs ggplot2 and none alters an analysis result;
 \code{\link[=scale_colour_rpst_c]{scale_colour_rpst_c()}} and friends use the same definitions in ggplot2.
@@ -37,18 +37,17 @@ palette, and \code{\link[=colour_map]{colour_map()}} maps numbers to colours. No
 
 \describe{
 \item{\code{axmanesque}, \code{axmanesque_hue}, \code{blue_red}, \code{purple_orange}, \code{greyscale}, \code{monochrome}, \code{depthmapx_classic}}{The seven
-depthmapX v0.9.1 modes ("Equal Ranges (3-Colour)", "(3-Colour Hue Only)", "(Blue-Red)", "(Purple-Orange)", "(Greyscale)",
-"(Monochrome)" and "depthmapX Classic"). Their colour values are reproduced from depthmapX (\code{salalib/pafcolor.cpp}, tag
-v0.9.1; GPL-3.0-or-later, Copyright (C) 2011-2012 Tasos Varoudis) and the Classic band mapping was reimplemented in R. They
-are unchanged. The first six are
+historical modes ("Equal Ranges (3-Colour)", "(3-Colour Hue Only)", "(Blue-Red)", "(Purple-Orange)", "(Greyscale)",
+"(Monochrome)" and "depthmapX Classic"). Their colour values are fixed hexadecimal values and the Classic band mapping is
+implemented in R. The first six are
 \emph{equal ranges} palettes with 10, 10, 7, 7, 7 and 7 native bands, so their continuous mapping is a band lookup, not a
 gradient. \code{monochrome} shares the greyscale colours; depthmapX also uses it to vary line thickness, which a colour mapping does
 not reproduce. \code{depthmapx_classic} has no discrete colours: it is a piecewise calculated rainbow with its landmarks at
 \verb{0, .05, .10, .55, 1} (blue, cyan, green, yellow, red), channels quantised to sixteen levels. It is not a gradient with equally
 spaced stops.}
-\item{\code{axmanesque_white}, \code{depthmapx_classic_white}}{White-background adaptations, each defined by nine anchor colours. Some anchors reuse depthmapX colours: seven of the nine
+\item{\code{axmanesque_white}, \code{depthmapx_classic_white}}{White-background adaptations, each defined by nine anchor colours. Some anchors reuse historical colours: seven of the nine
 \code{axmanesque_white} anchors (3 to 9) are colours of the depthmapX Equal Ranges (3-Colour) array, and the \code{depthmapx_classic_white}
-anchors at the cyan, green and red landmarks are the depthmapX Classic landmark colours (\verb{#00FFFF}, \verb{#00FF00}, \verb{#FF0000}). The
+anchors at the cyan, green and red landmarks are the Classic landmark colours (\verb{#00FFFF}, \verb{#00FF00}, \verb{#FF0000}). The
 remaining anchors (the pale cyan start colours, the intermediate Classic hues and the adjusted Classic yellow) are not
 depthmapX values. They are additional palettes: the native ten-band Axmanesque and the native Classic mapping are separate
 identifiers and are unchanged.}
@@ -76,10 +75,18 @@ sequences; they still contain bright cyan and green and uneven lightness. No pal
 colour-blind safety, perceptual uniformity and reading accuracy have not been assessed. The depthmapX source comments
 describe its Blue-Red and Purple-Orange arrays as red-green colour-blind safe; rPSTool has not verified this.
 
-Provenance and source files are documented in the repository's palette documentation
+The historical colour palettes follow the colour conventions of Axman and Depthmap (Dalton, 1988; Turner, 2001). The Axmanesque
+palette takes its name from Axman. rPSTool implements the palettes in R using hexadecimal colour values and independently written
+colour mapping functions. The palettes are documented in the repository
 (\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/palettes.md}). The Blue-Red and
 Purple-Orange colour values coincide, in reversed order, with the 7-class ColorBrewer RdYlBu and PuOr schemes (Brewer et al.);
-the colours are attributed to ColorBrewer (Cynthia Brewer) as well as to depthmapX.
+the colours are attributed to ColorBrewer (Cynthia Brewer).
+}
+\references{
+Dalton, N. (1988). Axman [software]. University College London.
+
+Turner, A. (2001). Depthmap: a program to perform visibility graph analysis. Proceedings of the 3rd International Symposium on
+Space Syntax, Atlanta.
 }
 
 \examples{

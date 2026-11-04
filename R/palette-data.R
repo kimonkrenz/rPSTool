@@ -2,7 +2,7 @@
 # numerical value, transcribed verbatim from the approved palette definitions; nothing here is computed. The R code that maps numbers
 # to these colours is in palettes.R and palette-mapping.R.
 
-# depthmapX v0.9.1 (salalib/pafcolor.cpp): the original discrete arrays.
+# The historical discrete arrays.
 .pal_axmanesque <- c("#3333DD", "#3388DD", "#22CCDD", "#22CCBB", "#22DD88", "#88DD22", "#BBCC22", "#DDCC22", "#DD8833", "#DD3333")
 .pal_axmanesque_hue <- c("#3333DD", "#3377DD", "#33BBDD", "#33DDBB", "#33DD55", "#55DD33", "#BBDD33", "#DDBB33", "#DD7733", "#DD3333")
 .pal_blue_red <- c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027")

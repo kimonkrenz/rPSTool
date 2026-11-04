@@ -208,11 +208,11 @@ Input and output formats are described in `?segment_graph` and `?pst_result_file
 
 ## Data attribution
 
-The Barnsbury example data are derived from Hillier and Iida (2005) and include the axial network, unlinks and observed
-movement gate counts. The geometries were georeferenced and spatially transformed by Kimon Krenz, so the coordinates are not the
-original coordinates, and the data were not originally supplied in British National Grid. The data are included and
-redistributed with permission from the authors. The original research and data remain attributable to their respective
-authors. The movement gate counts were originally reported by Penn et al. (1998).
+The Barnsbury example is derived from Hillier and Iida (2005). The movement gate-count observations are redistributed with the
+authors' permission. The axial network and unlinks are adapted from the source material, with geometries georeferenced and
+spatially transformed by Kimon Krenz, so the coordinates are not the original coordinates. The original research and data remain
+attributable to their respective authors. The movement gate counts were originally reported by Penn et al. (1998). The LGPL
+licence of rPSTool's software does not relicense the example data.
 
 ## References
 

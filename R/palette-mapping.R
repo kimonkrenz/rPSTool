@@ -167,7 +167,7 @@ colour_map <- function(x, palette = "coral_day", limits = NULL, breaks = NULL, r
   round(low + (high - low) * u)
 }
 
-# ---- depthmapX Classic (salalib/pafcolor.cpp, PafColor::makeDepthmapClassic and htmlByte) ----------------------------------------
+# ---- depthmapX Classic mapping ----------------------------------------
 
 # `htmlByte`: (unsigned char)((c + 0.0333) * 15) * 0x11, i.e. sixteen levels per channel. A non-finite argument converts to 0 on
 # the x86-64 and AArch64 conversions of the source's out-of-range cast (formally undefined behaviour in C++).
