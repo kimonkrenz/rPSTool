@@ -1,6 +1,6 @@
 # rPSTool: Space Syntax and Spatial Network Analysis in R
 
-Developed by **Kimon Krenz**(https://kimonkrenz.com), rPSTool brings the spatial network analysis engine of the [**Place Syntax Tool (PST)**](https://smog.chalmers.se/projects/pst-plugin-for-qgis/) to R. The original PST software was developed by KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB. rPSTool provides an independent R interface to this engine, building street-network graphs from line geometry and running analyses such as network integration, reach, betweenness and angular choice, with results returned as ordinary data frames. No separate PST, QGIS or Python installation is needed.
+Developed by [**Kimon Krenz**](https://kimonkrenz.com), rPSTool brings the spatial network analysis engine of the [**Place Syntax Tool (PST)**](https://smog.chalmers.se/projects/pst-plugin-for-qgis/) to R. The original PST software was developed by KTH School of Architecture, Chalmers School of Architecture (SMoG) and Spacescape AB. rPSTool provides an independent R interface to this engine, building street-network graphs from line geometry and running analyses such as network integration, reach, betweenness and angular choice, with results returned as ordinary data frames. No separate PST, QGIS or Python installation is needed.
 
 ## What rPSTool does
 
