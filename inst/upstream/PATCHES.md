@@ -30,7 +30,7 @@ Build-only compatibility declarations live in `src/rpst-compat.h` (force-include
 
 ## 0003 — central worker cap for the exposed asynchronous engines
 
-`src/portability/limit-workers.R` generates build copies for the pinned `AngularChoiceAlgo.cpp`, `SegmentBetweenness.cpp`, `SegmentGroupIntegration.cpp`, `AttractionReach.cpp`, `AttractionDistance.cpp` and `ODBetweenness.cpp`. The changes to the first two sources are recorded in `patches/0003-central-worker-limit.patch`; the additional modifications are documented in sections 0004–0007. The preserved `inst/upstream/build-inputs/` copies match the vendor bytes exactly (`AngularChoiceAlgo.cpp` has no final newline). Original/generated MD5 pairs for the initial 0003 transformation: `f518e8c71d6c1607723564238692de62` / `c60ee85a2bf676f718b8b4a14b743597` and `287ec62e7e28f9955740e89545b11b13` / `6fc7be945c0774e4f932974c290d115d`. The current generated checksums incorporate the additional modifications in 0007 and 0011; the transformer verifies the final output checksums.
+`src/portability/limit-workers.R` generates build copies for the pinned `AngularChoiceAlgo.cpp`, `SegmentBetweenness.cpp`, `SegmentGroupIntegration.cpp`, `AttractionReach.cpp`, `AttractionDistance.cpp` and `ODBetweenness.cpp`. The changes to the first two sources are recorded in `patches/0003-central-worker-limit.patch`; the additional modifications are documented in sections 0004–0007. The preserved `inst/upstream/build-inputs/` copies match the vendor bytes exactly (`AngularChoiceAlgo.cpp` has no final newline). The current original/generated MD5 pairs for `AngularChoiceAlgo.cpp` and `SegmentBetweenness.cpp` are `f518e8c71d6c1607723564238692de62` / `ec0db906b35e28c7e6077df18255b685` and `287ec62e7e28f9955740e89545b11b13` / `b98f83d994cb1f07d0b49ed9b280e369`, respectively. These generated checksums include the subsequent 0007 and 0011 modifications and are verified by `src/portability/limit-workers.R`.
 
 Each copy substitutes the single hardware concurrency call with the central `rpst_worker_count()` function.
 
@@ -106,7 +106,7 @@ Pristine and adapted PST structural outputs are byte-identical for 124 supported
 - A nonempty attraction-polygon edge queue in a partial view requires at least three calculated vertices before frustum/indexed iterator accesses.
 - A full-circle view with a nonempty polygon-edge queue requires at least two vertices before its loop iterator advances.
 
-The guards preserve PST's calculations and numerical results for unaffected cases. If a guard fails, temporary resources are released and the R interface reports an error without returning a partial result. Successful outputs are copied into R-managed memory before the native result is freed.
+The four guards check specified degenerate native states before unsafe accesses without modifying PST's numerical expressions. If a guard fails, temporary resources are released and the R interface reports an error without returning a partial result. Successful outputs are copied into R-managed memory before the native result is freed.
 
 `src/portability/harden-isovist.R` verifies pristine MD5 `42c16aa243ccc11e2b2e95692407ebb7` and the complete output MD5 `f03bb50a1abf2111af63e626940267d7` (later `fd1f956a159c1d136bae53acf75227bc` with 0011). See `docs/compatibility/isovist.md` and `tools/reference/isovist/`.
 
