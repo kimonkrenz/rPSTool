@@ -51,6 +51,26 @@ analysis_radius <- function(straight = NULL, walking = NULL, steps = NULL,
 .pst_radius_fields <- c("straight", "walking", "steps", "angular", "axmeter")
 .pst_radius_codes <- c(straight = "s", walking = "w", steps = "n", angular = "a", axmeter = "x")
 
+# Analyses that accept a multi-radius. A function is added here (and calls .pst_radius_plan()) when its multi-radius
+# support is complete; every other analysis keeps rejecting a vector before any native work.
+.pst_multi_radius_functions <- c("angular_choice", "angular_integration")
+.pst_multi_radius_list <- function(fns = .pst_multi_radius_functions) {
+  fns <- paste0(fns, "()")
+  if (length(fns) == 1L) fns else paste(paste(fns[-length(fns)], collapse = ", "), "and", fns[[length(fns)]])
+}
+
+# Reject, before any native work, a radius that sets a limit the analysis does not support (`fields`: the supported fields).
+# A varying field is checked like a scalar one. Returns `radius` invisibly.
+.pst_radius_require_fields <- function(radius, fields, fn) {
+  if (!inherits(radius, "pst_radius")) return(invisible(radius))
+  other <- setdiff(.pst_radius_fields, fields)
+  used <- other[!vapply(unclass(radius)[other], is.null, NA)]
+  if (length(used))
+    stop(fn, "() does not support the ", paste(used, collapse = ", "), " radius limit(s); supported: ",
+         paste(fields, collapse = ", "), ".", call. = FALSE)
+  invisible(radius)
+}
+
 # Structure and multi-radius shape of a radius object; returns the name of the varying field ("" when none).
 .pst_radius_shape <- function(radius, multi) {
   if (!inherits(radius, "pst_radius") || !is.list(radius) || !identical(names(radius), .pst_radius_fields))
@@ -59,8 +79,8 @@ analysis_radius <- function(straight = NULL, walking = NULL, steps = NULL,
   vary <- .pst_radius_fields[lens > 1L]
   if (!multi) {
     if (length(vary))
-      stop("A radius with several values (", vary[[1L]], ") is supported only by angular_choice() and ",
-           "angular_integration(); this analysis takes a single value per field.", call. = FALSE)
+      stop("A radius with several values (", vary[[1L]], ") is supported only by ", .pst_multi_radius_list(),
+           "; this analysis takes a single value per field.", call. = FALSE)
     return("")
   }
   if (length(vary) > 1L)
@@ -119,7 +139,9 @@ analysis_radius <- function(straight = NULL, walking = NULL, steps = NULL,
 }
 
 # The radius plan of an angular call: validated scalar configurations in order, the varying field, and the fixed restrictions.
-.pst_radius_plan <- function(radius, angular_engine = TRUE) {
+# `fields`/`fn`, when given, first reject limits the analysis does not support (before any validation or native work).
+.pst_radius_plan <- function(radius, angular_engine = TRUE, fields = NULL, fn = NULL) {
+  if (!is.null(fields)) .pst_radius_require_fields(radius, fields, fn)
   vary <- .pst_radius_shape(radius, TRUE)
   .pst_validate_radius(radius, angular_engine, multi = TRUE)
   configs <- .pst_radius_expand(radius, vary)
