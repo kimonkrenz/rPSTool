@@ -17,13 +17,20 @@
 # names come from the central naming layer (R/naming.R), so a scalar and a multi-radius call name the same column alike;
 # attr(, "cols") holds the full column descriptions for the manifest.
 .pst_multi_spec <- function(analysis, plan, norms, weighted, weight_outputs = FALSE, threshold = 0, precision = 1) {
+  .pst_multi_spec_from(plan, function(config)
+    if (analysis == "choice") .pst_nm_angular_choice(config, weighted, norms, threshold, precision)
+    else .pst_nm_angular_integration(config, weighted, weight_outputs, norms, threshold, precision))
+}
+
+# Analysis-independent core of the column spec: `columns_of(config)` returns the naming-layer column descriptions of one scalar
+# radius configuration. `id_col` is the result identifier column that comes first (and may not be reused as a result name);
+# `normalized_roles` are the roles whose `normalization` is reported in the spec.
+.pst_multi_spec_from <- function(plan, columns_of, id_col = "segment_id", normalized_roles = c("normalized", "integration")) {
   rows <- list(); all_cols <- list()
   for (i in seq_along(plan$configs)) {
-    config <- plan$configs[[i]]
-    cols <- if (analysis == "choice") .pst_nm_angular_choice(config, weighted, norms, threshold, precision)
-            else .pst_nm_angular_integration(config, weighted, weight_outputs, norms, threshold, precision)
+    cols <- columns_of(plan$configs[[i]])
     for (col in cols) {
-      norm <- if (col$role %in% c("normalized", "integration")) col$normalization else NA_character_
+      norm <- if (col$role %in% normalized_roles) col$normalization else NA_character_
       rows[[length(rows) + 1L]] <- data.frame(name = col$name, role = col$role, radius = i, normalization = norm,
                                               stringsAsFactors = FALSE)
       col$radius_index <- i
@@ -31,7 +38,7 @@
     }
   }
   spec <- do.call(rbind, rows)
-  if (anyDuplicated(tolower(c("segment_id", spec$name))))
+  if (anyDuplicated(tolower(c(id_col, spec$name))))
     stop("Internal error: duplicate multi-result column names.", call. = FALSE)
   attr(spec, "cols") <- all_cols
   spec
@@ -45,10 +52,14 @@
   if (nzchar(plan$varying)) cfg[[plan$varying]] <- .pst_json_array(as.list(plan$values))
   cfg
 }
-.pst_multi_metadata <- function(fn, parameters, plan, norms, spec, rows, graph) {
+# `norms = NULL` (analyses without a normalisation choice) omits the normalisation entries. `graph_type`, `order` and
+# `float_columns` describe the result table's graph and rows as `.pst_result_metadata()` does.
+.pst_multi_metadata <- function(fn, parameters, plan, norms, spec, rows, graph, graph_type = "segment",
+                                order = NULL, float_columns = TRUE) {
   parameters$radius <- .pst_multi_json_radius(plan)
-  parameters$normalization <- .pst_json_array(as.list(norms))
-  md <- .pst_result_metadata(fn, parameters, "segment", rows, graph)
+  if (!is.null(norms)) parameters$normalization <- .pst_json_array(as.list(norms))
+  md <- if (is.null(order)) .pst_result_metadata(fn, parameters, graph_type, rows, graph, float_columns = float_columns)
+        else .pst_result_metadata(fn, parameters, graph_type, rows, graph, order, float_columns = float_columns)
   md[["rpst:schema"]] <- "2"
   full <- attr(spec, "cols")
   manifest <- lapply(seq_len(nrow(spec)), function(i) {
@@ -62,13 +73,14 @@
     "rpst:radius_varying" = plan$varying,
     "rpst:radius_fixed" = .pst_json(if (length(plan$fixed)) plan$fixed else structure(list(), names = character())),
     "rpst:radius_configurations" = .pst_json(.pst_json_array(lapply(plan$configs, unclass))),
-    "rpst:normalizations" = .pst_json(.pst_json_array(as.list(norms))),
+    if (!is.null(norms)) c("rpst:normalizations" = .pst_json(.pst_json_array(as.list(norms)))),
     "rpst:columns" = .pst_json(.pst_json_array(manifest)))
 }
 
 # In-memory multi-result data frame from the flat list of native columns.
-.pst_multi_frame <- function(columns, spec, plan) {
-  frame <- data.frame(segment_id = seq_along(columns[[1L]]))
+.pst_multi_frame <- function(columns, spec, plan, id_col = "segment_id", ids = seq_along(columns[[1L]])) {
+  frame <- data.frame(ids)
+  names(frame) <- id_col
   for (i in seq_len(nrow(spec))) frame[[spec$name[[i]]]] <- columns[[i]]
   attr(frame, "rpst_manifest") <- list(columns = spec, radii = lapply(plan$configs, unclass))
   frame
@@ -76,15 +88,18 @@
 
 # Shared file/in-memory driver. `call_frame(configs)` runs the in-memory native entry; `call_stream(stream, columns, ...)`
 # the file one. Both run PST once per radius.
+# The defaults describe the angular segment tables; other analyses pass their own identifier column, native row count and
+# metadata description.
 .pst_multi_run <- function(graph, ptr, fn, plan, norms, spec, parameters, output_file, overwrite, spatial_output_file,
-                           call_frame, call_stream) {
+                           call_frame, call_stream, id_col = "segment_id",
+                           rows = .Call(C_rpst_segment_graph_info, ptr), graph_type = "segment", order = NULL,
+                           float_columns = TRUE) {
   # one analysis per radius; each is labelled with its first result variable
   .pst_progress_scope(vapply(seq_along(plan$configs), function(i) spec$name[spec$radius == i][[1L]], ""))
   if (is.null(output_file) && is.null(spatial_output_file))
-    return(.pst_multi_frame(call_frame(), spec, plan))
-  columns <- c("segment_id", spec$name)
-  rows <- .Call(C_rpst_segment_graph_info, ptr)
-  metadata <- .pst_multi_metadata(fn, parameters, plan, norms, spec, rows, graph)
+    return(.pst_multi_frame(call_frame(), spec, plan, id_col))
+  columns <- c(id_col, spec$name)
+  metadata <- .pst_multi_metadata(fn, parameters, plan, norms, spec, rows, graph, graph_type, order, float_columns)
   invisible(.pst_write_result_file(
     output_file, overwrite, columns = columns, expected_rows = rows,
     export = function(stream, batch_rows)
