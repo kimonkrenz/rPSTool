@@ -199,9 +199,10 @@
   cols <- list(.pst_nm_col(code, "betweenness", d, r, weight$code, "n", normalization = "none", weight_name = weight$name),
                .pst_nm_col(nc, "node_count", d, r, weight$code, weight_name = weight$name),
                .pst_nm_col(td, "total_depth", d, r, weight$code, weight_name = weight$name))
-  if (normalization != "none")
-    cols[[4L]] <- .pst_nm_col(code, "normalized", d, r, weight$code, .pst_nm_betweenness_norm[[normalization]],
-                              normalization = normalization, weight_name = weight$name)
+  # `normalization` holds one or more names; the raw score above is always present, so "none" adds nothing
+  for (n in setdiff(normalization, "none"))
+    cols[[length(cols) + 1L]] <- .pst_nm_col(code, "normalized", d, r, weight$code, .pst_nm_betweenness_norm[[n]],
+                                             normalization = n, weight_name = weight$name)
   cols
 }
 

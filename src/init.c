@@ -16,10 +16,15 @@ extern SEXP rpst_segment_graph_lifecycle(void);
 extern SEXP rpst_angular_integration(SEXP, SEXP);
 extern SEXP rpst_radius_validate(SEXP);
 extern SEXP rpst_angular_choice_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_betweenness_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_betweenness_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_reach_multi(SEXP, SEXP, SEXP);
+extern SEXP rpst_reach_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_choice_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_instrumentation(SEXP, SEXP);
+extern SEXP rpst_axial_instrumentation(SEXP, SEXP);
 extern SEXP rpst_progress_begin(SEXP, SEXP, SEXP);
 extern SEXP rpst_progress_end(void);
 extern SEXP rpst_progress_active(void);
@@ -185,10 +190,15 @@ static const R_CallMethodDef call_methods[] = {
     {"rpst_workers", (DL_FUNC) &rpst_workers, 0},
     {"rpst_radius_validate", (DL_FUNC) &rpst_radius_validate, 1},
     {"rpst_angular_choice_multi", (DL_FUNC) &rpst_angular_choice_multi, 6},
+    {"rpst_betweenness_multi", (DL_FUNC) &rpst_betweenness_multi, 6},
+    {"rpst_betweenness_multi_stream", (DL_FUNC) &rpst_betweenness_multi_stream, 11},
+    {"rpst_reach_multi", (DL_FUNC) &rpst_reach_multi, 3},
+    {"rpst_reach_multi_stream", (DL_FUNC) &rpst_reach_multi_stream, 8},
     {"rpst_angular_integration_multi", (DL_FUNC) &rpst_angular_integration_multi, 7},
     {"rpst_angular_choice_multi_stream", (DL_FUNC) &rpst_angular_choice_multi_stream, 11},
     {"rpst_angular_integration_multi_stream", (DL_FUNC) &rpst_angular_integration_multi_stream, 12},
     {"rpst_angular_instrumentation", (DL_FUNC) &rpst_angular_instrumentation, 2},
+    {"rpst_axial_instrumentation", (DL_FUNC) &rpst_axial_instrumentation, 2},
     {"rpst_progress_begin", (DL_FUNC) &rpst_progress_begin, 3},
     {"rpst_progress_end", (DL_FUNC) &rpst_progress_end, 0},
     {"rpst_progress_active", (DL_FUNC) &rpst_progress_active, 0},

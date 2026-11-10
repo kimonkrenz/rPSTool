@@ -1317,26 +1317,166 @@ extern "C" SEXP rpst_reach(SEXP pointer, SEXP radius)
 // Centrality shares allocation/conversion only. Each descriptor retains its
 // exact graph family, and native validators run before any graph access.
 namespace {
+// Test-only instrumentation of the axial analyses (same contract as AngularInstrumentation): counts of PST Reach (multi route) and
+// Segment Betweenness runs and of Betweenness normaliser calls, and a one-shot countdown that makes the (k+1)-th run fail.
+struct AxialInstrumentation {
+    std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0};
+    std::atomic<int> fail_after_runs{-1};
+};
+AxialInstrumentation g_axial;
+void axial_fault_point()
+{
+    const int remaining = g_axial.fail_after_runs.load();
+    if (remaining < 0) return;
+    if (remaining == 0) {
+        g_axial.fail_after_runs.store(-1);
+        throw std::runtime_error("injected native failure");
+    }
+    g_axial.fail_after_runs.store(remaining - 1);
+}
+const char* const kBetweennessDistances[] = {"walking", "steps", "angular", "axmeter"};
+const char* const kBetweennessNormalizations[] = {"none", "standard", "freeman", "syntax"};
+
+// Validated, R-independent inputs of a Segment Betweenness call (everything except the radius).
+struct BetweennessInput {
+    HPSTAGraph handle{};
+    int mode = 0;
+    SPSTAGraphInfo info{};
+    R_xlen_t n = 0;
+    AnalysisPoints points;
+    CoordinateData weight_data{nullptr, nullptr};
+    bool has_weights = false, has_attractions = false;
+};
+BetweennessInput betweenness_input(SEXP pointer, SEXP distance, SEXP weights, SEXP attractions)
+{
+    BetweennessInput in;
+    in.handle = graph_handle(pointer);
+    in.mode = named_mode(distance, kBetweennessDistances, 4, "distance");
+    if (!PSTAGetGraphInfo(in.handle, &in.info)) Rf_error("PSTAGetGraphInfo failed before PSTASegmentBetweenness.");
+    // Angular traversal allocates two directed states per line in signed int.
+    if (in.mode == 2 && in.info.m_LineCount > static_cast<unsigned int>(std::numeric_limits<int>::max() / 2))
+        Rf_error("Too many lines for angular Segment Betweenness.");
+    in.n = in.info.m_LineCount;
+    in.points = analysis_points(attractions, in.handle, "attraction_points");
+    const R_xlen_t weight_count = attractions == R_NilValue ? in.n : in.points.count;
+    in.weight_data = analysis_weights(weights, weight_count);
+    in.has_weights = weights != R_NilValue;
+    in.has_attractions = attractions != R_NilValue;
+    return in;
+}
+
+// Native inputs of the descriptor, built once per call (not per radius).
+struct BetweennessBuffers {
+    // Segment Betweenness's descriptor takes interleaved doubles, whereas Reach takes double2. Preserve each exact
+    // exported storage type.
+    std::vector<double> coords;
+    std::vector<float> native_weights;
+};
+BetweennessBuffers betweenness_buffers(const BetweennessInput& in)
+{
+    BetweennessBuffers b;
+    b.coords.resize(static_cast<size_t>(in.points.count) * 2);
+    for (R_xlen_t i = 0; i < in.points.count; ++i) {
+        b.coords[static_cast<size_t>(i) * 2] = in.points.data.at(i);
+        b.coords[static_cast<size_t>(i) * 2 + 1] = in.points.data.at(i + in.points.count);
+    }
+    const R_xlen_t weight_count = in.has_attractions ? in.points.count : in.n;
+    b.native_weights.resize(in.has_weights ? static_cast<size_t>(weight_count) : 0);
+    for (size_t i = 0; i < b.native_weights.size(); ++i)
+        b.native_weights[i] = static_cast<float>(in.weight_data.at(i));
+    return b;
+}
+
+// Pinned PST skips nonpositive weighted origins without writing either diagnostic. UINT_MAX cannot be a count under our
+// signed graph bounds; negative infinity cannot be a depth (all native distances are >= 0).
+constexpr unsigned int kBetweennessMissingCount = std::numeric_limits<unsigned int>::max();
+const float kBetweennessMissingDepth = -std::numeric_limits<float>::infinity();
+
+// The finished arrays of one PSTASegmentBetweenness run.
+struct BetweennessRun {
+    std::vector<float> scores, depths;
+    std::vector<unsigned int> counts;
+    bool written(std::size_t i) const { return counts[i] != kBetweennessMissingCount; }
+};
+void betweenness_run(const BetweennessInput& in, BetweennessBuffers& b, const SPSTARadii& radii, BetweennessRun& run)
+{
+    const R_xlen_t n = in.n;
+    axial_fault_point();
+    ++g_axial.betweenness_runs;
+    run.scores.assign(static_cast<size_t>(n), 0.0f);
+    run.depths.assign(static_cast<size_t>(n), kBetweennessMissingDepth);
+    run.counts.assign(static_cast<size_t>(n), kBetweennessMissingCount);
+    static const EPSTADistanceType native_distances[] = {EPSTADistanceType_Walking, EPSTADistanceType_Steps,
+        EPSTADistanceType_Angular, EPSTADistanceType_Axmeter};
+    SPSTASegmentBetweennessDesc desc{};
+    desc.m_Graph = in.handle;
+    desc.m_Radius = radii;
+    desc.m_DistanceType = native_distances[in.mode];
+    desc.m_Weights = in.has_weights ? b.native_weights.data() : nullptr;
+    desc.m_AttractionPoints = in.has_attractions ? b.coords.data() : nullptr;
+    desc.m_AttractionPointCount = static_cast<unsigned int>(in.points.count);
+    desc.m_OutBetweenness = run.scores.data();
+    desc.m_OutNodeCount = run.counts.data();
+    desc.m_OutTotalDepth = run.depths.data();
+    rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+    if (!PSTASegmentBetweenness(&desc)) throw std::runtime_error("PSTASegmentBetweenness returned false");
+    for (R_xlen_t i = 0; i < n; ++i) {
+        const bool count_written = run.counts[i] != kBetweennessMissingCount;
+        const bool depth_written = run.depths[i] != kBetweennessMissingDepth;
+        if (count_written != depth_written)
+            throw std::runtime_error("PST count/depth write masks are inconsistent");
+        if (count_written && run.counts[i] > in.info.m_LineCount)
+            throw std::runtime_error("PST returned an invalid node count");
+        if (!count_written && !in.has_weights && !in.has_attractions)
+            throw std::runtime_error("PST left unweighted diagnostics unwritten");
+    }
+}
+// One exported PST normaliser (norm 1 standard, 2 freeman, 3 syntax) applied to a finished run; `normalized` has one entry
+// per line (zero where PST wrote no diagnostics and the mode needs them).
+void betweenness_normalize(int norm, const BetweennessInput& in, BetweennessRun& run, std::vector<float>& normalized)
+{
+    const R_xlen_t n = in.n;
+    if (norm != 0) ++g_axial.betweenness_normalizations;
+    normalized.assign(static_cast<size_t>(n), 0.0f);
+    if (norm == 1) {
+        PSTAStandardNormalize(run.scores.data(), n, normalized.data());
+    } else if (norm == 2 || norm == 3) {
+        // Never pass sentinels to normalization. Compact written rows, call the genuine export, and scatter in
+        // original line order.
+        std::vector<float> defined_scores, defined_depths;
+        std::vector<unsigned int> defined_counts;
+        for (R_xlen_t i = 0; i < n; ++i) {
+            if (!run.written(static_cast<size_t>(i))) continue;
+            defined_scores.push_back(run.scores[i]);
+            defined_counts.push_back(run.counts[i]);
+            defined_depths.push_back(run.depths[i]);
+        }
+        std::vector<float> defined_normalized(defined_scores.size());
+        const auto defined_count = static_cast<unsigned int>(defined_scores.size());
+        if (defined_count) {
+            if (norm == 2)
+                PSTABetweennessNormalize(defined_scores.data(), defined_counts.data(),
+                                        defined_count, defined_normalized.data());
+            else
+                PSTABetweennessSyntaxNormalize(defined_scores.data(), defined_depths.data(),
+                                              defined_count, defined_normalized.data());
+        }
+        size_t j = 0;
+        for (R_xlen_t i = 0; i < n; ++i)
+            if (run.written(static_cast<size_t>(i))) normalized[i] = defined_normalized[j++];
+    }
+}
+
 SEXP betweenness_weighted(SEXP pointer, SEXP radius, SEXP distance, SEXP normalization, SEXP weights,
                           SEXP attractions, const StreamRequest* request)
 {
-    const auto handle = graph_handle(pointer);
+    // Same validation order as ever: graph, radius, distance, normalisation, then the graph size, points and weights.
+    graph_handle(pointer);
     const auto radii = shared_radii(radius);
-    const char* distances[] = {"walking", "steps", "angular", "axmeter"};
-    const EPSTADistanceType native_distances[] = {EPSTADistanceType_Walking, EPSTADistanceType_Steps,
-        EPSTADistanceType_Angular, EPSTADistanceType_Axmeter};
-    const auto mode = named_mode(distance, distances, 4, "distance");
-    const char* normalizations[] = {"none", "standard", "freeman", "syntax"};
-    const auto norm = named_mode(normalization, normalizations, 4, "normalization");
-    SPSTAGraphInfo info{};
-    if (!PSTAGetGraphInfo(handle, &info)) Rf_error("PSTAGetGraphInfo failed before PSTASegmentBetweenness.");
-    // Angular traversal allocates two directed states per line in signed int.
-    if (mode == 2 && info.m_LineCount > static_cast<unsigned int>(std::numeric_limits<int>::max() / 2))
-        Rf_error("Too many lines for angular Segment Betweenness.");
-    const R_xlen_t n = info.m_LineCount;
-    const auto points = analysis_points(attractions, handle, "attraction_points");
-    const R_xlen_t weight_count = attractions == R_NilValue ? n : points.count;
-    const auto weight_data = analysis_weights(weights, weight_count);
+    named_mode(distance, kBetweennessDistances, 4, "distance");
+    const auto norm = named_mode(normalization, kBetweennessNormalizations, 4, "normalization");
+    const auto in = betweenness_input(pointer, distance, weights, attractions);
+    const R_xlen_t n = in.n;
     // The file route builds no R result vectors: columns are betweenness, node_count, total_depth (+ normalized).
     ResultStreamArgs args;
     if (request) args = result_stream_args(*request, norm == 0 ? 4 : 5);
@@ -1359,85 +1499,23 @@ SEXP betweenness_weighted(SEXP pointer, SEXP radius, SEXP distance, SEXP normali
     }
     char error[512] = "";
     try {
-        // Segment Betweenness's descriptor takes interleaved doubles, whereas
-        // Reach takes double2. Preserve each exact exported storage type.
-        std::vector<double> coords(static_cast<size_t>(points.count) * 2);
-        for (R_xlen_t i = 0; i < points.count; ++i) {
-            coords[static_cast<size_t>(i) * 2] = points.data.at(i);
-            coords[static_cast<size_t>(i) * 2 + 1] = points.data.at(i + points.count);
-        }
-        std::vector<float> native_weights(weights == R_NilValue ? 0 : weight_count);
-        for (size_t i = 0; i < native_weights.size(); ++i)
-            native_weights[i] = static_cast<float>(weight_data.at(i));
-        // Pinned PST skips nonpositive weighted origins without writing either
-        // diagnostic. UINT_MAX cannot be a count under our signed graph bounds;
-        // negative infinity cannot be a depth (all native distances are >= 0).
-        const auto missing_count = std::numeric_limits<unsigned int>::max();
-        const float missing_depth = -std::numeric_limits<float>::infinity();
-        std::vector<float> scores(n), depths(n, missing_depth), normalized(n);
-        std::vector<unsigned int> counts(n, missing_count);
-        SPSTASegmentBetweennessDesc desc{};
-        desc.m_Graph = handle;
-        desc.m_Radius = radii;
-        desc.m_DistanceType = native_distances[mode];
-        desc.m_Weights = weights == R_NilValue ? nullptr : native_weights.data();
-        desc.m_AttractionPoints = attractions == R_NilValue ? nullptr : coords.data();
-        desc.m_AttractionPointCount = static_cast<unsigned int>(points.count);
-        desc.m_OutBetweenness = scores.data();
-        desc.m_OutNodeCount = counts.data();
-        desc.m_OutTotalDepth = depths.data();
-        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
-        if (!PSTASegmentBetweenness(&desc)) throw std::runtime_error("PSTASegmentBetweenness returned false");
-        for (R_xlen_t i = 0; i < n; ++i) {
-            const bool count_written = counts[i] != missing_count;
-            const bool depth_written = depths[i] != missing_depth;
-            if (count_written != depth_written)
-                throw std::runtime_error("PST count/depth write masks are inconsistent");
-            if (count_written && counts[i] > info.m_LineCount)
-                throw std::runtime_error("PST returned an invalid node count");
-            if (!count_written && weights == R_NilValue && attractions == R_NilValue)
-                throw std::runtime_error("PST left unweighted diagnostics unwritten");
-        }
-        if (norm == 1) {
-            PSTAStandardNormalize(scores.data(), n, normalized.data());
-        } else if (norm == 2 || norm == 3) {
-            // Never pass sentinels to normalization. Compact written rows,
-            // call the genuine export, and scatter in original line order.
-            std::vector<float> defined_scores, defined_depths;
-            std::vector<unsigned int> defined_counts;
-            for (R_xlen_t i = 0; i < n; ++i) {
-                if (counts[i] == missing_count) continue;
-                defined_scores.push_back(scores[i]);
-                defined_counts.push_back(counts[i]);
-                defined_depths.push_back(depths[i]);
-            }
-            std::vector<float> defined_normalized(defined_scores.size());
-            const auto defined_count = static_cast<unsigned int>(defined_scores.size());
-            if (defined_count) {
-                if (norm == 2)
-                    PSTABetweennessNormalize(defined_scores.data(), defined_counts.data(),
-                                            defined_count, defined_normalized.data());
-                else
-                    PSTABetweennessSyntaxNormalize(defined_scores.data(), defined_depths.data(),
-                                                  defined_count, defined_normalized.data());
-            }
-            size_t j = 0;
-            for (R_xlen_t i = 0; i < n; ++i)
-                if (counts[i] != missing_count) normalized[i] = defined_normalized[j++];
-        }
+        auto buffers = betweenness_buffers(in);
+        BetweennessRun run;
+        betweenness_run(in, buffers, radii, run);
+        std::vector<float> normalized;
+        betweenness_normalize(norm, in, run, normalized);
         if (request) {
             // Nullability follows the analysis and its parameters, not the data: node_count and total_depth are always
             // nullable (PST skips nonpositive weighted origins without writing them) and `normalized` only for the
             // Freeman/syntax modes; the raw score and the standard normalisation are never null. Native values are
             // moved as they are; a null row keeps whatever its native slot held (the UINT_MAX / -Inf sentinels of the
             // diagnostics, a zero in `normalized`), which no consumer reads.
-            const auto written = [&](std::size_t i) { return counts[i] != missing_count; };
             auto table = result_new_table(args, static_cast<size_t>(n));
-            result_add_float(*table, args.names[1], std::move(scores));
-            auto bits = result_validity(static_cast<size_t>(n), written);
-            result_add_count(*table, args.names[2], std::move(counts));
+            auto bits = result_validity(static_cast<size_t>(n), [&](std::size_t i) { return run.written(i); });
+            result_add_float(*table, args.names[1], std::move(run.scores));
+            result_add_count(*table, args.names[2], std::move(run.counts));
             result_mark_nullable(*table, bits);
-            result_add_float(*table, args.names[3], std::move(depths));
+            result_add_float(*table, args.names[3], std::move(run.depths));
             result_mark_nullable(*table, bits);
             if (norm != 0) {
                 result_add_float(*table, args.names[4], std::move(normalized));
@@ -1446,10 +1524,10 @@ SEXP betweenness_weighted(SEXP pointer, SEXP radius, SEXP distance, SEXP normali
             result_finish_and_export(args, std::move(table), error, sizeof error);
         } else {
             for (R_xlen_t i = 0; i < n; ++i) {
-                const bool written = counts[i] != missing_count;
-                out[0][i] = scores[i];
-                counts_out[i] = written ? static_cast<int>(counts[i]) : NA_INTEGER;
-                out[1][i] = written ? depths[i] : NA_REAL;
+                const bool written = run.written(static_cast<size_t>(i));
+                out[0][i] = run.scores[i];
+                counts_out[i] = written ? static_cast<int>(run.counts[i]) : NA_INTEGER;
+                out[1][i] = written ? run.depths[i] : NA_REAL;
                 out[2][i] = (norm == 2 || norm == 3) && !written ? NA_REAL : normalized[i];
             }
         }
@@ -1695,12 +1773,12 @@ extern "C" SEXP rpst_angular_choice_stream(SEXP pointer, SEXP radius, SEXP weigh
 namespace {
 // Validate the list of scalar radius configurations. Everything is R_alloc'd (reclaimed by R), so the Rf_error calls leave no
 // C++ owner behind. SPSTARadii is trivially destructible.
-SPSTARadii* multi_radii(SEXP list, R_xlen_t& count)
+SPSTARadii* multi_radii(SEXP list, R_xlen_t& count, bool angular_engine = true)
 {
     if (TYPEOF(list) != VECSXP || XLENGTH(list) < 1) Rf_error("radius configurations must be a non-empty list of analysis_radius().");
     count = XLENGTH(list);
     auto* radii = reinterpret_cast<SPSTARadii*>(R_alloc(static_cast<size_t>(count), sizeof(SPSTARadii)));
-    for (R_xlen_t i = 0; i < count; ++i) new (&radii[i]) SPSTARadii(shared_radii(VECTOR_ELT(list, i), true));
+    for (R_xlen_t i = 0; i < count; ++i) new (&radii[i]) SPSTARadii(shared_radii(VECTOR_ELT(list, i), angular_engine));
     return radii;
 }
 // Normalisation names (each a distinct member of `names`), as indices into `names`. R_alloc'd.
@@ -1911,6 +1989,210 @@ extern "C" SEXP rpst_angular_integration_multi_stream(SEXP pointer, SEXP radii, 
     if (error[0]) Rf_error("%s", error);
     return R_NilValue;
 }
+
+// ---- Multi-radius Network Reach and Segment Betweenness (axial graphs) ---------------------------------------------------
+// Same contract as the angular layer above: every radius configuration is parsed before the first PST call, PST runs once
+// per radius, and each requested exported normaliser is applied to that run. Only one radius' scratch is alive at a time;
+// the finished columns of ALL radii are retained, either in preallocated R vectors or in one ResultTable (one Arrow
+// stream), so the result storage grows with the number of radii.
+namespace {
+// Column sink of the in-memory route: preallocated R vectors; a null validity bit becomes NA.
+struct NullableRSink {
+    SEXP list; R_xlen_t next = 0;
+    void add_float(std::vector<float>&& v, const std::vector<std::uint8_t>* valid) {
+        double* o = REAL(VECTOR_ELT(list, next++));
+        for (size_t i = 0; i < v.size(); ++i)
+            o[i] = (valid && !((*valid)[i >> 3] & (1u << (i & 7)))) ? NA_REAL : static_cast<double>(v[i]);
+    }
+    void add_count(std::vector<unsigned int>&& v, const std::vector<std::uint8_t>* valid) {
+        int* o = INTEGER(VECTOR_ELT(list, next++));
+        for (size_t i = 0; i < v.size(); ++i)
+            o[i] = (valid && !((*valid)[i >> 3] & (1u << (i & 7)))) ? NA_INTEGER : static_cast<int>(v[i]);
+    }
+};
+// Column sink of the file route: moves the native arrays into the result owner, marking nullable columns.
+struct NullableTableSink {
+    rpst::ResultTable& table; const char* const* names; R_xlen_t next = 1;
+    void add_float(std::vector<float>&& v, const std::vector<std::uint8_t>* valid) {
+        result_add_float(table, names[next++], std::move(v));
+        if (valid) result_mark_nullable(table, *valid);
+    }
+    void add_count(std::vector<unsigned int>&& v, const std::vector<std::uint8_t>* valid) {
+        result_add_count(table, names[next++], std::move(v));
+        if (valid) result_mark_nullable(table, *valid);
+    }
+};
+// Result vectors of the in-memory route: `count_position` is the column of each radius that holds integers.
+SEXP multi_plain_list(R_xlen_t k, R_xlen_t per_radius, R_xlen_t rows, R_xlen_t count_position)
+{
+    if (per_radius > std::numeric_limits<int>::max() / (k ? k : 1)) Rf_error("Too many result columns.");
+    SEXP result = PROTECT(Rf_allocVector(VECSXP, k * per_radius));
+    for (R_xlen_t r = 0; r < k; ++r)
+        for (R_xlen_t c = 0; c < per_radius; ++c) {
+            SEXP v = PROTECT(Rf_allocVector(c == count_position ? INTSXP : REALSXP, rows));
+            SET_VECTOR_ELT(result, r * per_radius + c, v);
+            UNPROTECT(1);
+        }
+    UNPROTECT(1);
+    return result;
+}
+
+struct BetweennessMulti {
+    BetweennessInput in; SPSTARadii* radii; R_xlen_t k; int* norms; R_xlen_t nnorms; R_xlen_t per_radius;
+};
+// Per radius: betweenness, node_count, total_depth, then one array per requested normaliser. Freeman and syntax values are
+// null where PST wrote no diagnostics, exactly as in a scalar call.
+template <class Sink>
+void betweenness_multi_compute(const BetweennessMulti& a, BetweennessBuffers& buffers, Sink& sink)
+{
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        BetweennessRun run;
+        betweenness_run(a.in, buffers, a.radii[r], run);
+        std::vector<std::vector<float>> normalized(static_cast<size_t>(a.nnorms));
+        for (R_xlen_t j = 0; j < a.nnorms; ++j) betweenness_normalize(a.norms[j], a.in, run, normalized[static_cast<size_t>(j)]);
+        const auto bits = result_validity(static_cast<size_t>(a.in.n), [&](std::size_t i) { return run.written(i); });
+        sink.add_float(std::move(run.scores), nullptr);
+        sink.add_count(std::move(run.counts), &bits);
+        sink.add_float(std::move(run.depths), &bits);
+        for (R_xlen_t j = 0; j < a.nnorms; ++j)
+            sink.add_float(std::move(normalized[static_cast<size_t>(j)]), (a.norms[j] == 2 || a.norms[j] == 3) ? &bits : nullptr);
+    }
+}
+// `norms` lists the requested normalisers other than "none" (R drops "none": the raw score is always returned).
+BetweennessMulti betweenness_multi_args(SEXP pointer, SEXP radii, SEXP distance, SEXP norms, SEXP weights, SEXP attractions)
+{
+    BetweennessMulti a{};
+    graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    named_mode(distance, kBetweennessDistances, 4, "distance");
+    a.norms = multi_norms(norms, kBetweennessNormalizations, 4, a.nnorms, 1);
+    a.in = betweenness_input(pointer, distance, weights, attractions);
+    a.per_radius = 3 + a.nnorms;
+    return a;
+}
+} // namespace
+
+extern "C" SEXP rpst_betweenness_multi(SEXP pointer, SEXP radii, SEXP distance, SEXP norms, SEXP weights, SEXP attractions)
+{
+    auto a = betweenness_multi_args(pointer, radii, distance, norms, weights, attractions);
+    SEXP result = PROTECT(multi_plain_list(a.k, a.per_radius, a.in.n, 1));
+    char error[512] = "";
+    try {
+        auto buffers = betweenness_buffers(a.in);
+        NullableRSink sink{result};
+        betweenness_multi_compute(a, buffers, sink);
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTASegmentBetweenness failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTASegmentBetweenness failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    UNPROTECT(1);
+    return result;
+}
+extern "C" SEXP rpst_betweenness_multi_stream(SEXP pointer, SEXP radii, SEXP distance, SEXP norms, SEXP weights,
+    SEXP attractions, SEXP stream_pointer, SEXP names, SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    auto a = betweenness_multi_args(pointer, radii, distance, norms, weights, attractions);
+    if (a.per_radius > std::numeric_limits<int>::max() / (a.k ? a.k : 1) - 1) Rf_error("Too many result columns.");
+    const auto args = result_stream_args(stream_pointer, names, metadata_names, metadata_values, batch_rows,
+                                         1 + a.k * a.per_radius);
+    char error[512] = "";
+    try {
+        auto buffers = betweenness_buffers(a.in);
+        auto table = result_new_table(args, static_cast<size_t>(a.in.n));
+        NullableTableSink sink{*table, args.names};
+        betweenness_multi_compute(a, buffers, sink);
+        result_finish_and_export(args, std::move(table), error, sizeof error);
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTASegmentBetweenness failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTASegmentBetweenness failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    return Rf_ScalarReal(static_cast<double>(a.in.n));
+}
+
+namespace {
+struct ReachMulti {
+    HPSTAGraph handle{}; SPSTARadii* radii = nullptr; R_xlen_t k = 0; AnalysisPoints points; R_xlen_t n = 0; bool has_origins = false;
+};
+ReachMulti reach_multi_args(SEXP pointer, SEXP radii, SEXP origins)
+{
+    ReachMulti a;
+    a.handle = graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    SPSTAGraphInfo info{};
+    if (!PSTAGetGraphInfo(a.handle, &info)) Rf_error("PSTAGetGraphInfo failed before PSTAReach.");
+    a.points = analysis_points(origins, a.handle, "origins");
+    a.has_origins = origins != R_NilValue;
+    a.n = a.has_origins ? a.points.count : info.m_LineCount;
+    return a;
+}
+// Per radius: reached_count, reached_length, reached_area.
+template <class Sink>
+void reach_multi_compute(const ReachMulti& a, Sink& sink)
+{
+    const auto coords = copy_analysis_points(a.points);
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.reach_runs;
+        std::vector<unsigned int> counts(static_cast<size_t>(a.n));
+        std::vector<float> lengths(static_cast<size_t>(a.n)), areas(static_cast<size_t>(a.n));
+        SPSTAReachDesc desc{};
+        desc.m_Graph = a.handle;
+        desc.m_Radius = a.radii[r];
+        desc.m_OriginCoords = a.has_origins ? const_cast<double2*>(coords.data()) : nullptr;
+        desc.m_OriginCount = static_cast<unsigned int>(a.points.count);
+        desc.m_OutReachedCount = counts.data();
+        desc.m_OutReachedLength = lengths.data();
+        desc.m_OutReachedArea = areas.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTAReach(&desc)) throw std::runtime_error("PSTAReach returned false");
+        sink.add_count(std::move(counts), nullptr);
+        sink.add_float(std::move(lengths), nullptr);
+        sink.add_float(std::move(areas), nullptr);
+    }
+}
+} // namespace
+
+extern "C" SEXP rpst_reach_multi(SEXP pointer, SEXP radii, SEXP origins)
+{
+    const auto a = reach_multi_args(pointer, radii, origins);
+    SEXP result = PROTECT(multi_plain_list(a.k, 3, a.n, 0));
+    char error[512] = "";
+    try {
+        NullableRSink sink{result};
+        reach_multi_compute(a, sink);
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTAReach failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTAReach failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    UNPROTECT(1);
+    return result;
+}
+extern "C" SEXP rpst_reach_multi_stream(SEXP pointer, SEXP radii, SEXP origins, SEXP stream_pointer, SEXP names,
+    SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = reach_multi_args(pointer, radii, origins);
+    if (3 > std::numeric_limits<int>::max() / (a.k ? a.k : 1) - 1) Rf_error("Too many result columns.");
+    const auto args = result_stream_args(stream_pointer, names, metadata_names, metadata_values, batch_rows, 1 + a.k * 3);
+    char error[512] = "";
+    try {
+        auto table = result_new_table(args, static_cast<size_t>(a.n));
+        NullableTableSink sink{*table, args.names};
+        reach_multi_compute(a, sink);
+        result_finish_and_export(args, std::move(table), error, sizeof error);
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTAReach failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTAReach failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    return Rf_ScalarReal(static_cast<double>(a.n));
+}
 // Test-only: PST runs / normaliser calls since the last reset (choice runs, choice normalisers, integration runs,
 // integration normalisers), and a countdown that makes the PST analysis after `after` further runs fail (-1 disarms).
 // Arguments are validated before anything changes: `reset` is TRUE or FALSE, `fail_after` is NULL (leave unchanged) or one whole
@@ -1940,6 +2222,35 @@ extern "C" SEXP rpst_angular_instrumentation(SEXP reset, SEXP fail_after)
         g_angular.integration_runs = 0; g_angular.integration_normalizations = 0;
     }
     if (set_fault) g_angular.fail_after_runs.store(arm);
+    UNPROTECT(1);
+    return out;
+}
+
+// Test-only counterpart of rpst_angular_instrumentation for the axial analyses: returns c(reach runs, betweenness runs, betweenness
+// normaliser calls) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
+extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
+{
+    if (TYPEOF(reset) != LGLSXP || XLENGTH(reset) != 1 || LOGICAL(reset)[0] == NA_LOGICAL)
+        Rf_error("reset must be TRUE or FALSE.");
+    int arm = 0;
+    bool set_fault = false;
+    if (fail_after != R_NilValue) {
+        if (TYPEOF(fail_after) != REALSXP || XLENGTH(fail_after) != 1)
+            Rf_error("fail_after must be NULL or one whole number from -1 to 2147483647.");
+        const double k = REAL(fail_after)[0];
+        if (!std::isfinite(k) || k < -1 || k > std::numeric_limits<int>::max() || std::floor(k) != k)
+            Rf_error("fail_after must be NULL or one whole number from -1 to 2147483647.");
+        arm = static_cast<int>(k);
+        set_fault = true;
+    }
+    SEXP out = PROTECT(Rf_allocVector(REALSXP, 3));
+    REAL(out)[0] = static_cast<double>(g_axial.reach_runs.load());
+    REAL(out)[1] = static_cast<double>(g_axial.betweenness_runs.load());
+    REAL(out)[2] = static_cast<double>(g_axial.betweenness_normalizations.load());
+    if (LOGICAL(reset)[0] == TRUE) {
+        g_axial.reach_runs = 0; g_axial.betweenness_runs = 0; g_axial.betweenness_normalizations = 0;
+    }
+    if (set_fault) g_axial.fail_after_runs.store(arm);
     UNPROTECT(1);
     return out;
 }
