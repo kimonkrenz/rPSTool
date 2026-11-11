@@ -19,6 +19,8 @@ extern SEXP rpst_angular_choice_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_betweenness_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_betweenness_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_reach_multi(SEXP, SEXP, SEXP);
+extern SEXP rpst_network_integration_multi(SEXP, SEXP, SEXP);
+extern SEXP rpst_network_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_reach_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_choice_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -193,6 +195,8 @@ static const R_CallMethodDef call_methods[] = {
     {"rpst_betweenness_multi", (DL_FUNC) &rpst_betweenness_multi, 6},
     {"rpst_betweenness_multi_stream", (DL_FUNC) &rpst_betweenness_multi_stream, 11},
     {"rpst_reach_multi", (DL_FUNC) &rpst_reach_multi, 3},
+    {"rpst_network_integration_multi", (DL_FUNC) &rpst_network_integration_multi, 3},
+    {"rpst_network_integration_multi_stream", (DL_FUNC) &rpst_network_integration_multi_stream, 7},
     {"rpst_reach_multi_stream", (DL_FUNC) &rpst_reach_multi_stream, 8},
     {"rpst_angular_integration_multi", (DL_FUNC) &rpst_angular_integration_multi, 7},
     {"rpst_angular_choice_multi_stream", (DL_FUNC) &rpst_angular_choice_multi_stream, 11},

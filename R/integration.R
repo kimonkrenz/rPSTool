@@ -17,6 +17,16 @@
 #' and axmeter limits, alone or combined with steps, are rejected before any calculation. For those metrics
 #' use [angular_integration()] on a segment graph or [network_reach()].
 #'
+#' **Several steps radii.** `radius = analysis_radius(steps = c(1, 2, 3))` runs PST once per radius. The steps field may hold several
+#' values; the `steps` argument itself stays a single value, and a vector in any other field is rejected like any other non-steps
+#' limit. The result has `line_id` once, then radius by radius the columns a single call with that radius would give, named
+#' identically; it carries the `rpst_manifest` attribute, and `output_file` or `spatial_output_file` write the same table (schema 2).
+#' With `junctions = TRUE` the junction table has `junction_id`, `x` and `y` once (junction positions do not depend on the radius) and
+#' one `nj_s_<radius>` score column per radius, in the supplied order; `junction_output = "sf"` returns the same table as POINT
+#' features. Result files still cannot hold junction results. The result keeps the columns of all radii, so its size grows with the
+#' number of radii. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
+#'
 #' **Special values.** PST returns `-1` when fewer than two lines are reached. For very small or
 #' symmetric neighbourhoods the formula can give `NaN` or `Inf`. These values are returned unchanged and
 #' are not replaced by `NA`.
@@ -32,7 +42,7 @@
 #' @param graph An axial graph created by [axial_graph()].
 #' @param steps `NULL` (default, unrestricted) or one non-negative whole number no greater than
 #'   2147483647.
-#' @param radius Optional [analysis_radius()] object that sets only `steps`. Supply either `radius` or a
+#' @param radius Optional [analysis_radius()] object that sets only `steps`; the steps field may hold several values (see Details). Supply either `radius` or a
 #'   non-`NULL` `steps`.
 #' @param junctions `TRUE` or `FALSE` (default). If `TRUE`, also return junction scores (see Value).
 #' @param junction_output `"native"` (default) or `"sf"`. Applies only to the junction table and requires
@@ -68,8 +78,11 @@
 network_integration <- function(graph, steps = NULL, radius = NULL, junctions = FALSE,
                             junction_output = c("native", "sf"), output_file = NULL, overwrite = FALSE,
                             spatial_output_file = NULL) {
-  resolved <- .pst_resolve_radius(steps, radius, FALSE)
-  .pst_integration_steps_only(resolved)
+  resolved <- .pst_resolve_radius(steps, radius, FALSE, multi = TRUE)
+  .pst_integration_steps_only(resolved)   # a vector in any other field is refused here, before any calculation
+  if (inherits(resolved, "pst_radius") && length(resolved$steps) > 1L)
+    return(.pst_network_integration_multi(graph, resolved, junctions, junction_output, output_file, overwrite,
+                                          spatial_output_file))
   .pst_network_integration_run(graph, steps, radius, junctions, junction_output, output_file, overwrite,
                                spatial_output_file)
 }

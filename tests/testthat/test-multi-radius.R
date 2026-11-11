@@ -45,7 +45,8 @@ test_that("only the registered analyses accept a multi-radius; the others refuse
   # Network Reach and Segment Betweenness accept one since the axial multi-radius layer (test-multi-radius-network.R)
   r <- analysis_radius(walking = c(1, 2))
   axial <- axial_graph(mr_segments())
-  expect_error(network_integration(axial, radius = r), "supported only by")
+  # Network Integration accepts a steps vector since the integration multi-radius layer; any other field is still refused
+  expect_error(network_integration(axial, radius = r), "steps radius")
   expect_error(od_betweenness(axial, rbind(c(0, 0)), r), "supported only by")
   expect_error(attraction_reach(axial, rbind(c(0, 0)), r), "supported only by")
   expect_error(attraction_distance(axial, rbind(c(0, 0)), r), "supported only by")
