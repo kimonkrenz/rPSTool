@@ -42,7 +42,7 @@ unreachable. Finite, negative, zero, NaN and Inf scores are widened to double un
 - With `distance = "axmeter"`, the decay scale of Attraction Reach is the radius plus 1 (PST adds one when the axmeter distance type is
   selected).
 - Power and curve decay can write NaN (for example with a zero primary radius); divide can write Inf.
-- Finite straight line Reach queries the nearest line distance but applies decay at the radius. Unrestricted straight line Reach uses the
+- Finite straight line Reach queries the nearest line distance but applies decay at the radius. Its line lookup (`SphereTree::GetCloseLines`) returned a stale count in the pinned PST, which gave wrong, history-dependent scores; patch 0012 corrects this in the generated build copy only (`inst/upstream/PATCHES.md`). Zero-length lines are not returned by this query. Unrestricted straight line Reach uses the
   actual line distance; straight Distance uses line midpoints.
 - Reach's group collector reads each worker's point prefix, so unevenly sized groups give PST's result, not a corrected one; groups of
   size zero return -1.

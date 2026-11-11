@@ -24,20 +24,31 @@ na_meta <- function(path) {
   jsonlite::fromJSON(rawToChar(raw), simplifyVector = FALSE)
 }
 
-# PST accumulates float sums in a worker-dependent order, so two runs of the SAME scalar call can differ in the last float bit for
-# decayed or weighted values (the rest of the suite compares such scores with the same 1e-6 relative tolerance). Types, missing and
-# non-finite patterns, and integer columns (indices, counts) are compared exactly.
-na_same <- function(actual, expected, info = NULL) {
+# Comparison of a multi-radius column with the scalar column. Equality is EXACT (values and types) unless a tolerance is given. The only
+# measured run-to-run variability of any analysed score is Attraction Reach with attraction values or a non-constant decay on SEVERAL
+# workers: workers add their partial scores in a nondeterministic order, which moves the last float bits (25 repeats of each case gave
+# at most 3.5e-7 relative deviation, about three float epsilons; with RPST_NUM_THREADS=1 every case, including that one, is bit for bit
+# reproducible). Those comparisons therefore run exactly on one worker and with tolerance `na_tol` (1e-6, a factor of three above the
+# measured maximum) on several. Types, missing and non-finite patterns, and integer columns are always compared exactly.
+na_tol <- 1e-6
+na_same <- function(actual, expected, info = NULL, tolerance = 0) {
   expect_identical(typeof(actual), typeof(expected), info = info)
   expect_identical(is.na(actual), is.na(expected), info = info)
   expect_identical(is.nan(actual), is.nan(expected), info = info)
   finite <- is.finite(expected)
   expect_identical(actual[!finite], expected[!finite], info = info)
-  if (is.integer(expected)) expect_identical(actual, expected, info = info)
-  else expect_equal(actual[finite], expected[finite], tolerance = 1e-6, info = info)
+  if (is.integer(expected) || tolerance == 0) expect_identical(actual, expected, info = info)
+  else expect_equal(actual[finite], expected[finite], tolerance = tolerance, info = info)
+}
+# Run `code` with the worker cap `workers` (NULL = the machine default); the analyses read RPST_NUM_THREADS at every call.
+na_with_workers <- function(workers, code) {
+  old <- Sys.getenv("RPST_NUM_THREADS", unset = NA)
+  on.exit(if (is.na(old)) Sys.unsetenv("RPST_NUM_THREADS") else Sys.setenv(RPST_NUM_THREADS = old), add = TRUE)
+  if (is.null(workers)) Sys.unsetenv("RPST_NUM_THREADS") else Sys.setenv(RPST_NUM_THREADS = workers)
+  force(code)
 }
 
-na_expect_columns_match_scalar <- function(multi, radius, scalar_fn, id = c("origin_id", "line_id")) {
+na_expect_columns_match_scalar <- function(multi, radius, scalar_fn, id = c("origin_id", "line_id"), tolerance = 0) {
   plan <- rPSTool:::.pst_radius_plan(radius, FALSE)
   manifest <- attr(multi, "rpst_manifest")$columns
   seen <- character()
@@ -46,7 +57,7 @@ na_expect_columns_match_scalar <- function(multi, radius, scalar_fn, id = c("ori
     expect_null(attr(scalar, "rpst_manifest"))                        # a scalar call keeps the single-result schema
     for (nm in setdiff(names(scalar), id)) {
       expect_true(nm %in% names(multi), info = nm)
-      na_same(multi[[nm]], scalar[[nm]], info = nm)
+      na_same(multi[[nm]], scalar[[nm]], info = nm, tolerance = tolerance)
       expect_identical(manifest$radius[match(nm, manifest$name)], i)
       seen <- c(seen, nm)
     }
@@ -75,7 +86,6 @@ test_that("Attraction Reach: every radius column equals the scalar call, for eve
     expect_identical(names(multi)[[1L]], "origin_id")
     expect_identical(multi$origin_id, seq_len(nrow(multi)))
     expect_identical(nrow(multi), info[[c(lines = 1L, junctions = 2L, points = 3L, point_groups = 4L)[[origin]]]])
-    if (origin == "lines" && d == "straight") next   # nondeterministic upstream: see the straight line-reach test below
     na_expect_columns_match_scalar(multi, r, function(cfg) attraction_reach(g, a, cfg, origin, d))
   }
   # radius-major, in the supplied order, with the scalar names
@@ -88,22 +98,26 @@ test_that("Attraction Reach keeps every option under several radii: values, deca
   g <- na_graph(); a <- na_attractions()
   values <- c(2, 0, 3.5, 1)
   r <- analysis_radius(walking = c(30, 6, 12))
-  for (decay in c("constant", "power", "curve", "divide")) {
-    multi <- na_reach(g, a, r, distance = "walking", attraction_values = values, decay = decay, decay_constant = 2)
-    expect_true(all(grepl("_wattraction_values", names(multi)[-1L])))
-    na_expect_columns_match_scalar(multi, r, function(cfg)
-      na_reach(g, a, cfg, distance = "walking", attraction_values = values, decay = decay, decay_constant = 2))
-  }
-  default_decay <- attraction_reach(g, a, r, distance = "walking", decay = "power")      # NULL decay_constant -> 1, as a scalar call
-  na_expect_columns_match_scalar(default_decay, r, function(cfg) attraction_reach(g, a, cfg, distance = "walking", decay = "power"))
-  pvalues <- c(4, 1)
-  for (dist in c("copy", "divide")) for (coll in c("mean", "sum", "min", "max")) for (origin in c("lines", "point_groups")) {
-    multi <- na_reach(g, na_polygons(), r, origin, "walking", points_per_polygon = na_polygon_sizes, polygon_point_interval = 0.5,
-                      attraction_values = pvalues, distribution = dist, collection = coll)
-    na_expect_columns_match_scalar(multi, r, function(cfg)
-      na_reach(g, na_polygons(), cfg, origin, "walking", points_per_polygon = na_polygon_sizes, polygon_point_interval = 0.5,
-               attraction_values = pvalues, distribution = dist, collection = coll))
-  }
+  # exact on one worker, within the measured float-summation tolerance on several (see na_tol)
+  for (setting in list(list(workers = "1", tol = 0), list(workers = NULL, tol = na_tol))) na_with_workers(setting$workers, {
+    for (decay in c("constant", "power", "curve", "divide")) {
+      multi <- na_reach(g, a, r, distance = "walking", attraction_values = values, decay = decay, decay_constant = 2)
+      expect_true(all(grepl("_wattraction_values", names(multi)[-1L])))
+      na_expect_columns_match_scalar(multi, r, function(cfg)
+        na_reach(g, a, cfg, distance = "walking", attraction_values = values, decay = decay, decay_constant = 2), tolerance = setting$tol)
+    }
+    default_decay <- attraction_reach(g, a, r, distance = "walking", decay = "power")      # NULL decay_constant -> 1, as a scalar call
+    na_expect_columns_match_scalar(default_decay, r, function(cfg) attraction_reach(g, a, cfg, distance = "walking", decay = "power"),
+                                   tolerance = setting$tol)
+    pvalues <- c(4, 1)
+    for (dist in c("copy", "divide")) for (coll in c("mean", "sum", "min", "max")) for (origin in c("lines", "point_groups")) {
+      multi <- na_reach(g, na_polygons(), r, origin, "walking", points_per_polygon = na_polygon_sizes, polygon_point_interval = 0.5,
+                        attraction_values = pvalues, distribution = dist, collection = coll)
+      na_expect_columns_match_scalar(multi, r, function(cfg)
+        na_reach(g, na_polygons(), cfg, origin, "walking", points_per_polygon = na_polygon_sizes, polygon_point_interval = 0.5,
+                 attraction_values = pvalues, distribution = dist, collection = coll), tolerance = setting$tol)
+    }
+  })
   # distance "none" and empty attractions
   na_expect_columns_match_scalar(attraction_reach(g, a, analysis_radius(steps = c(1, 3)), distance = "none"), analysis_radius(steps = c(1, 3)),
                                  function(cfg) attraction_reach(g, a, cfg, distance = "none"))
@@ -200,19 +214,6 @@ test_that("the multi-result manifest describes every column, including the weigh
   expect_identical(attr(attr(od, "rpst_manifest")$columns, "cols")[[1L]]$weight_name, "origin: origin_weights; destination: destination_weights")
   expect_identical(vapply(attr(attr(od, "rpst_manifest")$columns, "cols"), function(x) x$weight, ""),
                    rep("woorigin_weights_wddestination_weights", 2L))
-})
-
-test_that("straight line reach is exercised for shape and finiteness only: the pinned engine is not reproducible there", {
-  # Attraction Reach with origin = "lines", distance = "straight" and a straight radius uses a graph-internal scratch buffer in PST
-  # (CAxialGraph::getLinesFromPoint); repeated identical scalar calls on one graph can return different scores, so no equality with
-  # the scalar call can hold. Everything else about the multi call is still checked.
-  g <- na_graph(); a <- na_attractions()
-  r <- analysis_radius(straight = c(5, 12, 30))
-  multi <- attraction_reach(g, a, r, "lines", "straight")
-  expect_identical(names(multi), c("origin_id", "ar_l_rl5", "ar_l_rl12", "ar_l_rl30"))
-  expect_identical(nrow(multi), 54L)
-  expect_true(all(is.finite(as.matrix(multi))))
-  expect_false(is.null(attr(multi, "rpst_manifest")))
 })
 
 # ---- validation: every radius is checked before the first PST run ----------------------------------------------------------------
@@ -343,6 +344,7 @@ na_origins <- function() rbind(c(101, 201), c(115, 210), c(128, 221))
 
 test_that("FlatGeobuf spatial output of the three multi-radius analyses equals the in-memory result and describes every column", {
   na_skip_fgb()
+  withr::local_envvar(RPST_NUM_THREADS = "1")   # two separate runs are compared exactly: one worker is bit-for-bit reproducible
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   s <- na_fgb_graph(dir); g <- s$g
   a <- na_fgb_attractions(); o <- na_origins()
@@ -469,6 +471,7 @@ skip_na_parquet <- function() {
 
 test_that("attribute-only Parquet output of the multi-radius analyses equals the in-memory result for every origin kind", {
   skip_na_parquet()
+  withr::local_envvar(RPST_NUM_THREADS = "1")   # two separate runs are compared exactly: one worker is bit-for-bit reproducible
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   g <- na_graph(); a <- na_attractions(); o <- rbind(c(1, 1), c(5, 2), c(12, 8))
   info <- .Call(rPSTool:::C_rpst_graph_info, g$ptr)
@@ -511,6 +514,7 @@ test_that("attribute-only Parquet output of the multi-radius analyses equals the
 
 test_that("GeoParquet spatial output of the multi-radius attraction analyses: exact values, signed indices, metadata and publication", {
   skip_na_parquet()
+  withr::local_envvar(RPST_NUM_THREADS = "1")   # two separate runs are compared exactly: one worker is bit-for-bit reproducible
   dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
   src <- so_write_gpq(file.path(dir, "net.parquet"), so_segments(30), so_attributes(30), chunk = 7L)
   g <- axial_graph(src, points = rbind(c(105, 205), c(112, 207), c(120, 215), c(131, 203), c(118, 222)))

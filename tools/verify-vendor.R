@@ -278,3 +278,41 @@ verify_diagnostic_copies <- function() {
 }
 verify_diagnostic_copies()
 message("Verified diagnostic build copies, preserved inputs, shim removal and Unix/Windows recipes")
+
+# Patch 0012: the SphereTree radius query fix lives only in a verified, reversible build copy (docs: inst/upstream/PATCHES.md).
+verify_sphere_tree_copy <- function() {
+  env <- new.env(parent = baseenv())
+  sys.source("src/portability/fix-sphere-tree.R", envir = env)
+  input <- "inst/upstream/build-inputs/SphereTree.cpp"
+  vendor <- "src/vendor/pstalgo/src/utils/SphereTree.cpp"
+  copy <- "src/.rpst-build/utils/SphereTree.cpp"
+  if (!identical(read_bytes(input), read_bytes(vendor)))
+    stop("Preserved SphereTree input differs from pristine upstream source")
+  tmp <- tempfile("verify-sphere-tree-", tmpdir = ".local")
+  dir.create(".local", showWarnings = FALSE)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  expected <- file.path(tmp, ".rpst-build", "SphereTree.cpp")
+  env$fix_sphere_tree(input, expected)
+  if (file.exists(copy) && !identical(read_bytes(copy), read_bytes(expected)))
+    stop("Unexpected SphereTree build-copy changes")
+  # the copy differs from the pristine file only by the added #line prefix and the one-expression fix
+  lines <- strsplit(rawToChar(read_bytes(expected)), "\n", fixed = TRUE)[[1L]]
+  pristine <- strsplit(rawToChar(read_bytes(vendor)), "\n", fixed = TRUE)[[1L]]
+  changed <- which(lines[-1L] != pristine)
+  if (length(lines) != length(pristine) + 1L || length(changed) != 1L ||
+      !identical(pristine[changed], "\treturn nResult;") || !identical(lines[changed + 1L], "\treturn count;"))
+    stop("The SphereTree copy changes more than the intended expression")
+  generate <- "portability/fix-sphere-tree.R ../inst/upstream/build-inputs/SphereTree.cpp .rpst-build/utils/SphereTree.cpp"
+  for (makevars in c("src/Makevars", "src/Makevars.win")) {
+    text <- readLines(makevars)
+    rule <- ".rpst-build/utils/SphereTree.cpp: vendor/pstalgo/src/utils/SphereTree.cpp ../inst/upstream/build-inputs/SphereTree.cpp portability/fix-sphere-tree.R rpst-prepare"
+    at <- which(text == rule)
+    object <- which(text == ".rpst-build/utils/SphereTree.o: .rpst-build/utils/SphereTree.cpp")
+    if (length(at) != 1L || !identical(text[at + 2L], paste0('\t"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" ', generate)) ||
+        length(object) != 1L || !grepl("-c .rpst-build/utils/SphereTree.cpp -o $@", text[object + 2L], fixed = TRUE) ||
+        any(grepl("-c vendor/pstalgo/src/utils/SphereTree.cpp", text, fixed = TRUE)))
+      stop("SphereTree generation/compilation recipe drift in ", makevars)
+  }
+}
+verify_sphere_tree_copy()
+message("Verified the SphereTree radius-query correction copy, preserved input and Unix/Windows recipes")
