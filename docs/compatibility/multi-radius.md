@@ -1,6 +1,6 @@
 # Multi-radius and multi-normalisation
 
-Scope: `angular_choice()`, `angular_integration()`, `network_reach()` and `network_betweenness()` (§10); every other analysis rejects a multi-valued radius (§9).
+Scope: `angular_choice()`, `angular_integration()`, `network_reach()`, `network_betweenness()` and `network_integration()` (§10, §11); every other analysis rejects a multi-valued radius (§9).
 
 rPSTool runs one PST calculation per radius and applies PST's exported normalisers to that calculation's finished native arrays;
 nothing is computed in R.
@@ -148,8 +148,7 @@ network, make several calls with different radii. A combined file stores geometr
 
 ## 9. Other radius-bearing analyses
 
-Only the analyses listed in §10 accept a vector in one radius field. All other analyses (Network Integration,
-OD Betweenness, Attraction Reach and Distance, Segment Group Integration) reject a multi-valued
+Only the analyses listed in §10 and §11 accept a vector in one radius field. All other analyses (OD Betweenness, Attraction Reach and Distance, Segment Group Integration) reject a multi-valued
 `analysis_radius()` with an explicit error before any native work.
 
 ## 10. Network Reach and Segment Betweenness (axial graphs)
@@ -176,3 +175,22 @@ the requested order, named exactly as in a scalar call with that radius.
 * **Memory.** Each PST run's scratch memory is released before the next radius, but the finished columns of all radii are retained
   until the result is returned or the file is written, so result storage grows with the number of radii. The file route does not
   build R data frames; it is not constant-memory.
+
+## 11. Network Integration (axial graphs)
+
+`network_integration()` keeps its supported boundary: only a topological steps radius (the official PST for QGIS plugin offers only
+steps). That is a restriction on the radius type, not on the number of values, so `radius = analysis_radius(steps = c(1, 2, 3))` is
+accepted. The `steps` argument stays a single value; a vector in any other `analysis_radius()` field, or a fixed non-steps limit next to a
+steps vector, is rejected before any native work with the existing steps-only error. A one-element steps vector is a scalar call.
+
+PST runs once per radius. The table is `line_id`, then per radius `ni_s_<radius>`, `nc_s_<radius>` and `td_s_<radius>` (integration,
+node count, total depth), named exactly as in a scalar call, in the supplied order; there are no normalisation columns.
+
+* **Junctions.** With `junctions = TRUE` the result is `list(lines, junctions)`. `lines` is the multi table. `junctions` has
+  `junction_id`, `x` and `y` once, then one `nj_s_<radius>` score column per radius. PST returns the same junction coordinates for every
+  radius; the native layer checks this and fails the call otherwise. `junction_output = "sf"` returns the same table as POINT features
+  with the graph's CRS. A graph without crossings gives a zero-row junction table.
+* **Files.** `output_file` and `spatial_output_file` write the line table (schema 2, `rpst:graph_type` `axial`). Result files cannot hold
+  junction results, as for a scalar call; `junctions = TRUE` with a file is still an error.
+* **Memory.** As in §10: each run's scratch memory is released, but the finished columns of all radii are retained until the result is
+  returned or written. The in-memory junction table keeps one score vector per radius.

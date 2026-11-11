@@ -11,7 +11,7 @@ nm_segments <- function() {
   unname(rbind(s, cbind(s[8:22, 1], s[8:22, 2], s[8:22, 1] + 1, s[8:22, 2] + 5)))
 }
 nm_graph <- function() axial_graph(nm_segments())
-nm_axial_counts <- function(reset = FALSE) .Call(rPSTool:::C_rpst_axial_instrumentation, reset, NULL)
+nm_axial_counts <- function(reset = FALSE) .Call(rPSTool:::C_rpst_axial_instrumentation, reset, NULL)[1:3]   # reach, betweenness, normalisers
 nm_fail_after <- function(k) invisible(.Call(rPSTool:::C_rpst_axial_instrumentation, FALSE, as.double(k)))
 nm_skip_fgb <- function() { skip_if_not_installed("sf"); skip_if_not_installed("jsonlite") }
 nm_meta <- function(path) {
@@ -154,11 +154,10 @@ test_that("invalid requests are rejected before any calculation", {
   expect_error(network_betweenness(segment_graph(nm_segments()), analysis_radius(walking = c(5, 10))), "axial")
   expect_identical(nm_axial_counts(TRUE), c(0, 0, 0))   # no PST run happened for any of them
   # the unchanged analyses still refuse a vector
-  expect_error(network_integration(g, radius = analysis_radius(steps = c(1, 2))), "supported only by")
   expect_error(attraction_reach(g, rbind(c(0, 0)), analysis_radius(steps = c(1, 2))), "supported only by")
   # the error text names the analyses that accept one
-  expect_error(network_integration(g, radius = analysis_radius(steps = c(1, 2))),
-               "network_reach(), network_betweenness(), angular_choice() and angular_integration()", fixed = TRUE)
+  expect_error(attraction_distance(g, rbind(c(0, 0)), analysis_radius(steps = c(1, 2))),
+               paste0("supported only by ", rPSTool:::.pst_multi_radius_list(), ";"), fixed = TRUE)
 })
 
 test_that("a radius a scalar call would reject is rejected when it is one of several", {

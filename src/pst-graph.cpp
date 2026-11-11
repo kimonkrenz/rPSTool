@@ -1320,7 +1320,7 @@ namespace {
 // Test-only instrumentation of the axial analyses (same contract as AngularInstrumentation): counts of PST Reach (multi route) and
 // Segment Betweenness runs and of Betweenness normaliser calls, and a one-shot countdown that makes the (k+1)-th run fail.
 struct AxialInstrumentation {
-    std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0};
+    std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0}, integration_runs{0};
     std::atomic<int> fail_after_runs{-1};
 };
 AxialInstrumentation g_axial;
@@ -2156,6 +2156,137 @@ void reach_multi_compute(const ReachMulti& a, Sink& sink)
 }
 } // namespace
 
+// ---- Multi-radius Network Integration (axial graphs) ---------------------------------------------------------------------------
+// Same contract as above. Junction positions do not depend on the radius: they are taken from the first run and every later run
+// is checked to have produced identical coordinates; only the junction scores are per radius. Junction results exist only on the
+// in-memory route (a result file cannot hold them, as for a scalar call).
+namespace {
+struct IntegrationMulti {
+    HPSTAGraph handle{}; SPSTARadii* radii = nullptr; R_xlen_t k = 0; R_xlen_t n = 0; R_xlen_t junction_count = 0;
+};
+IntegrationMulti integration_multi_args(SEXP pointer, SEXP radii, bool junctions)
+{
+    IntegrationMulti a;
+    a.handle = graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    SPSTAGraphInfo info{};
+    info.m_Version = SPSTAGraphInfo::VERSION;
+    if (!PSTAGetGraphInfo(a.handle, &info)) Rf_error("PSTAGetGraphInfo failed before PSTANetworkIntegration.");
+    if (info.m_LineCount > static_cast<unsigned int>(std::numeric_limits<int>::max()))
+        Rf_error("Too many lines for PSTANetworkIntegration.");
+    a.n = info.m_LineCount;
+    if (junctions && info.m_CrossingCount > static_cast<unsigned int>(std::numeric_limits<int>::max()))
+        Rf_error("Too many junctions for PSTANetworkIntegration.");
+    a.junction_count = junctions ? info.m_CrossingCount : 0;
+    return a;
+}
+// Per radius: integration, node_count, total_depth. `on_junctions(r, coords, scores)` receives each radius' junction results.
+template <class Sink, class JunctionFn>
+void integration_multi_compute(const IntegrationMulti& a, Sink& sink, JunctionFn on_junctions)
+{
+    std::vector<double2> first_coords;
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.integration_runs;
+        std::vector<float> scores(static_cast<size_t>(a.n)), depths(static_cast<size_t>(a.n));
+        std::vector<unsigned int> counts(static_cast<size_t>(a.n));
+        std::vector<float> junction_scores(static_cast<size_t>(a.junction_count), 0);   // PST accumulates; zero is the fresh seed
+        std::vector<double2> junction_coords(static_cast<size_t>(a.junction_count));
+        SPSTANetworkIntegrationDesc desc{};
+        desc.m_Version = SPSTANetworkIntegrationDesc::VERSION;
+        desc.m_Graph = a.handle;
+        desc.m_Radius = a.radii[r];
+        desc.m_OutJunctionCount = static_cast<unsigned int>(a.junction_count);
+        desc.m_OutJunctionCoords = a.junction_count ? junction_coords.data() : nullptr;
+        desc.m_OutJunctionScores = a.junction_count ? junction_scores.data() : nullptr;
+        desc.m_OutLineIntegration = scores.data();
+        desc.m_OutLineNodeCount = counts.data();
+        desc.m_OutLineTotalDepth = depths.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTANetworkIntegration(&desc)) throw std::runtime_error("PSTANetworkIntegration failed for the native pst_graph.");
+        if (a.junction_count) {
+            if (r == 0) first_coords = junction_coords;
+            else if (std::memcmp(first_coords.data(), junction_coords.data(), first_coords.size() * sizeof(double2)) != 0)
+                throw std::runtime_error("PST returned different junction coordinates for different radii");
+            on_junctions(r, first_coords, junction_scores);
+        }
+        sink.add_float(std::move(scores), nullptr);
+        sink.add_count(std::move(counts), nullptr);
+        sink.add_float(std::move(depths), nullptr);
+    }
+}
+} // namespace
+
+// Returns list(line columns (3 per radius, radius-major), junction coordinate matrix or NULL, list of per-radius junction scores or NULL).
+extern "C" SEXP rpst_network_integration_multi(SEXP pointer, SEXP radii, SEXP junctions_arg)
+{
+    if (TYPEOF(junctions_arg) != LGLSXP || XLENGTH(junctions_arg) != 1 || LOGICAL(junctions_arg)[0] == NA_LOGICAL)
+        Rf_error("junctions must be TRUE or FALSE.");
+    const bool junctions = LOGICAL(junctions_arg)[0] == TRUE;
+    const auto a = integration_multi_args(pointer, radii, junctions);
+    SEXP out = PROTECT(Rf_allocVector(VECSXP, 3));
+    SEXP lines = PROTECT(multi_plain_list(a.k, 3, a.n, 1));
+    SET_VECTOR_ELT(out, 0, lines);
+    UNPROTECT(1);
+    double* coords_data = nullptr;
+    SEXP score_list = R_NilValue;
+    if (junctions) {
+        SEXP coords = PROTECT(Rf_allocMatrix(REALSXP, static_cast<int>(a.junction_count), 2));
+        SET_VECTOR_ELT(out, 1, coords);
+        UNPROTECT(1);
+        coords_data = REAL(coords);
+        score_list = PROTECT(Rf_allocVector(VECSXP, a.k));
+        SET_VECTOR_ELT(out, 2, score_list);
+        UNPROTECT(1);
+        for (R_xlen_t r = 0; r < a.k; ++r) {
+            SEXP v = PROTECT(Rf_allocVector(REALSXP, a.junction_count));
+            SET_VECTOR_ELT(score_list, r, v);
+            UNPROTECT(1);
+        }
+    }
+    char error[512] = "";
+    try {
+        NullableRSink sink{lines};
+        integration_multi_compute(a, sink, [&](R_xlen_t r, const std::vector<double2>& coords, const std::vector<float>& scores) {
+            double* o = REAL(VECTOR_ELT(score_list, r));
+            for (R_xlen_t i = 0; i < a.junction_count; ++i) {
+                if (r == 0) {
+                    coords_data[i] = coords[static_cast<size_t>(i)].x;
+                    coords_data[i + a.junction_count] = coords[static_cast<size_t>(i)].y;
+                }
+                o[i] = scores[static_cast<size_t>(i)];
+            }
+        });
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTANetworkIntegration failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTANetworkIntegration failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    UNPROTECT(1);
+    return out;
+}
+extern "C" SEXP rpst_network_integration_multi_stream(SEXP pointer, SEXP radii, SEXP stream_pointer, SEXP names,
+    SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = integration_multi_args(pointer, radii, false);
+    if (3 > std::numeric_limits<int>::max() / (a.k ? a.k : 1) - 1) Rf_error("Too many result columns.");
+    const auto args = result_stream_args(stream_pointer, names, metadata_names, metadata_values, batch_rows, 1 + a.k * 3);
+    char error[512] = "";
+    try {
+        auto table = result_new_table(args, static_cast<size_t>(a.n));
+        NullableTableSink sink{*table, args.names};
+        integration_multi_compute(a, sink, [](R_xlen_t, const std::vector<double2>&, const std::vector<float>&) {});
+        result_finish_and_export(args, std::move(table), error, sizeof error);
+    } catch (const std::exception& e) {
+        std::snprintf(error, sizeof(error), "PSTANetworkIntegration failed: %s", e.what());
+    } catch (...) {
+        std::snprintf(error, sizeof(error), "PSTANetworkIntegration failed with an unknown native exception.");
+    }
+    if (error[0]) Rf_error("%s", error);
+    return Rf_ScalarReal(static_cast<double>(a.n));
+}
+
 extern "C" SEXP rpst_reach_multi(SEXP pointer, SEXP radii, SEXP origins)
 {
     const auto a = reach_multi_args(pointer, radii, origins);
@@ -2227,7 +2358,7 @@ extern "C" SEXP rpst_angular_instrumentation(SEXP reset, SEXP fail_after)
 }
 
 // Test-only counterpart of rpst_angular_instrumentation for the axial analyses: returns c(reach runs, betweenness runs, betweenness
-// normaliser calls) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
+// normaliser calls, multi-radius network integration runs) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
 extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
 {
     if (TYPEOF(reset) != LGLSXP || XLENGTH(reset) != 1 || LOGICAL(reset)[0] == NA_LOGICAL)
@@ -2243,12 +2374,14 @@ extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
         arm = static_cast<int>(k);
         set_fault = true;
     }
-    SEXP out = PROTECT(Rf_allocVector(REALSXP, 3));
+    SEXP out = PROTECT(Rf_allocVector(REALSXP, 4));
     REAL(out)[0] = static_cast<double>(g_axial.reach_runs.load());
     REAL(out)[1] = static_cast<double>(g_axial.betweenness_runs.load());
     REAL(out)[2] = static_cast<double>(g_axial.betweenness_normalizations.load());
+    REAL(out)[3] = static_cast<double>(g_axial.integration_runs.load());
     if (LOGICAL(reset)[0] == TRUE) {
         g_axial.reach_runs = 0; g_axial.betweenness_runs = 0; g_axial.betweenness_normalizations = 0;
+        g_axial.integration_runs = 0;
     }
     if (set_fault) g_axial.fail_after_runs.store(arm);
     UNPROTECT(1);

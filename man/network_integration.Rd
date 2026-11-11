@@ -21,7 +21,7 @@ network_integration(
 \item{steps}{\code{NULL} (default, unrestricted) or one non-negative whole number no greater than
 2147483647.}
 
-\item{radius}{Optional \code{\link[=analysis_radius]{analysis_radius()}} object that sets only \code{steps}. Supply either \code{radius} or a
+\item{radius}{Optional \code{\link[=analysis_radius]{analysis_radius()}} object that sets only \code{steps}; the steps field may hold several values (see Details). Supply either \code{radius} or a
 non-\code{NULL} \code{steps}.}
 
 \item{junctions}{\code{TRUE} or \code{FALSE} (default). If \code{TRUE}, also return junction scores (see Value).}
@@ -68,6 +68,16 @@ radius: a limit of zero reaches only the line itself. Supply the limit with \cod
 matches the Network Integration offered by the official PST for QGIS plugin; walking, straight, angular
 and axmeter limits, alone or combined with steps, are rejected before any calculation. For those metrics
 use \code{\link[=angular_integration]{angular_integration()}} on a segment graph or \code{\link[=network_reach]{network_reach()}}.
+
+\strong{Several steps radii.} \code{radius = analysis_radius(steps = c(1, 2, 3))} runs PST once per radius. The steps field may hold several
+values; the \code{steps} argument itself stays a single value, and a vector in any other field is rejected like any other non-steps
+limit. The result has \code{line_id} once, then radius by radius the columns a single call with that radius would give, named
+identically; it carries the \code{rpst_manifest} attribute, and \code{output_file} or \code{spatial_output_file} write the same table (schema 2).
+With \code{junctions = TRUE} the junction table has \code{junction_id}, \code{x} and \code{y} once (junction positions do not depend on the radius) and
+one \verb{nj_s_<radius>} score column per radius, in the supplied order; \code{junction_output = "sf"} returns the same table as POINT
+features. Result files still cannot hold junction results. The result keeps the columns of all radii, so its size grows with the
+number of radii. See
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 
 \strong{Special values.} PST returns \code{-1} when fewer than two lines are reached. For very small or
 symmetric neighbourhoods the formula can give \code{NaN} or \code{Inf}. These values are returned unchanged and
