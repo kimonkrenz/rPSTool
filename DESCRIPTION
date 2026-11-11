@@ -31,7 +31,8 @@ Suggests:
     knitr,
     rmarkdown,
     sf,
-    testthat (>= 3.2.0)
+    testthat (>= 3.2.0),
+    withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 SystemRequirements: C++17

@@ -67,9 +67,11 @@ test_that("straight line Attraction Reach is reproducible and independent of the
 test_that("straight line Attraction Reach is the same on one, two and the default number of workers", {
   segments <- sl_segments()
   want <- lapply(sl_radii, function(r) sl_expected(segments, sl_attractions(), r, sl_values))
+  # the effective native ceiling (hardware concurrency and _R_CHECK_LIMIT_CORES_), observed with no explicit cap
+  ceiling <- withr::with_envvar(c(RPST_NUM_THREADS = NA), .Call(rPSTool:::C_rpst_workers))
   for (workers in list("1", "2", "3", NULL)) withr::with_envvar(c(RPST_NUM_THREADS = if (is.null(workers)) NA else workers), {
     g <- axial_graph(segments)
-    expect_identical(.Call(rPSTool:::C_rpst_workers), if (is.null(workers)) .Call(rPSTool:::C_rpst_workers) else as.numeric(min(as.numeric(workers), parallel::detectCores())))
+    expect_identical(.Call(rPSTool:::C_rpst_workers), if (is.null(workers)) ceiling else min(as.numeric(workers), ceiling))
     for (rep in 1:3) for (i in seq_along(sl_radii))
       expect_identical(sl_reach(g, sl_radii[[i]], sl_values)[[2L]], want[[i]], info = paste("workers", workers, "radius", sl_radii[[i]]))
   })
