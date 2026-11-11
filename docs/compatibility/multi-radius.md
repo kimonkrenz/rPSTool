@@ -1,6 +1,6 @@
 # Multi-radius and multi-normalisation
 
-Scope: `angular_choice()`, `angular_integration()`, `network_reach()`, `network_betweenness()` and `network_integration()` (§10, §11); every other analysis rejects a multi-valued radius (§9).
+Scope: `angular_choice()`, `angular_integration()`, `network_reach()`, `network_betweenness()`, `network_integration()` (§10, §11), `attraction_reach()`, `attraction_distance()` and `od_betweenness()` (§12); every other analysis rejects a multi-valued radius (§9).
 
 rPSTool runs one PST calculation per radius and applies PST's exported normalisers to that calculation's finished native arrays;
 nothing is computed in R.
@@ -148,7 +148,7 @@ network, make several calls with different radii. A combined file stores geometr
 
 ## 9. Other radius-bearing analyses
 
-Only the analyses listed in §10 and §11 accept a vector in one radius field. All other analyses (OD Betweenness, Attraction Reach and Distance, Segment Group Integration) reject a multi-valued
+Only the analyses listed in §10 to §12 accept a vector in one radius field. All other analyses (Segment Group Integration) reject a multi-valued
 `analysis_radius()` with an explicit error before any native work.
 
 ## 10. Network Reach and Segment Betweenness (axial graphs)
@@ -194,3 +194,32 @@ node count, total depth), named exactly as in a scalar call, in the supplied ord
   junction results, as for a scalar call; `junctions = TRUE` with a file is still an error.
 * **Memory.** As in §10: each run's scratch memory is released, but the finished columns of all radii are retained until the result is
   returned or written. The in-memory junction table keeps one score vector per radius.
+
+## 12. Attraction Reach, Attraction Distance and OD Betweenness (axial graphs)
+
+These three follow §10: R expands the radius vector into validated scalar configurations, PST runs once per radius with the descriptor a
+scalar call would fill, and nothing is computed in R. Every option keeps its scalar meaning in every radius: `origin`, `distance`,
+polygon attractions and `points_per_polygon`, `attraction_values`, decay and `decay_constant`, `distribution`, `collection`,
+`line_weights`, `point_edge_weight`, `destination_indices`, `origins`, `origin_weights`, `destination_weights` and `destination_mode`. A call
+with one radius is a scalar call (schema 1); several radii give schema 2. There is no normalisation choice.
+
+* **Identifier and order.** `origin_id` in PST's origin order for the two attraction analyses (lines, junctions, retained points or point
+  groups), `line_id` for OD Betweenness; then the columns of each radius, in the supplied order, named exactly as in a scalar call.
+* **Columns per radius.** Attraction Reach: `ar_...`. Attraction Distance: `ad_...` and, unless `destination_indices = FALSE`, `di_...`
+  (PST's zero-based index, `-1` for none, a signed integer in memory and in files). OD Betweenness: `od_...`.
+* **Validation before the first run.** Every configuration is checked first: the scalar radius rules and, for Attraction Distance, the
+  distance rules of the scalar function (straight distance only with no radius or straight-only radii, so a `walking` vector with
+  `distance = "straight"` is rejected as a whole; axmeter rejected; point groups with a straight-only radius unsupported) and its weight
+  rules; for OD Betweenness, the axmeter rejection. A set in which any radius is invalid is rejected without a PST run.
+* **Manifest.** Schema-2 metadata and the in-memory `rpst_manifest` list every column with its radius index; weighted columns carry
+  `weight_name` (for OD Betweenness `origin: <name>; destination: <name>`), as in a scalar manifest.
+* **Files.** `output_file` and `spatial_output_file` use the shared native result table and Arrow stream and the §10 publication
+  guarantees. `spatial_output_file` stays limited to Attraction Reach/Distance with `origin = "lines"` (OD Betweenness rows are lines).
+* **Memory.** As in §10: per-run scratch is released, the finished columns of all radii are retained, so storage grows with the number of
+  radii; the attraction and origin inputs are copied once per run because PST receives them through writable pointers.
+* **Reproducibility of PST scores.** PST accumulates single-precision scores in a worker-dependent order, so two runs of one scalar call can differ in
+  the last bit for decayed or weighted values; the tests compare such scores with a 1e-6 relative tolerance, and indices, counts, types and
+  missing patterns exactly. One combination is not reproducible even from call to call in the pinned engine: `attraction_reach()` with
+  `origin = "lines"`, `distance = "straight"` and a straight radius uses a scratch buffer owned by the graph
+  (`CAxialGraph::getLinesFromPoint`) and can return different scores for identical scalar calls. Multi-radius calls inherit that behaviour; no
+  equality with the scalar call is claimed for it.

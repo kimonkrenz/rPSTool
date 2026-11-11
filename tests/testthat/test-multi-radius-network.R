@@ -153,10 +153,9 @@ test_that("invalid requests are rejected before any calculation", {
   expect_error(network_reach(segment_graph(nm_segments()), analysis_radius(walking = c(5, 10))), "axial")
   expect_error(network_betweenness(segment_graph(nm_segments()), analysis_radius(walking = c(5, 10))), "axial")
   expect_identical(nm_axial_counts(TRUE), c(0, 0, 0))   # no PST run happened for any of them
-  # the unchanged analyses still refuse a vector
-  expect_error(attraction_reach(g, rbind(c(0, 0)), analysis_radius(steps = c(1, 2))), "supported only by")
-  # the error text names the analyses that accept one
-  expect_error(attraction_distance(g, rbind(c(0, 0)), analysis_radius(steps = c(1, 2))),
+  # an analysis outside the registry still refuses a vector, and the error text names the analyses that accept one
+  # (Attraction Reach/Distance and OD Betweenness accept one since test-multi-radius-attraction.R)
+  expect_error(rPSTool:::.pst_validate_radius(analysis_radius(steps = c(1, 2))),
                paste0("supported only by ", rPSTool:::.pst_multi_radius_list(), ";"), fixed = TRUE)
 })
 

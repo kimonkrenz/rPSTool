@@ -40,7 +40,7 @@ analysis_radius(walking = 800, steps = NULL, angular = NULL)
 ```
 
 `NULL` leaves a native limit absent; zero is a real limit. Which fields an analysis accepts, and the source-grounded bounds,
-are in the [core contract](compatibility/core-network-analyses.md). For `network_reach()`, `network_betweenness()`, `network_integration()` (steps only), `angular_choice()` and
+are in the [core contract](compatibility/core-network-analyses.md). For `network_reach()`, `network_betweenness()`, `network_integration()` (steps only), `attraction_reach()`, `attraction_distance()`, `od_betweenness()`, `angular_choice()` and
 `angular_integration()` a field may be a vector, and `normalization` may name several methods for `network_betweenness()`, `angular_choice()` and `angular_integration()`; see [multi-radius](compatibility/multi-radius.md).
 
 ## Inputs and outputs

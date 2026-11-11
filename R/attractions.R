@@ -33,6 +33,8 @@
 #' **Coordinate reference systems.** `sf` inputs need XY geometry and a CRS compatible with the graph's (known versus
 #' unknown included). A known geographic CRS is rejected. Nothing is reprojected or converted.
 #'
+#' **Several radii.** One [analysis_radius()] field may be a vector: PST runs once per radius and the result holds each radius' columns (`ar_...`; `ad_...` and `di_...`), named as a single call would name them. Every radius is validated before the first run, including the `attraction_distance()` distance rules above (so a `walking` vector with `distance = "straight"` is rejected). A single radius gives the unchanged single-result schema. `output_file` and `spatial_output_file` write the same table. Native storage keeps the columns of all radii. In the pinned PST, `attraction_reach()` with `origin = "lines"`, `distance = "straight"` and a straight radius is not reproducible from call to call, with one radius or several.
+#'
 #' **Threads.** PST uses several worker threads; see [network_betweenness()] for how to cap them.
 #'
 #' @section Limitations:
@@ -93,7 +95,7 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
     output_file = NULL, overwrite = FALSE, spatial_output_file = NULL) {
   values_expr <- substitute(attraction_values)
   ptr <- .pst_analysis_graph(graph)
-  .pst_validate_radius(radius)
+  plan <- .pst_radius_plan(radius, FALSE)   # a single radius is validated exactly as before; several are all checked here
   origin <- .pst_mode(origin, c("lines", "junctions", "points", "point_groups"), "origin")
   .pst_spatial_request(output_file, spatial_output_file, origin == "lines", paste0("attraction_reach with origin = \"", origin, "\""))
   distance <- .pst_mode(distance, c("straight", "walking", "steps", "angular", "axmeter", "none"), "distance")
@@ -107,6 +109,10 @@ attraction_reach <- function(graph, attraction_points, radius = analysis_radius(
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
   weight <- .pst_nm_user_weight(!is.null(attraction_values), values_expr, "attraction_values", "w")
+  if (!.pst_is_scalar_call(plan, "none"))
+    return(.pst_attraction_reach_multi(graph, ptr, plan, origin, distance, attraction_points, points_per_polygon,
+                                       polygon_point_interval, attraction_values, weight, decay, decay_constant, distribution,
+                                       collection, output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_attraction_reach(radius, origin, distance, weight, decay, decay_constant, distribution, collection,
                                    polygon_point_interval)
   result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
@@ -137,12 +143,12 @@ attraction_distance <- function(graph, attraction_points, radius = analysis_radi
     destination_indices = TRUE, output_file = NULL, overwrite = FALSE, spatial_output_file = NULL) {
   weights_expr <- substitute(line_weights)
   ptr <- .pst_analysis_graph(graph)
-  .pst_validate_radius(radius)
+  plan <- .pst_radius_plan(radius, FALSE)
   origin <- .pst_mode(origin, c("lines", "junctions", "points", "point_groups"), "origin")
   .pst_spatial_request(output_file, spatial_output_file, origin == "lines", paste0("attraction_distance with origin = \"", origin, "\""))
   distance <- .pst_mode(distance, c("straight", "walking", "steps", "angular", "weights"), "distance")
   if (origin == "point_groups" && distance == "straight" &&
-      all(vapply(radius[c("walking", "steps", "angular", "axmeter")], is.null, logical(1))))
+      all(vapply(plan$configs, function(config) all(vapply(config[c("walking", "steps", "angular", "axmeter")], is.null, logical(1))), NA)))
     stop("Pinned PST leaves straight-only Attraction Distance point-group outputs unwritten; this combination is unsupported.", call. = FALSE)
   .pst_sf_analysis_crs(graph, attraction_points)
   converted <- .pst_sf_graph_points(attraction_points, points_per_polygon, "attraction_points")
@@ -150,6 +156,10 @@ attraction_distance <- function(graph, attraction_points, radius = analysis_radi
   points_per_polygon <- converted$counts
   overwrite <- .pst_flag(overwrite, "overwrite")
   weight <- .pst_nm_user_weight(!is.null(line_weights), weights_expr, "line_weights", "w")
+  if (!.pst_is_scalar_call(plan, "none"))
+    return(.pst_attraction_distance_multi(graph, ptr, plan, origin, distance, attraction_points, points_per_polygon,
+                                          polygon_point_interval, line_weights, weight, point_edge_weight, destination_indices,
+                                          output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_attraction_distance(radius, origin, distance, weight, point_edge_weight, polygon_point_interval,
                                       isTRUE(destination_indices))
   result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work

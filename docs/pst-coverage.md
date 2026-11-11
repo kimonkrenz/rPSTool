@@ -75,7 +75,7 @@ The computation is the same engine; the interface or a plugin defect differs. Th
 | Safety guards | no guard for more than 32 segments at one point (the engine mis-counts) | rejects |
 | Conveniences computed in Python only | mean depth `TD/(N-1)`, Reach area units, "length weights" switch, attribute filtering (`value > 0`) | not provided; user recipe |
 | Defaults | wizard defaults walking (Betweenness, Attraction Distance) | `distance = "steps"` |
-| Batch orchestration | loops over radii x distances x weights x columns | one weight mode / distance per call; several radii in one call for Network Reach, Segment Betweenness, Network Integration (steps) and the angular analyses ([multi-radius](compatibility/multi-radius.md)) |
+| Batch orchestration | loops over radii x distances x weights x columns | one weight mode / distance per call; several radii in one call for Network Reach, Segment Betweenness, Network Integration (steps), Attraction Reach and Distance, OD Betweenness and the angular analyses ([multi-radius](compatibility/multi-radius.md)) |
 
 
 ## Available in rPSTool but hidden or restricted in PST for QGIS

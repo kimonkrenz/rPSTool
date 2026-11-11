@@ -82,3 +82,69 @@
                  class = "data.frame", row.names = junction_id)
   list(lines = lines, junctions = junction_table)
 }
+
+# ---- Attraction Reach, Attraction Distance and OD Betweenness ----------------------------------------------------------------------
+# The native entry points run PST once per radius with the scalar descriptor; R only plans, names and describes. The identifier column
+# and row order are those of the scalar functions (`origin_id` in PST's origin order for the attraction analyses, `line_id` for OD
+# Betweenness), and the file routes use the same native result storage and Arrow stream.
+
+.pst_attraction_reach_multi <- function(graph, ptr, plan, origin, distance, attraction_points, points_per_polygon,
+                                        polygon_point_interval, attraction_values, weight, decay, decay_constant, distribution,
+                                        collection, output_file, overwrite, spatial_output_file) {
+  spec <- .pst_multi_spec_from(plan, function(config)
+    .pst_nm_attraction_reach(config, origin, distance, weight, decay, decay_constant, distribution, collection,
+                             polygon_point_interval), id_col = "origin_id")
+  parameters <- c(.pst_attraction_parameters(NULL, origin, distance, attraction_points, points_per_polygon, polygon_point_interval),
+                  list(attraction_values = .pst_count_or_null(attraction_values), weight_name = weight$name, decay = decay,
+                       decay_constant = decay_constant, distribution = distribution, collection = collection))
+  .pst_multi_run(graph, ptr, "attraction_reach", plan, NULL, spec, parameters, output_file, overwrite, spatial_output_file,
+                 function() .Call(C_rpst_attraction_reach_multi, ptr, plan$configs, origin, distance, attraction_points,
+                                  points_per_polygon, polygon_point_interval, attraction_values, decay, decay_constant,
+                                  distribution, collection),
+                 function(stream, columns, md_names, md_values, batch_rows)
+                   .Call(C_rpst_attraction_reach_multi_stream, ptr, plan$configs, origin, distance, attraction_points,
+                         points_per_polygon, polygon_point_interval, attraction_values, decay, decay_constant, distribution,
+                         collection, stream, columns, md_names, md_values, batch_rows),
+                 id_col = "origin_id", rows = .Call(C_rpst_graph_info, ptr)[[1L]], graph_type = "axial",
+                 order = .pst_attraction_order(origin), float_columns = TRUE)
+}
+
+.pst_attraction_distance_multi <- function(graph, ptr, plan, origin, distance, attraction_points, points_per_polygon,
+                                           polygon_point_interval, line_weights, weight, point_edge_weight, destination_indices,
+                                           output_file, overwrite, spatial_output_file) {
+  destination_indices <- .pst_flag(destination_indices, "destination_indices")
+  spec <- .pst_multi_spec_from(plan, function(config)
+    .pst_nm_attraction_distance(config, origin, distance, weight, point_edge_weight, polygon_point_interval,
+                                destination_indices), id_col = "origin_id")
+  parameters <- c(.pst_attraction_parameters(NULL, origin, distance, attraction_points, points_per_polygon, polygon_point_interval),
+                  list(line_weights = .pst_count_or_null(line_weights), weight_name = weight$name,
+                       point_edge_weight = point_edge_weight, destination_indices = destination_indices))
+  .pst_multi_run(graph, ptr, "attraction_distance", plan, NULL, spec, parameters, output_file, overwrite, spatial_output_file,
+                 function() .Call(C_rpst_attraction_distance_multi, ptr, plan$configs, origin, distance, attraction_points,
+                                  points_per_polygon, polygon_point_interval, line_weights, point_edge_weight,
+                                  destination_indices),
+                 function(stream, columns, md_names, md_values, batch_rows)
+                   .Call(C_rpst_attraction_distance_multi_stream, ptr, plan$configs, origin, distance, attraction_points,
+                         points_per_polygon, polygon_point_interval, line_weights, point_edge_weight, destination_indices,
+                         stream, columns, md_names, md_values, batch_rows),
+                 id_col = "origin_id", rows = .Call(C_rpst_graph_info, ptr)[[1L]], graph_type = "axial",
+                 order = .pst_attraction_order(origin))
+}
+
+.pst_od_betweenness_multi <- function(graph, ptr, plan, origins, distance, destination_mode, origin_weights, destination_weights,
+                                      origin_weight, destination_weight, output_file, overwrite, spatial_output_file) {
+  spec <- .pst_multi_spec_from(plan, function(config)
+    .pst_nm_od_betweenness(config, distance, destination_mode, origin_weight, destination_weight), id_col = "line_id")
+  parameters <- list(radius = NULL, distance = distance, destination_mode = destination_mode, origins = NROW(origins),
+                     origin_weights = .pst_count_or_null(origin_weights), origin_weight_name = origin_weight$name,
+                     destination_weights = .pst_count_or_null(destination_weights),
+                     destination_weight_name = destination_weight$name)
+  .pst_multi_run(graph, ptr, "od_betweenness", plan, NULL, spec, parameters, output_file, overwrite, spatial_output_file,
+                 function() .Call(C_rpst_od_betweenness_multi, ptr, origins, plan$configs, distance, destination_mode,
+                                  origin_weights, destination_weights),
+                 function(stream, columns, md_names, md_values, batch_rows)
+                   .Call(C_rpst_od_betweenness_multi_stream, ptr, origins, plan$configs, distance, destination_mode,
+                         origin_weights, destination_weights, stream, columns, md_names, md_values, batch_rows),
+                 id_col = "line_id", rows = .Call(C_rpst_graph_info, ptr)[[1L]], graph_type = "axial",
+                 order = .pst_axial_line_order)
+}

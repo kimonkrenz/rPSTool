@@ -47,9 +47,8 @@ test_that("only the registered analyses accept a multi-radius; the others refuse
   axial <- axial_graph(mr_segments())
   # Network Integration accepts a steps vector since the integration multi-radius layer; any other field is still refused
   expect_error(network_integration(axial, radius = r), "steps radius")
-  expect_error(od_betweenness(axial, rbind(c(0, 0)), r), "supported only by")
-  expect_error(attraction_reach(axial, rbind(c(0, 0)), r), "supported only by")
-  expect_error(attraction_distance(axial, rbind(c(0, 0)), r), "supported only by")
+  # Attraction Reach/Distance and OD Betweenness accept one since the attraction multi-radius layer (test-multi-radius-attraction.R)
+  expect_error(rPSTool:::.pst_validate_radius(r), "supported only by")
   expect_error(segment_group_integration(segment_group_graph(mr_graph(), rep(1:2, length.out = nrow(mr_segments()))), r),
                "native float value")   # its own scalar-only radius check
   # the native boundary itself still only accepts scalar fields
