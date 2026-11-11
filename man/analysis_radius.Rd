@@ -46,7 +46,8 @@ calculation, so \code{analysis_radius(walking = c(500, 1000), angular = 180)} me
 limited to 180 degrees; no Cartesian product is formed. The order you supply is kept. Missing,
 non-finite, invalid and duplicate values (duplicates also after narrowing to single precision) and empty
 vectors are rejected. A radius of \code{0} is valid. Only \code{\link[=network_reach]{network_reach()}}, \code{\link[=network_betweenness]{network_betweenness()}}, \code{\link[=network_integration]{network_integration()}} (steps only),
-\code{\link[=attraction_reach]{attraction_reach()}}, \code{\link[=attraction_distance]{attraction_distance()}}, \code{\link[=od_betweenness]{od_betweenness()}}, \code{\link[=angular_choice]{angular_choice()}} and \code{\link[=angular_integration]{angular_integration()}} accept a
+\code{\link[=attraction_reach]{attraction_reach()}}, \code{\link[=attraction_distance]{attraction_distance()}}, \code{\link[=od_betweenness]{od_betweenness()}}, \code{\link[=angular_choice]{angular_choice()}}, \code{\link[=angular_integration]{angular_integration()}} and
+\code{\link[=segment_group_integration]{segment_group_integration()}} (walking and steps only) accept a
 multi-radius; every other analysis rejects it before doing any work. See
 \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 

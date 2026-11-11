@@ -128,6 +128,17 @@ print.pst_segment_group_graph <- function(x, ...) {
 #' PST uses several worker threads; see [network_betweenness()] for how to cap them. Invalid explicit caps are
 #' rejected even for graphs without nodes.
 #'
+#' @section Several radii:
+#' One field of `radius` (`walking` or `steps`) may hold several distinct values, for example
+#' `analysis_radius(steps = c(1, 2, 3))`. Each value is an independent scalar calculation: PST runs once per radius, with
+#' the same descriptor a scalar call fills, and nothing is computed in R. Every radius is validated before the first run,
+#' so one invalid value rejects the whole call. The result has `group_id` followed, for each radius in the order given,
+#' by `gi_...`, `nc_...` and `td_...` named exactly as in a scalar call (schema 2); a single radius keeps the scalar
+#' schema. Unwritten outputs are `NA` in every radius, and `NA` (or null in a file) is decided per radius from PST's
+#' count and depth write masks, never from the integration value. `output_file` uses the native result storage and
+#' Arrow stream, as for a scalar call. The finished columns of all radii are retained, so result storage grows with the
+#' number of radii. See `docs/compatibility/multi-radius.md`.
+#'
 #' @param graph A segment-group graph created by [segment_group_graph()].
 #' @param radius Walking and/or steps limits created by [analysis_radius()].
 #' @param output_file,overwrite Write the result to a Parquet file instead of returning a data frame; see
@@ -149,6 +160,11 @@ print.pst_segment_group_graph <- function(x, ...) {
 segment_group_integration <- function(graph, radius = analysis_radius(), output_file = NULL, overwrite = FALSE) {
   ptr <- .pst_group_pointer(graph, "pst_segment_group_graph")
   overwrite <- .pst_flag(overwrite, "overwrite")
+  # several values in one radius field: plan and validate every configuration here, before any PST run
+  if (inherits(radius, "pst_radius") && is.list(radius) && any(vapply(radius, length, 1L) > 1L)) {
+    plan <- .pst_radius_plan(radius, FALSE, c("walking", "steps"), "segment_group_integration")
+    return(.pst_segment_group_integration_multi(graph, ptr, plan, output_file, overwrite))
+  }
   cols <- .pst_nm_segment_group_integration(radius)
   result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
   .pst_progress_scope(result_label)

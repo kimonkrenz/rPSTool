@@ -49,8 +49,10 @@ test_that("only the registered analyses accept a multi-radius; the others refuse
   expect_error(network_integration(axial, radius = r), "steps radius")
   # Attraction Reach/Distance and OD Betweenness accept one since the attraction multi-radius layer (test-multi-radius-attraction.R)
   expect_error(rPSTool:::.pst_validate_radius(r), "supported only by")
-  expect_error(segment_group_integration(segment_group_graph(mr_graph(), rep(1:2, length.out = nrow(mr_segments()))), r),
-               "native float value")   # its own scalar-only radius check
+  # Segment Group Integration accepts one since the segment-group layer (test-multi-radius-segment-group.R); its supported-field
+  # rule (walking and steps only) applies to a vector too
+  expect_error(segment_group_integration(segment_group_graph(mr_graph(), rep(1:2, length.out = nrow(mr_segments()))),
+                                         analysis_radius(straight = c(1, 2))), "does not support the straight")
   # the native boundary itself still only accepts scalar fields
   expect_error(.Call(rPSTool:::C_rpst_radius_validate, r), "native float")
 })

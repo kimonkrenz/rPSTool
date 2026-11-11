@@ -50,6 +50,8 @@ extern SEXP rpst_segment_group_graph_info(SEXP);
 extern SEXP rpst_segment_group_graph_release(SEXP);
 extern SEXP rpst_segment_group_graph_lifecycle(void);
 extern SEXP rpst_segment_group_integration(SEXP, SEXP);
+extern SEXP rpst_segment_group_integration_multi(SEXP, SEXP);
+extern SEXP rpst_segment_group_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_segment_group_output_test(SEXP, SEXP, SEXP);
 extern SEXP rpst_graph_create_inputs(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_graph_line_lengths(SEXP);
@@ -177,6 +179,8 @@ static const R_CallMethodDef call_methods[] = {
     {"rpst_segment_group_graph_release", (DL_FUNC) &rpst_segment_group_graph_release, 1},
     {"rpst_segment_group_graph_lifecycle", (DL_FUNC) &rpst_segment_group_graph_lifecycle, 0},
     {"rpst_segment_group_integration", (DL_FUNC) &rpst_segment_group_integration, 2},
+    {"rpst_segment_group_integration_multi", (DL_FUNC) &rpst_segment_group_integration_multi, 2},
+    {"rpst_segment_group_integration_multi_stream", (DL_FUNC) &rpst_segment_group_integration_multi_stream, 7},
     {"rpst_segment_group_output_test", (DL_FUNC) &rpst_segment_group_output_test, 3},
 
     {"rpst_segment_graph_create", (DL_FUNC) &rpst_segment_graph_create, 1},

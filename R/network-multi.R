@@ -148,3 +148,18 @@
                  id_col = "line_id", rows = .Call(C_rpst_graph_info, ptr)[[1L]], graph_type = "axial",
                  order = .pst_axial_line_order)
 }
+
+# ---- Segment Group Integration ------------------------------------------------------------------------------------------------------
+# One PST run per radius; the identifier column and row order are those of the scalar function (`group_id`, one-based ascending), the
+# missing-result contract (NA/null per radius from PST's count and depth masks) is the native scalar one, and the file route uses the
+# same native result storage and Arrow stream.
+.pst_segment_group_integration_multi <- function(graph, ptr, plan, output_file, overwrite) {
+  spec <- .pst_multi_spec_from(plan, .pst_nm_segment_group_integration, id_col = "group_id", normalized_roles = character())
+  .pst_multi_run(graph, ptr, "segment_group_integration", plan, NULL, spec, list(radius = NULL), output_file, overwrite, NULL,
+                 function() .Call(C_rpst_segment_group_integration_multi, ptr, plan$configs),
+                 function(stream, columns, md_names, md_values, batch_rows)
+                   .Call(C_rpst_segment_group_integration_multi_stream, ptr, plan$configs, stream, columns, md_names, md_values,
+                         batch_rows),
+                 id_col = "group_id", rows = .Call(C_rpst_segment_group_graph_info, ptr), graph_type = "segment_group",
+                 order = "group id order (one-based, ascending); no external identifiers")
+}

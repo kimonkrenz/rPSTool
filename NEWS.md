@@ -14,7 +14,7 @@ First release.
   `inst/upstream/PATCHES.md`, vendored source untouched) makes it return the number of lines found. Scores now equal the geometric count and are
   reproducible. Other analyses are unchanged.
 
-## Multi-radius Network Reach, Segment Betweenness, Network Integration, Attraction and OD analyses
+## Multi-radius analyses
 
 * `network_reach()` and `network_betweenness()` accept one `analysis_radius()` field with several values: PST runs once per radius and the
   result holds each radius' columns, named as a single call would name them. `network_betweenness()` also accepts several `normalization`
@@ -22,7 +22,9 @@ First release.
   `radius = analysis_radius(steps = ...)` (its steps-only boundary is unchanged), including junction results. `output_file` and
   `spatial_output_file` write the same table (not junction results, as before). Calls with one radius and one normalisation are
   unchanged. `attraction_reach()`, `attraction_distance()` and `od_betweenness()` accept several values in one radius field in the same way
-  (all radii and distance rules are validated before the first run; `di_...` destination indices are kept per radius). See
+  (all radii and distance rules are validated before the first run; `di_...` destination indices are kept per radius), and so does `segment_group_integration()` (walking or steps
+  vector; `gi_...`, `nc_...` and `td_...` per radius, `NA` decided per radius from PST's write masks, `output_file` as before; one radius keeps the
+  scalar schema). With these the multi-radius layer covers every analysis that takes an `analysis_radius()`. See
   `docs/compatibility/multi-radius.md`.
 
 ## Result column names
