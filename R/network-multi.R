@@ -44,6 +44,7 @@
 # the order of .pst_network_integration_run(); the scalar and junction-output contracts are the same.
 .pst_network_integration_multi <- function(graph, resolved, junctions, junction_output = c("native", "sf"), output_file = NULL,
                                            overwrite = FALSE, spatial_output_file = NULL) {
+  junctions <- .pst_flag(junctions, "junctions")   # a non-flag is an error, never silently FALSE; checked before anything else
   junction_output <- match.arg(junction_output)
   if (junction_output == "sf") {
     if (!isTRUE(junctions))

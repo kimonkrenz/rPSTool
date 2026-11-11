@@ -19,6 +19,10 @@ ni_meta <- function(path) {
   jsonlite::fromJSON(rawToChar(raw), simplifyVector = FALSE)
 }
 ni_steps <- function(...) analysis_radius(steps = c(...))
+ni_fgb_graph <- function(dir, n = 30) {
+  src <- so_write_fgb(file.path(dir, "net.fgb"), so_segments(n))
+  list(src = src, g = axial_graph(src))
+}
 
 test_that("every line column equals the scalar call, in the supplied order, with the scalar names, values and types", {
   g <- ni_graph()
@@ -125,6 +129,57 @@ test_that("the steps-only rule and every scalar rule hold for a vector, and refu
   expect_error(network_integration(g, radius = list(steps = c(1, 2))), "analysis_radius")
 })
 
+test_that("junctions must be TRUE or FALSE for a multi-radius call, before any calculation and with or without file output", {
+  g <- ni_graph()
+  ni_counts(TRUE)
+  dir <- tempfile("ni-junctions-"); dir.create(dir); on.exit(unlink(dir, recursive = TRUE))
+  for (bad in list(NA, 1, 0L, "TRUE", "yes", c(TRUE, FALSE), logical(), NULL, NA_integer_, list(TRUE))) {
+    expect_error(network_integration(g, radius = ni_steps(1, 2), junctions = bad), "junctions must be TRUE or FALSE", info = deparse(bad))
+    expect_error(network_integration(g, radius = ni_steps(1, 2), junctions = bad, junction_output = "sf"), "junctions must be TRUE or FALSE", info = deparse(bad))
+    expect_error(network_integration(g, radius = ni_steps(1, 2), junctions = bad, output_file = file.path(dir, "o.parquet")),
+                 "junctions must be TRUE or FALSE", info = deparse(bad))
+    expect_error(network_integration(g, radius = ni_steps(1, 2), junctions = bad, spatial_output_file = file.path(dir, "o.fgb")),
+                 "junctions must be TRUE or FALSE", info = deparse(bad))
+  }
+  expect_identical(ni_counts(TRUE)[4L], 0)
+  expect_identical(list.files(dir, all.files = TRUE, no.. = TRUE), character())
+  # valid flags keep working
+  expect_named(network_integration(g, radius = ni_steps(1, 2), junctions = TRUE), c("lines", "junctions"))
+  expect_s3_class(network_integration(g, radius = ni_steps(1, 2), junctions = FALSE), "data.frame")
+})
+
+test_that("junction sf output of a multi-radius call carries a projected CRS, also with zero crossings", {
+  ni_skip_fgb()
+  dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
+  g <- ni_fgb_graph(dir)$g                               # a FlatGeobuf source in EPSG:32630 (UTM 30N)
+  r <- ni_steps(1, 3, 2)
+  multi <- network_integration(g, radius = r, junctions = TRUE, junction_output = "sf")
+  scalar <- network_integration(g, steps = 3, junctions = TRUE, junction_output = "sf")
+  expect_s3_class(multi$junctions, "sf")
+  expect_gt(nrow(multi$junctions), 0L)
+  expect_false(is.na(sf::st_crs(multi$junctions)))
+  expect_identical(sf::st_crs(multi$junctions)$epsg, 32630L)
+  expect_identical(sf::st_crs(multi$junctions), sf::st_crs(scalar$junctions))
+  expect_identical(sf::st_crs(multi$junctions)$wkt, sf::st_crs(scalar$junctions)$wkt)
+  expect_identical(sf::st_coordinates(multi$junctions), sf::st_coordinates(scalar$junctions))
+  expect_identical(multi$junctions[["nj_s_rs3"]], scalar$junctions[["nj_s_rs3"]])
+  expect_identical(names(multi$junctions), c("junction_id", "nj_s_rs1", "nj_s_rs3", "nj_s_rs2", "geometry"))
+  # zero crossings: two disjoint lines in the same CRS
+  src <- so_write_fgb(file.path(dir, "flat.fgb"), rbind(c(100, 200, 103, 200), c(100, 205, 103, 205)))
+  flat <- axial_graph(src)
+  none <- network_integration(flat, radius = ni_steps(1, 2), junctions = TRUE, junction_output = "sf")
+  scalar_none <- network_integration(flat, steps = 1, junctions = TRUE, junction_output = "sf")
+  expect_s3_class(none$junctions, "sf")
+  expect_identical(nrow(none$junctions), 0L)
+  expect_identical(names(none$junctions), c("junction_id", "nj_s_rs1", "nj_s_rs2", "geometry"))
+  expect_identical(sf::st_crs(none$junctions)$epsg, 32630L)
+  expect_identical(sf::st_crs(none$junctions), sf::st_crs(scalar_none$junctions))
+  expect_identical(nrow(none$lines), 2L)
+  # a graph without a CRS gives sf points without one, as a scalar call does
+  nocrs <- network_integration(ni_graph(), radius = ni_steps(1, 2), junctions = TRUE, junction_output = "sf")
+  expect_true(is.na(sf::st_crs(nocrs$junctions)))
+})
+
 test_that("PST runs once per radius, and a failure on a later radius leaves the graph usable", {
   g <- ni_graph()
   ni_counts(TRUE)
@@ -152,11 +207,6 @@ test_that("PST's special values are returned unchanged for every radius", {
     for (nm in setdiff(names(sc), "line_id")) expect_identical(m[[nm]], sc[[nm]], info = nm)
   }
 })
-
-ni_fgb_graph <- function(dir, n = 30) {
-  src <- so_write_fgb(file.path(dir, "net.fgb"), so_segments(n))
-  list(src = src, g = axial_graph(src))
-}
 
 test_that("FlatGeobuf output of multi-radius Network Integration equals the in-memory result and records schema 2", {
   ni_skip_fgb()
@@ -265,4 +315,24 @@ test_that("Parquet and GeoParquet output of multi-radius Network Integration equ
     expect_identical(is.na(back$attrs[[nm]]), is.na(gf[[nm]]), info = nm)
     expect_identical(as.numeric(back$attrs[[nm]]), as.numeric(gf[[nm]]), info = nm)
   }
+  # geometry, CRS and metadata
+  original <- as.data.frame(rs_read_parquet(src, as_data_frame = FALSE))
+  expect_identical(back$wkb, unclass(original$geometry))                                   # geometry byte for byte
+  src_md <- rs_read_parquet(src, as_data_frame = FALSE)$schema$metadata
+  out_md <- rs_read_parquet(out, as_data_frame = FALSE)$schema$metadata
+  expect_identical(out_md[["geo"]], src_md[["geo"]])                                       # GeoParquet metadata and CRS unchanged
+  expect_match(out_md[["geo"]], "32630|UTM")
+  expect_identical(out_md[["other_key"]], "kept")
+  expect_identical(out_md[["rpst:schema"]], "2")
+  expect_identical(out_md[["rpst:function"]], "network_integration")
+  expect_identical(out_md[["rpst:graph_type"]], "axial")
+  expect_identical(out_md[["rpst:graph_rows"]], "30")
+  expect_identical(out_md[["rpst:radius_varying"]], "steps")
+  cols <- jsonlite::fromJSON(out_md[["rpst:columns"]], simplifyVector = FALSE)
+  expect_identical(vapply(cols, function(x) x$name, ""), setdiff(names(gf), "line_id"))
+  expect_equal(vapply(cols, function(x) x$radius, 1), rep(1:2, each = 3))
+  expect_identical(rs_pq(out)$num_row_groups, rs_pq(src)$num_row_groups)                   # row-group layout survives
+  expect_identical(so_leftovers(dir), character())
+  # the source's own attributes are carried over untouched
+  for (nm in names(so_attributes(30))) expect_identical(back$attrs[[nm]], original[[nm]])
 })
