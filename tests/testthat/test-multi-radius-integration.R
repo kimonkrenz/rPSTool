@@ -124,8 +124,8 @@ test_that("the steps-only rule and every scalar rule hold for a vector, and refu
   expect_error(network_integration(segment_graph(ni_segments()), radius = ni_steps(1, 2)), "axial")
   expect_error(network_integration(g, radius = ni_steps(1, 2), overwrite = NA, output_file = tempfile()), "overwrite")
   expect_identical(ni_counts(TRUE)[4L], 0)      # no PST run happened for any of them
-  # the other analyses still refuse a vector
-  expect_error(attraction_reach(g, rbind(c(0, 0)), analysis_radius(steps = c(1, 2))), "supported only by")
+  # an analysis outside the registry still refuses a vector (Attraction Reach/Distance and OD Betweenness accept one since test-multi-radius-attraction.R)
+  expect_error(rPSTool:::.pst_validate_radius(analysis_radius(steps = c(1, 2))), "supported only by")
   expect_error(network_integration(g, radius = list(steps = c(1, 2))), "analysis_radius")
 })
 

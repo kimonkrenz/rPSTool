@@ -60,6 +60,8 @@ radius can give different results from walking-primary mode. An axmeter limit is
 Destination weights of zero or below are excluded, and non-positive origin weights make no positive contribution.
 Written zeros, \code{Inf} and \code{NaN} are returned unchanged.
 
+One \code{\link[=analysis_radius]{analysis_radius()}} field may be a vector: PST runs once per radius and the result holds each radius' \verb{od_...} column, named as a single call would name it. Every radius is validated (an axmeter limit is rejected) before the first run, and a single radius gives the unchanged single-result schema. \code{output_file} and \code{spatial_output_file} write the same table; native storage keeps the columns of all radii.
+
 PST runs this analysis on a single worker thread regardless of any thread cap. \code{sf} inputs need XY geometry and a CRS
 compatible with the graph's (known versus unknown included); a known geographic CRS is rejected and nothing is
 reprojected.

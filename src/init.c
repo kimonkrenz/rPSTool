@@ -22,6 +22,12 @@ extern SEXP rpst_reach_multi(SEXP, SEXP, SEXP);
 extern SEXP rpst_network_integration_multi(SEXP, SEXP, SEXP);
 extern SEXP rpst_network_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_reach_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_attraction_reach_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_attraction_reach_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_attraction_distance_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_attraction_distance_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_od_betweenness_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP rpst_od_betweenness_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_choice_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP rpst_angular_integration_multi_stream(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -198,6 +204,12 @@ static const R_CallMethodDef call_methods[] = {
     {"rpst_network_integration_multi", (DL_FUNC) &rpst_network_integration_multi, 3},
     {"rpst_network_integration_multi_stream", (DL_FUNC) &rpst_network_integration_multi_stream, 7},
     {"rpst_reach_multi_stream", (DL_FUNC) &rpst_reach_multi_stream, 8},
+    {"rpst_attraction_reach_multi", (DL_FUNC) &rpst_attraction_reach_multi, 12},
+    {"rpst_attraction_reach_multi_stream", (DL_FUNC) &rpst_attraction_reach_multi_stream, 17},
+    {"rpst_attraction_distance_multi", (DL_FUNC) &rpst_attraction_distance_multi, 10},
+    {"rpst_attraction_distance_multi_stream", (DL_FUNC) &rpst_attraction_distance_multi_stream, 15},
+    {"rpst_od_betweenness_multi", (DL_FUNC) &rpst_od_betweenness_multi, 7},
+    {"rpst_od_betweenness_multi_stream", (DL_FUNC) &rpst_od_betweenness_multi_stream, 12},
     {"rpst_angular_integration_multi", (DL_FUNC) &rpst_angular_integration_multi, 7},
     {"rpst_angular_choice_multi_stream", (DL_FUNC) &rpst_angular_choice_multi_stream, 11},
     {"rpst_angular_integration_multi_stream", (DL_FUNC) &rpst_angular_integration_multi_stream, 12},

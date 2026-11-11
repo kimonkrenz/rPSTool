@@ -16,6 +16,8 @@
 #' Destination weights of zero or below are excluded, and non-positive origin weights make no positive contribution.
 #' Written zeros, `Inf` and `NaN` are returned unchanged.
 #'
+#' One [analysis_radius()] field may be a vector: PST runs once per radius and the result holds each radius' `od_...` column, named as a single call would name it. Every radius is validated (an axmeter limit is rejected) before the first run, and a single radius gives the unchanged single-result schema. `output_file` and `spatial_output_file` write the same table; native storage keeps the columns of all radii.
+#'
 #' PST runs this analysis on a single worker thread regardless of any thread cap. `sf` inputs need XY geometry and a CRS
 #' compatible with the graph's (known versus unknown included); a known geographic CRS is rejected and nothing is
 #' reprojected.
@@ -54,7 +56,7 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   destination_expr <- substitute(destination_weights)
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file)
-  .pst_validate_radius(radius)
+  plan <- .pst_radius_plan(radius, FALSE)   # a single radius is validated exactly as before; several are all checked here
   if (!is.null(radius[["axmeter"]]))
     stop("An axmeter radius is not supported by od_betweenness(): the pinned PST OD Betweenness algorithm ignores it, so the axmeter restriction would have no effect. Use straight, walking, steps or angular limits.", call. = FALSE)
   distance <- .pst_mode(distance, c("walking", "angular"), "distance")
@@ -64,6 +66,9 @@ od_betweenness <- function(graph, origins, radius = analysis_radius(),
   overwrite <- .pst_flag(overwrite, "overwrite")
   origin_weight <- .pst_nm_user_weight(!is.null(origin_weights), origin_expr, "origin_weights", "wo")
   destination_weight <- .pst_nm_user_weight(!is.null(destination_weights), destination_expr, "destination_weights", "wd")
+  if (!.pst_is_scalar_call(plan, "none"))
+    return(.pst_od_betweenness_multi(graph, ptr, plan, origins, distance, destination_mode, origin_weights, destination_weights,
+                                     origin_weight, destination_weight, output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_od_betweenness(radius, distance, destination_mode, origin_weight, destination_weight)
   result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
   .pst_progress_scope(result_label)

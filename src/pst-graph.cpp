@@ -1320,7 +1320,8 @@ namespace {
 // Test-only instrumentation of the axial analyses (same contract as AngularInstrumentation): counts of PST Reach (multi route) and
 // Segment Betweenness runs and of Betweenness normaliser calls, and a one-shot countdown that makes the (k+1)-th run fail.
 struct AxialInstrumentation {
-    std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0}, integration_runs{0};
+    std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0}, integration_runs{0},
+                                    attraction_reach_runs{0}, attraction_distance_runs{0}, od_runs{0};
     std::atomic<int> fail_after_runs{-1};
 };
 AxialInstrumentation g_axial;
@@ -2009,6 +2010,10 @@ struct NullableRSink {
         for (size_t i = 0; i < v.size(); ++i)
             o[i] = (valid && !((*valid)[i >> 3] & (1u << (i & 7)))) ? NA_INTEGER : static_cast<int>(v[i]);
     }
+    void add_signed(std::vector<int>&& v) {   // native signed values (such as -1 = none) are written unchanged, never null
+        int* o = INTEGER(VECTOR_ELT(list, next++));
+        for (size_t i = 0; i < v.size(); ++i) o[i] = v[i];
+    }
 };
 // Column sink of the file route: moves the native arrays into the result owner, marking nullable columns.
 struct NullableTableSink {
@@ -2021,6 +2026,7 @@ struct NullableTableSink {
         result_add_count(table, names[next++], std::move(v));
         if (valid) result_mark_nullable(table, *valid);
     }
+    void add_signed(std::vector<int>&& v) { result_add_signed(table, names[next++], std::move(v)); }
 };
 // Result vectors of the in-memory route: `count_position` is the column of each radius that holds integers.
 SEXP multi_plain_list(R_xlen_t k, R_xlen_t per_radius, R_xlen_t rows, R_xlen_t count_position)
@@ -2358,7 +2364,7 @@ extern "C" SEXP rpst_angular_instrumentation(SEXP reset, SEXP fail_after)
 }
 
 // Test-only counterpart of rpst_angular_instrumentation for the axial analyses: returns c(reach runs, betweenness runs, betweenness
-// normaliser calls, multi-radius network integration runs) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
+// normaliser calls, multi-radius network integration runs, then multi-radius attraction reach, attraction distance and OD betweenness runs) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
 extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
 {
     if (TYPEOF(reset) != LGLSXP || XLENGTH(reset) != 1 || LOGICAL(reset)[0] == NA_LOGICAL)
@@ -2374,14 +2380,18 @@ extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
         arm = static_cast<int>(k);
         set_fault = true;
     }
-    SEXP out = PROTECT(Rf_allocVector(REALSXP, 4));
+    SEXP out = PROTECT(Rf_allocVector(REALSXP, 7));
     REAL(out)[0] = static_cast<double>(g_axial.reach_runs.load());
     REAL(out)[1] = static_cast<double>(g_axial.betweenness_runs.load());
     REAL(out)[2] = static_cast<double>(g_axial.betweenness_normalizations.load());
     REAL(out)[3] = static_cast<double>(g_axial.integration_runs.load());
+    REAL(out)[4] = static_cast<double>(g_axial.attraction_reach_runs.load());
+    REAL(out)[5] = static_cast<double>(g_axial.attraction_distance_runs.load());
+    REAL(out)[6] = static_cast<double>(g_axial.od_runs.load());
     if (LOGICAL(reset)[0] == TRUE) {
         g_axial.reach_runs = 0; g_axial.betweenness_runs = 0; g_axial.betweenness_normalizations = 0;
-        g_axial.integration_runs = 0;
+        g_axial.integration_runs = 0; g_axial.attraction_reach_runs = 0; g_axial.attraction_distance_runs = 0;
+        g_axial.od_runs = 0;
     }
     if (set_fault) g_axial.fail_after_runs.store(arm);
     UNPROTECT(1);
@@ -3026,6 +3036,17 @@ extern "C" SEXP rpst_attraction_reach_stream(SEXP pointer, SEXP radius, SEXP ori
                             collection,&request);
 }
 namespace {
+// The radius/distance/origin rules of Attraction Distance (R_alloc/Rf_error only, so it can run before any native owner exists).
+void attraction_distance_check_radius(int d, const SPSTARadii& radii, unsigned char origin_mode)
+{
+    const bool straight_only=d==EPSTADistanceType_Straight && !(radii.m_Mask & ~EPSTADistanceTypeMask_Straight);
+    if (straight_only && origin_mode==EPSTAOriginType_PointGroups)
+        Rf_error("Pinned PST leaves straight-only Attraction Distance point-group outputs unwritten; this combination is unsupported.");
+    if (d==EPSTADistanceType_Straight && !straight_only)
+        Rf_error("Pinned PST supports straight Attraction Distance only with no radius or a straight-only radius.");
+    if (!straight_only && (radii.m_Mask & EPSTADistanceTypeMask_Axmeter))
+        Rf_error("axmeter radius is unsupported by the pinned Attraction Distance network builder.");
+}
 SEXP attraction_distance(SEXP pointer, SEXP radius, SEXP origin, SEXP distance,
     SEXP points, SEXP sizes, SEXP interval, SEXP weights, SEXP point_cost, SEXP indices,
     const StreamRequest* request)
@@ -3037,13 +3058,7 @@ SEXP attraction_distance(SEXP pointer, SEXP radius, SEXP origin, SEXP distance,
     const char* distances[]={"straight","walking","steps","angular","weights"};
     int d=named_mode(distance,distances,5,"distance");
     if (d==4) d=EPSTADistanceType_Weights;
-    const bool straight_only=d==EPSTADistanceType_Straight && !(radii.m_Mask & ~EPSTADistanceTypeMask_Straight);
-    if (straight_only && origin_mode==EPSTAOriginType_PointGroups)
-        Rf_error("Pinned PST leaves straight-only Attraction Distance point-group outputs unwritten; this combination is unsupported.");
-    if (d==EPSTADistanceType_Straight && !straight_only)
-        Rf_error("Pinned PST supports straight Attraction Distance only with no radius or a straight-only radius.");
-    if (!straight_only && (radii.m_Mask & EPSTADistanceTypeMask_Axmeter))
-        Rf_error("axmeter radius is unsupported by the pinned Attraction Distance network builder.");
+    attraction_distance_check_radius(d,radii,origin_mode);
     const auto in=attraction_input(points,sizes,interval,h);
     const auto line_count=static_cast<const CAxialGraph*>(h)->getLineCount();
     if (d==EPSTADistanceType_Weights && weights==R_NilValue)
@@ -3186,4 +3201,279 @@ extern "C" SEXP rpst_od_betweenness_stream(SEXP pointer, SEXP origins, SEXP radi
 {
     const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
     return od_betweenness(pointer, origins, radius, distance, mode, origin_weights, destination_weights, &request);
+}
+
+// ---- Multi-radius Attraction Reach, Attraction Distance and OD Betweenness (axial graphs) -------------------------------------------
+// Same contract as the multi-radius Network Reach / Betweenness layer: every radius configuration is parsed (and, for Attraction
+// Distance, checked against the distance rules) before the first PST call; PST then runs once per radius with the scalar
+// descriptor, exactly as a scalar call would fill it. The finished columns of all radii are retained, in preallocated R vectors
+// or in one ResultTable, so result storage grows with the number of radii. The attraction/origin inputs are copied per run
+// because PST receives them through non-const pointers.
+namespace {
+struct AttractionReachMulti {
+    HPSTAGraph h{}; SPSTARadii* radii = nullptr; R_xlen_t k = 0; unsigned char origin_mode = 0; unsigned int n = 0;
+    int d = 0, w = 0, dist = 0, coll = 0; float c = 0;
+    AttractionInput in; CoordinateData weights{nullptr, nullptr}; bool has_values = false;
+};
+AttractionReachMulti attraction_reach_multi_args(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points, SEXP sizes,
+    SEXP interval, SEXP values, SEXP decay, SEXP constant, SEXP distribution, SEXP collection)
+{
+    AttractionReachMulti a;
+    a.h = graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    a.n = attraction_origin(a.h, origin, a.origin_mode);
+    const char* distances[] = {"straight", "walking", "steps", "angular", "axmeter", "none"};
+    a.d = named_mode(distance, distances, 6, "distance");
+    if (a.d == 5) a.d = EPSTADistanceType_Undefined;
+    const char* decays[] = {"constant", "power", "curve", "divide"};
+    a.w = named_mode(decay, decays, 4, "decay");
+    a.c = attraction_scalar(constant, "decay_constant");
+    const char* distributions[] = {"copy", "divide"};
+    a.dist = named_mode(distribution, distributions, 2, "distribution");
+    const char* collections[] = {"mean", "sum", "min", "max"};
+    a.coll = named_mode(collection, collections, 4, "collection");
+    a.in = attraction_input(points, sizes, interval, a.h);
+    a.weights = analysis_weights(values, a.in.groups ? a.in.groups : a.in.points.rows);
+    a.has_values = values != R_NilValue;
+    return a;
+}
+// One score column per radius.
+template <class Sink>
+void attraction_reach_multi_compute(const AttractionReachMulti& a, Sink& sink)
+{
+    const auto& graph = *static_cast<const CAxialGraph*>(a.h);
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.attraction_reach_runs;
+        auto coords = attraction_points_copy(a.in);
+        attraction_sampling_bounds(a.in, coords, graph, false);
+        auto counts = attraction_sizes(a.in);
+        std::vector<float> native_values(a.has_values ? (a.in.groups ? a.in.groups : a.in.points.rows) : 0);
+        for (size_t i = 0; i < native_values.size(); ++i) native_values[i] = static_cast<float>(a.weights.at(i));
+        std::vector<float> scores(a.n);
+        SPSTAAttractionReachDesc desc{};
+        desc.m_Graph = a.h; desc.m_OriginType = a.origin_mode; desc.m_DistanceType = static_cast<unsigned char>(a.d);
+        desc.m_Radius = a.radii[r]; desc.m_WeightFunc = static_cast<unsigned char>(a.w); desc.m_WeightFuncConstant = a.c;
+        desc.m_AttractionPoints = coords.data(); desc.m_AttractionPointCount = static_cast<unsigned int>(coords.size());
+        desc.m_PointsPerAttractionPolygon = counts.empty() ? nullptr : counts.data();
+        desc.m_AttractionPolygonCount = static_cast<unsigned int>(counts.size());
+        desc.m_AttractionPolygonPointInterval = a.in.spacing;
+        desc.m_AttractionValues = native_values.empty() ? nullptr : native_values.data();
+        desc.m_AttractionDistributionFunc = static_cast<unsigned char>(a.dist);
+        desc.m_AttractionCollectionFunc = static_cast<unsigned char>(a.coll);
+        desc.m_OutScores = scores.data(); desc.m_OutputCount = a.n;
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTAAttractionReach(&desc)) throw std::runtime_error("PSTAAttractionReach failed.");
+        sink.add_float(std::move(scores), nullptr);
+    }
+}
+
+struct AttractionDistanceMulti {
+    HPSTAGraph h{}; SPSTARadii* radii = nullptr; R_xlen_t k = 0; unsigned char origin_mode = 0; unsigned int n = 0; int d = 0;
+    AttractionInput in; int line_count = 0; CoordinateData line_weights{nullptr, nullptr}; bool has_weights = false;
+    float cost = 0; bool want_indices = false;
+};
+AttractionDistanceMulti attraction_distance_multi_args(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points,
+    SEXP sizes, SEXP interval, SEXP weights, SEXP point_cost, SEXP indices)
+{
+    AttractionDistanceMulti a;
+    a.h = graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    a.n = attraction_origin(a.h, origin, a.origin_mode);
+    const char* distances[] = {"straight", "walking", "steps", "angular", "weights"};
+    a.d = named_mode(distance, distances, 5, "distance");
+    if (a.d == 4) a.d = EPSTADistanceType_Weights;
+    for (R_xlen_t r = 0; r < a.k; ++r) attraction_distance_check_radius(a.d, a.radii[r], a.origin_mode);   // every radius, before any run
+    a.in = attraction_input(points, sizes, interval, a.h);
+    a.line_count = static_cast<const CAxialGraph*>(a.h)->getLineCount();
+    if (a.d == EPSTADistanceType_Weights && weights == R_NilValue)
+        Rf_error("line_weights is required for distance = weights.");
+    a.line_weights = analysis_weights(weights, a.line_count);
+    if (a.d != EPSTADistanceType_Weights && weights != R_NilValue)
+        Rf_error("line_weights requires distance = weights.");
+    a.has_weights = weights != R_NilValue;
+    for (int i = 0; a.has_weights && i < a.line_count; ++i)
+        if (a.line_weights.at(i) < 0) Rf_error("line_weights must be non-negative for PST's shortest-path traversal.");
+    a.cost = attraction_scalar(point_cost, "point_edge_weight", false, true);
+    if (TYPEOF(indices) != LGLSXP || XLENGTH(indices) != 1 || LOGICAL(indices)[0] == NA_LOGICAL)
+        Rf_error("destination_indices must be TRUE or FALSE.");
+    a.want_indices = LOGICAL(indices)[0];
+    return a;
+}
+// Per radius: distance, then (when requested) the native zero-based destination index, -1 = none.
+template <class Sink>
+void attraction_distance_multi_compute(const AttractionDistanceMulti& a, Sink& sink)
+{
+    const auto& graph = *static_cast<const CAxialGraph*>(a.h);
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.attraction_distance_runs;
+        auto coords = attraction_points_copy(a.in);
+        attraction_sampling_bounds(a.in, coords, graph, true);
+        auto counts = attraction_sizes(a.in);
+        std::vector<float> native_weights(a.has_weights ? a.line_count : 0);
+        for (size_t i = 0; i < native_weights.size(); ++i) native_weights[i] = static_cast<float>(a.line_weights.at(i));
+        std::vector<float> results(a.n);
+        std::vector<int> destinations(a.want_indices ? a.n : 0, -1);   // negative initialisation, as in the scalar call
+        SPSTAAttractionDistanceDesc desc{};
+        desc.m_Graph = a.h; desc.m_OriginType = a.origin_mode; desc.m_DistanceType = static_cast<unsigned char>(a.d);
+        desc.m_Radius = a.radii[r];
+        desc.m_AttractionPoints = coords.data(); desc.m_AttractionPointCount = static_cast<unsigned int>(coords.size());
+        desc.m_PointsPerAttractionPolygon = counts.empty() ? nullptr : counts.data();
+        desc.m_AttractionPolygonCount = static_cast<unsigned int>(counts.size());
+        desc.m_AttractionPolygonPointInterval = a.in.spacing;
+        desc.m_LineWeights = native_weights.empty() ? nullptr : native_weights.data();
+        desc.m_LineWeightCount = static_cast<unsigned int>(native_weights.size());
+        desc.m_WeightPerMeterForPointEdges = a.cost; desc.m_OutMinDistance = results.data();
+        desc.m_OutDestinationIndices = a.want_indices ? destinations.data() : nullptr; desc.m_OutputCount = a.n;
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTAAttractionDistance(&desc)) throw std::runtime_error("PSTAAttractionDistance failed.");
+        sink.add_float(std::move(results), nullptr);
+        if (a.want_indices) sink.add_signed(std::move(destinations));
+    }
+}
+
+struct ODBetweennessMulti {
+    HPSTAGraph h{}; SPSTARadii* radii = nullptr; R_xlen_t k = 0; int distance_mode = 0, destination_mode = 0;
+    AttractionInput in; int n = 0, points = 0; CoordinateData ow{nullptr, nullptr}, dw{nullptr, nullptr};
+    bool has_ow = false, has_dw = false;
+};
+ODBetweennessMulti od_multi_args(SEXP pointer, SEXP origins, SEXP radii, SEXP distance, SEXP mode, SEXP origin_weights,
+                                 SEXP destination_weights)
+{
+    ODBetweennessMulti a;
+    a.h = graph_handle(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    const char* distances[] = {"walking", "angular"};
+    a.distance_mode = named_mode(distance, distances, 2, "distance");
+    const char* destinations[] = {"all", "closest"};
+    a.destination_mode = named_mode(mode, destinations, 2, "destination_mode");
+    a.in = attraction_input(origins, R_NilValue, R_NilValue, a.h, "origins");
+    const auto& graph = *static_cast<const CAxialGraph*>(a.h);
+    a.n = graph.getLineCount(); a.points = graph.getPointCount();
+    a.ow = analysis_weights(origin_weights, a.in.points.rows, "origin_weights", "origin row");
+    a.dw = analysis_weights(destination_weights, a.points, "destination_weights", "native graph point");
+    a.has_ow = origin_weights != R_NilValue; a.has_dw = destination_weights != R_NilValue;
+    return a;
+}
+template <class Sink>
+void od_multi_compute(const ODBetweennessMulti& a, Sink& sink)
+{
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.od_runs;
+        auto coords = attraction_points_copy(a.in);
+        std::vector<float> native_origins(a.has_ow ? a.in.points.rows : 0);
+        std::vector<float> native_destinations(a.has_dw ? a.points : 0);
+        for (size_t i = 0; i < native_origins.size(); ++i) native_origins[i] = static_cast<float>(a.ow.at(i));
+        for (size_t i = 0; i < native_destinations.size(); ++i) native_destinations[i] = static_cast<float>(a.dw.at(i));
+        std::vector<float> scores(a.n);
+        SPSTAODBetweenness desc{};
+        desc.m_Graph = a.h;
+        desc.m_OriginPoints = coords.empty() ? nullptr : coords.data();
+        desc.m_OriginCount = static_cast<unsigned int>(coords.size());
+        desc.m_OriginWeights = native_origins.empty() ? nullptr : native_origins.data();
+        desc.m_DestinationWeights = native_destinations.empty() ? nullptr : native_destinations.data();
+        desc.m_DestinationCount = static_cast<unsigned int>(a.points);
+        desc.m_DestinationMode = static_cast<unsigned char>(a.destination_mode);
+        desc.m_DistanceType = a.distance_mode == 0 ? EPSTADistanceType_Walking : EPSTADistanceType_Angular;
+        desc.m_Radius = a.radii[r];
+        desc.m_OutScores = scores.data();
+        desc.m_OutputCount = static_cast<unsigned int>(a.n);
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTAODBetweenness(&desc)) throw std::runtime_error("PSTAODBetweenness failed.");
+        sink.add_float(std::move(scores), nullptr);
+    }
+}
+
+// Shared in-memory / file drivers. `Compute` fills the sink; the messages of the scalar functions are kept (no prefix).
+template <class Args, class Compute>
+SEXP attraction_multi_frame(const Args& a, R_xlen_t rows, R_xlen_t per_radius, R_xlen_t count_position, Compute compute,
+                            const char* unknown)
+{
+    SEXP result = PROTECT(multi_plain_list(a.k, per_radius, rows, count_position));
+    char error[512] = "";
+    try {
+        NullableRSink sink{result};
+        compute(sink);
+    } catch (const std::exception& e) { std::snprintf(error, sizeof(error), "%s", e.what()); }
+      catch (...) { std::snprintf(error, sizeof(error), "%s", unknown); }
+    if (error[0]) Rf_error("%s", error);
+    UNPROTECT(1);
+    return result;
+}
+template <class Args, class Compute>
+SEXP attraction_multi_stream(const Args& a, R_xlen_t rows, R_xlen_t per_radius, const StreamRequest& request, Compute compute,
+                             const char* unknown)
+{
+    if (per_radius > std::numeric_limits<int>::max() / (a.k ? a.k : 1) - 1) Rf_error("Too many result columns.");
+    const auto args = result_stream_args(request, 1 + a.k * per_radius);
+    char error[512] = "";
+    try {
+        auto table = result_new_table(args, static_cast<size_t>(rows));
+        NullableTableSink sink{*table, args.names};
+        compute(sink);
+        result_finish_and_export(args, std::move(table), error, sizeof error);
+    } catch (const std::exception& e) { std::snprintf(error, sizeof(error), "%s", e.what()); }
+      catch (...) { std::snprintf(error, sizeof(error), "%s", unknown); }
+    if (error[0]) Rf_error("%s", error);
+    return Rf_ScalarReal(static_cast<double>(rows));
+}
+} // namespace
+
+extern "C" SEXP rpst_attraction_reach_multi(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points, SEXP sizes,
+    SEXP interval, SEXP values, SEXP decay, SEXP constant, SEXP distribution, SEXP collection)
+{
+    const auto a = attraction_reach_multi_args(pointer, radii, origin, distance, points, sizes, interval, values, decay, constant,
+                                               distribution, collection);
+    return attraction_multi_frame(a, a.n, 1, -1, [&](NullableRSink& s) { attraction_reach_multi_compute(a, s); },
+                                  "Unknown native Attraction Reach exception.");
+}
+extern "C" SEXP rpst_attraction_reach_multi_stream(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points, SEXP sizes,
+    SEXP interval, SEXP values, SEXP decay, SEXP constant, SEXP distribution, SEXP collection, SEXP stream_pointer, SEXP names,
+    SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = attraction_reach_multi_args(pointer, radii, origin, distance, points, sizes, interval, values, decay, constant,
+                                               distribution, collection);
+    const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
+    return attraction_multi_stream(a, a.n, 1, request, [&](NullableTableSink& s) { attraction_reach_multi_compute(a, s); },
+                                   "Unknown native Attraction Reach exception.");
+}
+
+extern "C" SEXP rpst_attraction_distance_multi(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points, SEXP sizes,
+    SEXP interval, SEXP weights, SEXP point_cost, SEXP indices)
+{
+    const auto a = attraction_distance_multi_args(pointer, radii, origin, distance, points, sizes, interval, weights, point_cost,
+                                                  indices);
+    return attraction_multi_frame(a, a.n, a.want_indices ? 2 : 1, a.want_indices ? 1 : -1,
+                                  [&](NullableRSink& s) { attraction_distance_multi_compute(a, s); },
+                                  "Unknown native Attraction Distance exception.");
+}
+extern "C" SEXP rpst_attraction_distance_multi_stream(SEXP pointer, SEXP radii, SEXP origin, SEXP distance, SEXP points,
+    SEXP sizes, SEXP interval, SEXP weights, SEXP point_cost, SEXP indices, SEXP stream_pointer, SEXP names,
+    SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = attraction_distance_multi_args(pointer, radii, origin, distance, points, sizes, interval, weights, point_cost,
+                                                  indices);
+    const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
+    return attraction_multi_stream(a, a.n, a.want_indices ? 2 : 1, request,
+                                   [&](NullableTableSink& s) { attraction_distance_multi_compute(a, s); },
+                                   "Unknown native Attraction Distance exception.");
+}
+
+extern "C" SEXP rpst_od_betweenness_multi(SEXP pointer, SEXP origins, SEXP radii, SEXP distance, SEXP mode,
+    SEXP origin_weights, SEXP destination_weights)
+{
+    const auto a = od_multi_args(pointer, origins, radii, distance, mode, origin_weights, destination_weights);
+    return attraction_multi_frame(a, a.n, 1, -1, [&](NullableRSink& s) { od_multi_compute(a, s); },
+                                  "Unknown native OD Betweenness exception.");
+}
+extern "C" SEXP rpst_od_betweenness_multi_stream(SEXP pointer, SEXP origins, SEXP radii, SEXP distance, SEXP mode,
+    SEXP origin_weights, SEXP destination_weights, SEXP stream_pointer, SEXP names, SEXP metadata_names,
+    SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = od_multi_args(pointer, origins, radii, distance, mode, origin_weights, destination_weights);
+    const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
+    return attraction_multi_stream(a, a.n, 1, request, [&](NullableTableSink& s) { od_multi_compute(a, s); },
+                                   "Unknown native OD Betweenness exception.");
 }

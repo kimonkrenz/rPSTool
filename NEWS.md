@@ -7,14 +7,16 @@ First release.
 * Long analyses show a single in-place progress line once an operation has run for two seconds. It is on in interactive sessions, off
   elsewhere, and controlled by `options(rPSTool.progress = TRUE/FALSE)`. See `docs/progress.md`.
 
-## Multi-radius Network Reach, Segment Betweenness and Network Integration
+## Multi-radius Network Reach, Segment Betweenness, Network Integration, Attraction and OD analyses
 
 * `network_reach()` and `network_betweenness()` accept one `analysis_radius()` field with several values: PST runs once per radius and the
   result holds each radius' columns, named as a single call would name them. `network_betweenness()` also accepts several `normalization`
   names, applied to each radius' single PST run. `network_integration()` accepts several steps values in
   `radius = analysis_radius(steps = ...)` (its steps-only boundary is unchanged), including junction results. `output_file` and
   `spatial_output_file` write the same table (not junction results, as before). Calls with one radius and one normalisation are
-  unchanged. See `docs/compatibility/multi-radius.md`.
+  unchanged. `attraction_reach()`, `attraction_distance()` and `od_betweenness()` accept several values in one radius field in the same way
+  (all radii and distance rules are validated before the first run; `di_...` destination indices are kept per radius). See
+  `docs/compatibility/multi-radius.md`.
 
 ## Result column names
 
