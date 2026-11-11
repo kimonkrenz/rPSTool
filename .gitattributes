@@ -35,3 +35,4 @@ inst/upstream/build-inputs/NetworkIntegration.cpp whitespace=-blank-at-eol,-spac
 inst/upstream/build-inputs/AxialGraph.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
 inst/upstream/build-inputs/Geometry.cpp whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
 inst/upstream/build-inputs/IsovistCalculator.h whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof
+inst/upstream/build-inputs/SphereTree.cpp whitespace=-blank-at-eol

@@ -7,6 +7,13 @@ First release.
 * Long analyses show a single in-place progress line once an operation has run for two seconds. It is on in interactive sessions, off
   elsewhere, and controlled by `options(rPSTool.progress = TRUE/FALSE)`. See `docs/progress.md`.
 
+## Straight line Attraction Reach correction
+
+* `attraction_reach()` with `origin = "lines"`, `distance = "straight"` and a finite straight radius no longer returns wrong, call-history
+  dependent scores. The pinned PST's sphere-tree radius query returned a stale line count; a verified build-copy correction (patch 0012,
+  `inst/upstream/PATCHES.md`, vendored source untouched) makes it return the number of lines found. Scores now equal the geometric count and are
+  reproducible. Other analyses are unchanged.
+
 ## Multi-radius Network Reach, Segment Betweenness, Network Integration, Attraction and OD analyses
 
 * `network_reach()` and `network_betweenness()` accept one `analysis_radius()` field with several values: PST runs once per radius and the

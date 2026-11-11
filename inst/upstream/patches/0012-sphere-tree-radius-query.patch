@@ -1,0 +1,10 @@
+--- a/vendor/pstalgo/src/utils/SphereTree.cpp
++++ b/generated/utils/SphereTree.cpp
+@@ -367,5 +367,5 @@
+ 	for (int i = 0; i < count; ++i) 
+ 		elementFlags[list[i]] = 0;
+ 
+-	return nResult;
++	return count;
+ }
+\ No newline at end of file

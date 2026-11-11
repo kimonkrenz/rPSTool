@@ -217,9 +217,11 @@ with one radius is a scalar call (schema 1); several radii give schema 2. There 
   guarantees. `spatial_output_file` stays limited to Attraction Reach/Distance with `origin = "lines"` (OD Betweenness rows are lines).
 * **Memory.** As in §10: per-run scratch is released, the finished columns of all radii are retained, so storage grows with the number of
   radii; the attraction and origin inputs are copied once per run because PST receives them through writable pointers.
-* **Reproducibility of PST scores.** PST accumulates single-precision scores in a worker-dependent order, so two runs of one scalar call can differ in
-  the last bit for decayed or weighted values; the tests compare such scores with a 1e-6 relative tolerance, and indices, counts, types and
-  missing patterns exactly. One combination is not reproducible even from call to call in the pinned engine: `attraction_reach()` with
-  `origin = "lines"`, `distance = "straight"` and a straight radius uses a scratch buffer owned by the graph
-  (`CAxialGraph::getLinesFromPoint`) and can return different scores for identical scalar calls. Multi-radius calls inherit that behaviour; no
-  equality with the scalar call is claimed for it.
+* **Reproducibility of PST scores.** Every score is bit for bit reproducible on one worker (`RPST_NUM_THREADS=1`) and, on several, for Attraction
+  Distance, OD Betweenness, constant-decay unit-value Attraction Reach and straight line Attraction Reach. The one measured exception is Attraction
+  Reach with attraction values or a non-constant decay: workers add partial scores in a nondeterministic order, which moves the last float bits
+  (25 repeats per case: at most 3.5e-7 relative deviation, about three float epsilons). The tests therefore compare multi-radius columns with
+  the scalar calls exactly, and use a 1e-6 relative tolerance only for that case on several workers. Straight line Attraction Reach
+  (`origin = "lines"`, `distance = "straight"`, finite straight radius) was not reproducible in the pinned engine before patch 0012
+  (`SphereTree::GetCloseLines` returned a stale count; see `inst/upstream/PATCHES.md`); it is now exact and checked against an independent geometric
+  count. A separate, unchanged PST property: the finite straight query does not return zero-length lines.

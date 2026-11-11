@@ -388,9 +388,13 @@ rpst-workers.o: rpst-workers.cpp
 	mkdir -p .rpst-build/utils
 	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/utils/SimpleAlignedAllocator.cpp -o $@
 
-.rpst-build/utils/SphereTree.o: vendor/pstalgo/src/utils/SphereTree.cpp
+.rpst-build/utils/SphereTree.cpp: vendor/pstalgo/src/utils/SphereTree.cpp ../inst/upstream/build-inputs/SphereTree.cpp portability/fix-sphere-tree.R rpst-prepare
 	mkdir -p .rpst-build/utils
-	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c vendor/pstalgo/src/utils/SphereTree.cpp -o $@
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" portability/fix-sphere-tree.R ../inst/upstream/build-inputs/SphereTree.cpp .rpst-build/utils/SphereTree.cpp
+
+.rpst-build/utils/SphereTree.o: .rpst-build/utils/SphereTree.cpp
+	mkdir -p .rpst-build/utils
+	$(CXX) -Ivendor/pstalgo/src/utils $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) $(RPST_FP_FLAGS) -c .rpst-build/utils/SphereTree.cpp -o $@
 
 $(OBJECTS): rpst-compat.h rpst-float-overloads.h
 
