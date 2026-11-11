@@ -44,6 +44,19 @@ they are never treated as missing.
 PST uses several worker threads; see \code{\link[=network_betweenness]{network_betweenness()}} for how to cap them. Invalid explicit caps are
 rejected even for graphs without nodes.
 }
+
+\section{Several radii}{
+
+One field of \code{radius} (\code{walking} or \code{steps}) may hold several distinct values, for example
+\code{analysis_radius(steps = c(1, 2, 3))}. Each value is an independent scalar calculation: PST runs once per radius, with
+the same descriptor a scalar call fills, and nothing is computed in R. Every radius is validated before the first run,
+so one invalid value rejects the whole call. The result has \code{group_id} followed, for each radius in the order given,
+by \code{gi_...}, \code{nc_...} and \code{td_...} named exactly as in a scalar call (schema 2); a single radius keeps the scalar
+schema. Unwritten outputs are \code{NA} in every radius, and \code{NA} (or null in a file) is decided per radius from PST's
+count and depth write masks, never from the integration value. \code{output_file} uses the native result storage and
+Arrow stream, as for a scalar call. The finished columns of all radii are retained, so result storage grows with the
+number of radii. See \code{docs/compatibility/multi-radius.md}.
+}
 \examples{
 s <- segment_graph(cbind(0:4 * 3, 0, 1:5 * 3, 0))
 grouping <- segment_grouping(s)

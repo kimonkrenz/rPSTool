@@ -1,6 +1,6 @@
 # Multi-radius and multi-normalisation
 
-Scope: `angular_choice()`, `angular_integration()`, `network_reach()`, `network_betweenness()`, `network_integration()` (§10, §11), `attraction_reach()`, `attraction_distance()` and `od_betweenness()` (§12); every other analysis rejects a multi-valued radius (§9).
+Scope: `angular_choice()`, `angular_integration()`, `network_reach()`, `network_betweenness()`, `network_integration()` (§10, §11), `attraction_reach()`, `attraction_distance()` and `od_betweenness()` (§12), and `segment_group_integration()` (§13); every other analysis rejects a multi-valued radius (§9).
 
 rPSTool runs one PST calculation per radius and applies PST's exported normalisers to that calculation's finished native arrays;
 nothing is computed in R.
@@ -20,8 +20,8 @@ Each of the five fields accepts `NULL` (unrestricted), one valid scalar (unchang
 * The vector is **expanded in R into independent scalar `pst_radius` configurations**; every configuration is validated by the
   unchanged scalar path (R rules and `rpst_radius_validate`, which shares `analysis_radii` with the analyses). The native
   analysis entry points still only ever consume scalar fields (a vector field reaching `analysis_radii` is rejected as before).
-* Every analysis other than Angular Choice and Angular Integration rejects a multi-valued `pst_radius` with an explicit error
-  before any native work (§9).
+* Every analysis outside the list in §9 rejects a multi-valued `pst_radius` with an explicit error
+  before any native work.
 
 `analysis_radius(walking = c(500, 1000, 1500), angular = 180)` therefore means three calculations (walking 500, 1000, 1500, each also
 limited to 180 degrees), not six.
@@ -148,8 +148,9 @@ network, make several calls with different radii. A combined file stores geometr
 
 ## 9. Other radius-bearing analyses
 
-Only the analyses listed in §10 to §12 accept a vector in one radius field. All other analyses (Segment Group Integration) reject a multi-valued
-`analysis_radius()` with an explicit error before any native work.
+Only the analyses listed in §10 to §13 (with Angular Choice and Angular Integration) accept a vector in one radius field; this is every
+analysis that takes an `analysis_radius()`. Any other function, or a multi-valued radius passed outside the registered analyses, is rejected with an
+explicit error before any native work.
 
 ## 10. Network Reach and Segment Betweenness (axial graphs)
 
@@ -225,3 +226,26 @@ with one radius is a scalar call (schema 1); several radii give schema 2. There 
   (`origin = "lines"`, `distance = "straight"`, finite straight radius) was not reproducible in the pinned engine before patch 0012
   (`SphereTree::GetCloseLines` returned a stale count; see `inst/upstream/PATCHES.md`); it is now exact and checked against an independent geometric
   count. A separate, unchanged PST property: the finite straight query does not return zero-length lines.
+
+## 13. Segment Group Integration (segment-group graphs)
+
+`segment_group_integration()` follows §10: R expands the radius vector into validated scalar configurations and PST runs once per radius with
+the descriptor a scalar call fills; nothing is computed in R and no normalisation is applied (PST's own integration is returned). A call with one
+radius is a scalar call (schema 1, scalar native entry points); several radii give schema 2.
+
+* **Supported fields.** `walking` and `steps` only, as in the scalar function. The vector may be in either field; the other may be a fixed
+  restriction. A vector, or a fixed value, in `straight`, `angular` or `axmeter` is rejected as a whole, before the first PST run.
+* **Identifier and order.** `group_id` (one-based, ascending, as in a scalar call), then for each radius in the supplied order `gi_...`
+  (integration, double), `nc_...` (node count, integer) and `td_...` (total depth, double), named exactly as in a scalar call.
+* **Missing results.** The scalar contract applies to every radius separately: a row is `NA` (null in a file) in all three columns of a radius exactly
+  when PST wrote neither its count nor its depth for that radius, decided from PST's write masks and never from the integration value. A graph
+  with no connecting nodes is `NA` in every radius. Written `-1` (isolated group), `0`, `NaN` and `Inf` are returned unchanged.
+* **Manifest.** Schema-2 metadata and the in-memory `rpst_manifest` list every column with its radius index; `rpst:function` is
+  `segment_group_integration` and `rpst:graph_type` is `segment_group`.
+* **Files.** `output_file` (Parquet) uses the shared native result table and Arrow stream and the publication, overwrite, collision and cleanup
+  guarantees of §6 and §10; the nullable `gi_`, `nc_`, `td_` columns carry one validity mask per radius. Segment-group graphs have no spatial output.
+* **Validation and failure.** All configurations are validated before the first run, `RPST_NUM_THREADS` is validated once up front (also for graphs
+  without nodes), and a failure in a later radius aborts the call and writes nothing. The graph stays usable.
+* **Memory.** As in §10: per-run scratch is released, the finished columns of all radii are retained, so storage grows with the number of radii.
+* **Reproducibility.** The scalar function is deterministic across worker caps, and so is every multi-radius column; the tests compare each
+  multi-radius column exactly (values, types and NA pattern) with the scalar call for the same radius.

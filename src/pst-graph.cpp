@@ -1321,7 +1321,7 @@ namespace {
 // Segment Betweenness runs and of Betweenness normaliser calls, and a one-shot countdown that makes the (k+1)-th run fail.
 struct AxialInstrumentation {
     std::atomic<unsigned long long> reach_runs{0}, betweenness_runs{0}, betweenness_normalizations{0}, integration_runs{0},
-                                    attraction_reach_runs{0}, attraction_distance_runs{0}, od_runs{0};
+                                    attraction_reach_runs{0}, attraction_distance_runs{0}, od_runs{0}, group_runs{0};
     std::atomic<int> fail_after_runs{-1};
 };
 AxialInstrumentation g_axial;
@@ -2364,7 +2364,7 @@ extern "C" SEXP rpst_angular_instrumentation(SEXP reset, SEXP fail_after)
 }
 
 // Test-only counterpart of rpst_angular_instrumentation for the axial analyses: returns c(reach runs, betweenness runs, betweenness
-// normaliser calls, multi-radius network integration runs, then multi-radius attraction reach, attraction distance and OD betweenness runs) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
+// normaliser calls, multi-radius network integration runs, then multi-radius attraction reach, attraction distance and OD betweenness runs, then multi-radius segment group integration runs) and optionally resets them and arms the one-shot failure countdown (-1 disarms). Arguments are validated first.
 extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
 {
     if (TYPEOF(reset) != LGLSXP || XLENGTH(reset) != 1 || LOGICAL(reset)[0] == NA_LOGICAL)
@@ -2380,7 +2380,7 @@ extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
         arm = static_cast<int>(k);
         set_fault = true;
     }
-    SEXP out = PROTECT(Rf_allocVector(REALSXP, 7));
+    SEXP out = PROTECT(Rf_allocVector(REALSXP, 8));
     REAL(out)[0] = static_cast<double>(g_axial.reach_runs.load());
     REAL(out)[1] = static_cast<double>(g_axial.betweenness_runs.load());
     REAL(out)[2] = static_cast<double>(g_axial.betweenness_normalizations.load());
@@ -2388,10 +2388,11 @@ extern "C" SEXP rpst_axial_instrumentation(SEXP reset, SEXP fail_after)
     REAL(out)[4] = static_cast<double>(g_axial.attraction_reach_runs.load());
     REAL(out)[5] = static_cast<double>(g_axial.attraction_distance_runs.load());
     REAL(out)[6] = static_cast<double>(g_axial.od_runs.load());
+    REAL(out)[7] = static_cast<double>(g_axial.group_runs.load());
     if (LOGICAL(reset)[0] == TRUE) {
         g_axial.reach_runs = 0; g_axial.betweenness_runs = 0; g_axial.betweenness_normalizations = 0;
         g_axial.integration_runs = 0; g_axial.attraction_reach_runs = 0; g_axial.attraction_distance_runs = 0;
-        g_axial.od_runs = 0;
+        g_axial.od_runs = 0; g_axial.group_runs = 0;
     }
     if (set_fault) g_axial.fail_after_runs.store(arm);
     UNPROTECT(1);
@@ -3476,4 +3477,61 @@ extern "C" SEXP rpst_od_betweenness_multi_stream(SEXP pointer, SEXP origins, SEX
     const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
     return attraction_multi_stream(a, a.n, 1, request, [&](NullableTableSink& s) { od_multi_compute(a, s); },
                                    "Unknown native OD Betweenness exception.");
+}
+
+// ---- Segment Group Integration, several radii ---------------------------------------------------------------------------------------
+// One PST run per radius with the descriptor the scalar call fills. Per radius three columns: integration, node count and total depth,
+// all three null in exactly the rows PST wrote neither a count nor a depth (the scalar contract, validated by the same helper).
+namespace {
+struct GroupMulti { const GroupOwner* owner; SPSTARadii* radii; R_xlen_t k; R_xlen_t n; };
+GroupMulti group_multi_args(SEXP pointer, SEXP radii)
+{
+    GroupMulti a{};
+    a.owner = group_graph_owner(pointer);
+    a.radii = multi_radii(radii, a.k, false);
+    // The pinned implementation reads only Walking()/Steps(); every configuration is checked before the first run.
+    for (R_xlen_t r = 0; r < a.k; ++r)
+        if (a.radii[r].m_Mask & ~(EPSTADistanceTypeMask_Walking | EPSTADistanceTypeMask_Steps))
+            Rf_error("Segment Group Integration supports only walking and steps radius limits.");
+    a.n = a.owner->count;
+    return a;
+}
+template <class Sink>
+void group_multi_compute(const GroupMulti& a, Sink& sink)
+{
+    rpst_worker_count();   // an invalid explicit cap is rejected even for graphs without nodes
+    for (R_xlen_t r = 0; r < a.k; ++r) {
+        axial_fault_point();
+        ++g_axial.group_runs;
+        std::vector<float> scores(a.n);
+        std::vector<unsigned int> counts(a.n, std::numeric_limits<unsigned int>::max());
+        std::vector<float> depths(a.n, -std::numeric_limits<float>::infinity());
+        SPSTASegmentGroupIntegrationDesc desc{};
+        desc.m_Graph = a.owner->handle; desc.m_Radius = a.radii[r];
+        desc.m_OutIntegration = scores.data(); desc.m_OutNodeCount = counts.data(); desc.m_OutTotalDepth = depths.data();
+        rpst::progress_attach(desc.m_ProgressCallback, desc.m_ProgressCallbackUser);
+        if (!PSTASegmentGroupIntegration(&desc)) throw std::runtime_error("PSTASegmentGroupIntegration returned false");
+        validate_group_outputs(counts.data(), depths.data(), a.n, a.owner->count);
+        const auto bits = result_validity(counts.size(), [&](std::size_t i) {
+            return counts[i] != std::numeric_limits<unsigned int>::max();
+        });
+        sink.add_float(std::move(scores), &bits);
+        sink.add_count(std::move(counts), &bits);
+        sink.add_float(std::move(depths), &bits);
+    }
+}
+}
+extern "C" SEXP rpst_segment_group_integration_multi(SEXP pointer, SEXP radii)
+{
+    const auto a = group_multi_args(pointer, radii);
+    return attraction_multi_frame(a, a.n, 3, 1, [&](NullableRSink& s) { group_multi_compute(a, s); },
+                                  "PSTASegmentGroupIntegration failed with an unknown native exception.");
+}
+extern "C" SEXP rpst_segment_group_integration_multi_stream(SEXP pointer, SEXP radii, SEXP stream_pointer, SEXP names,
+    SEXP metadata_names, SEXP metadata_values, SEXP batch_rows)
+{
+    const auto a = group_multi_args(pointer, radii);
+    const StreamRequest request{stream_pointer, names, metadata_names, metadata_values, batch_rows};
+    return attraction_multi_stream(a, a.n, 3, request, [&](NullableTableSink& s) { group_multi_compute(a, s); },
+                                   "PSTASegmentGroupIntegration failed with an unknown native exception.");
 }

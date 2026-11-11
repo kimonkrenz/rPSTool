@@ -22,7 +22,8 @@
 #' limited to 180 degrees; no Cartesian product is formed. The order you supply is kept. Missing,
 #' non-finite, invalid and duplicate values (duplicates also after narrowing to single precision) and empty
 #' vectors are rejected. A radius of `0` is valid. Only [network_reach()], [network_betweenness()], [network_integration()]
-#' (steps only), [attraction_reach()], [attraction_distance()], [od_betweenness()], [angular_choice()] and [angular_integration()] accept a
+#' (steps only), [attraction_reach()], [attraction_distance()], [od_betweenness()], [angular_choice()], [angular_integration()] and
+#' [segment_group_integration()] (walking and steps only) accept a
 #' multi-radius; every other analysis rejects it before doing any work. See
 #' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
 #'
@@ -54,7 +55,7 @@ analysis_radius <- function(straight = NULL, walking = NULL, steps = NULL,
 
 # Analyses that accept a multi-radius. A function is added here (and calls .pst_radius_plan()) when its multi-radius
 # support is complete; every other analysis keeps rejecting a vector before any native work.
-.pst_multi_radius_functions <- c("network_reach", "network_betweenness", "network_integration", "attraction_reach", "attraction_distance", "od_betweenness", "angular_choice", "angular_integration")
+.pst_multi_radius_functions <- c("network_reach", "network_betweenness", "network_integration", "attraction_reach", "attraction_distance", "od_betweenness", "angular_choice", "angular_integration", "segment_group_integration")
 .pst_multi_radius_list <- function(fns = .pst_multi_radius_functions) {
   fns <- paste0(fns, "()")
   if (length(fns) == 1L) fns else paste(paste(fns[-length(fns)], collapse = ", "), "and", fns[[length(fns)]])
