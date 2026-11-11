@@ -388,3 +388,165 @@ test_that("attribute-only Parquet output of multi-radius Network Reach and Betwe
     expect_identical(so_leftovers(dir), character())
   }
 })
+
+# ---- review additions: weight_name in the manifest, one radius with several normalisations, GeoParquet ----------------------------
+
+test_that("the schema-2 manifest keeps weight_name for weighted and attraction Network Betweenness, as the scalar manifest does", {
+  nm_skip_fgb()
+  dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
+  g <- nm_fgb_graph(dir)$g
+  attractions <- rbind(c(105, 205), c(112, 207), c(120, 215))
+  wts <- rep(c(0, 1, 2), 10)
+  names_of <- function(path) vapply(jsonlite::fromJSON(nm_meta(path)[["rpst:columns"]], simplifyVector = FALSE), function(x) x$name, "")
+  weight_of <- function(path) vapply(jsonlite::fromJSON(nm_meta(path)[["rpst:columns"]], simplifyVector = FALSE),
+                                     function(x) if (is.null(x$weight_name)) NA_character_ else x$weight_name, "")
+  for (case in list(list(weights = wts, attraction_points = NULL, name = "weights"),
+                    list(weights = c(1, 0, 2), attraction_points = attractions, name = "weights"),
+                    list(weights = NULL, attraction_points = NULL, name = NA_character_))) {
+    multi <- file.path(dir, "m.fgb"); scalar <- file.path(dir, "s.fgb")
+    nm_between(g, analysis_radius(steps = c(2, 3)), "steps", c("none", "freeman", "syntax"), case$weights, case$attraction_points,
+               spatial_output_file = multi, overwrite = TRUE)
+    nm_between(g, analysis_radius(steps = 2), "steps", "freeman", case$weights, case$attraction_points,
+               spatial_output_file = scalar, overwrite = TRUE)
+    expect_identical(nm_meta(multi)[["rpst:schema"]], "2")
+    expect_identical(nm_meta(scalar)[["rpst:schema"]], "1")
+    # every column of both manifests carries the weight name (or none), and the multi manifest repeats it for every radius
+    expect_true(all(weight_of(scalar) == case$name) || (is.na(case$name) && all(is.na(weight_of(scalar)))))
+    expect_true(all(weight_of(multi) == case$name) || (is.na(case$name) && all(is.na(weight_of(multi)))))
+    expect_length(weight_of(multi), 2L * 5L)   # two radii x (raw, node count, total depth, freeman, syntax)
+    # the scalar columns of radius 2 are the first four multi columns, with the same names and weight names
+    expect_identical(names_of(multi)[1:4], names_of(scalar))
+    expect_identical(weight_of(multi)[1:4], weight_of(scalar))
+    # the parameters record it too
+    expect_identical(jsonlite::fromJSON(nm_meta(multi)[["rpst:parameters"]], simplifyVector = FALSE)$weight_name,
+                     jsonlite::fromJSON(nm_meta(scalar)[["rpst:parameters"]], simplifyVector = FALSE)$weight_name)
+  }
+  # an angular manifest (no weights) is unchanged: no weight_name entry
+  src <- so_write_fgb(file.path(dir, "seg.fgb"), so_segments(30))
+  out <- file.path(dir, "ang.fgb")
+  angular_choice(segment_graph(src), analysis_radius(walking = c(25, 10)), spatial_output_file = out)
+  expect_true(all(is.na(weight_of(out))))
+})
+
+test_that("a single radius with several Betweenness normalisations equals independent scalar calls", {
+  g <- nm_graph()
+  set.seed(5)
+  wts <- c(0, runif(52, 0, 3), 0)
+  attractions <- rbind(c(2, 1), c(6, 3), c(10, 7))
+  aw <- c(1, 0, 3)
+  cases <- list(
+    list(radius = analysis_radius(walking = 12), distance = "walking"),
+    list(radius = analysis_radius(steps = 3, straight = 40), distance = "steps"),
+    list(radius = analysis_radius(angular = 100), distance = "angular"),
+    list(radius = analysis_radius(axmeter = 20), distance = "axmeter", weights = wts),
+    list(radius = analysis_radius(), distance = "steps", attraction_points = attractions, weights = aw),
+    list(radius = analysis_radius(walking = 0), distance = "walking"))
+  sets <- list(c("standard", "freeman"), c("syntax", "none", "standard"), c("freeman", "syntax", "standard", "none"),
+               c("none", "syntax"))
+  for (case in cases) for (norms in sets) {
+    multi <- nm_between(g, case$radius, case$distance, norms, case$weights, case$attraction_points)
+    man <- attr(multi, "rpst_manifest")
+    expect_false(is.null(man), info = paste(norms, collapse = ","))     # several normalisations: schema 2 even with one radius
+    expect_length(man$radii, 1L)
+    extra <- setdiff(norms, "none")
+    expect_identical(ncol(multi), 1L + 3L + length(extra))
+    scalar_raw <- nm_between(g, case$radius, case$distance, "none", case$weights, case$attraction_points)
+    expect_identical(multi[names(scalar_raw)], scalar_raw)                # raw, node count, total depth, once
+    for (n in extra) {
+      one <- nm_between(g, case$radius, case$distance, n, case$weights, case$attraction_points)
+      nrm <- setdiff(names(one), names(scalar_raw))
+      expect_length(nrm, 1L)
+      expect_true(nrm %in% names(multi))
+      expect_identical(multi[[nrm]], one[[nrm]], info = paste(n, collapse = ","))
+    }
+    # the order of the normalised columns is the requested order, after the three shared columns
+    codes <- c(standard = "s", freeman = "f", syntax = "y")[extra]
+    expect_identical(sub(".*_([sfy])$", "\\1", names(multi)[-(1:4)]), unname(codes))
+  }
+})
+
+skip_nm_geoparquet <- function() {
+  skip_if_not_installed("sf"); skip_if_not_installed("jsonlite"); skip_if_not_installed("arrow", "25.0.0")
+}
+nm_pq_meta <- function(path) rs_read_parquet(path, as_data_frame = FALSE)$schema$metadata
+nm_same_values <- function(actual, expected, info = NULL) {
+  expect_identical(is.na(actual), is.na(expected), info = info)
+  expect_identical(is.nan(actual), is.nan(expected), info = info)
+  expect_identical(as.numeric(actual), as.numeric(expected), info = info)
+}
+
+test_that("GeoParquet spatial output of multi-radius Network Reach and Betweenness: exact values, nulls, metadata, publication and failure", {
+  skip_nm_geoparquet()
+  dir <- so_dir(); on.exit(unlink(dir, recursive = TRUE))
+  m <- so_segments(30)
+  attrs <- so_attributes(30)
+  attrs$nb_s_rs2_wweights_n <- seq_len(30)                 # a source column that a result column replaces
+  src <- so_write_gpq(file.path(dir, "net.parquet"), m, attrs, chunk = 7L)
+  g <- axial_graph(src)
+  original <- as.data.frame(rs_read_parquet(src, as_data_frame = FALSE))
+  src_md <- nm_pq_meta(src)
+  weights <- rep(c(0, 1, 2), 10)                           # zero weights: PST writes no diagnostics for those origins
+  r <- analysis_radius(steps = c(2, 3), straight = 80)
+  norms <- c("freeman", "none", "syntax", "standard")
+  frame <- nm_between(g, r, "steps", norms, weights)
+  expect_true(anyNA(frame[[grep("^nc_", names(frame))[[1L]]]]))   # the table really contains nulls
+  out <- file.path(dir, "between.parquet")
+  # a source column named like a result column needs overwrite = TRUE, and nothing is created without it
+  expect_error(nm_between(g, r, "steps", norms, weights, spatial_output_file = out), "already exist in the source: nb_s_rs2_wweights_n")
+  expect_false(file.exists(out))
+  res <- nm_between(g, r, "steps", norms, weights, spatial_output_file = out, overwrite = TRUE)
+  expect_s3_class(res, "pst_result_file")
+  expect_true(res$spatial)
+  expect_identical(res$replaced, "nb_s_rs2_wweights_n")
+  result_names <- setdiff(names(frame), "line_id")
+  expect_identical(res$appended, setdiff(result_names, "nb_s_rs2_wweights_n"))
+  expect_identical(so_leftovers(dir), character())
+  back <- so_read(out, "geoparquet")
+  source_names <- setdiff(names(rs_read_parquet(src, as_data_frame = FALSE)), "geometry")
+  expect_identical(back$names, c(source_names, setdiff(result_names, "nb_s_rs2_wweights_n")))
+  for (nm in result_names) nm_same_values(as.numeric(back$attrs[[nm]]), frame[[nm]], info = nm)   # exact values and the same nulls
+  expect_identical(back$wkb, unclass(original$geometry))                                            # geometry byte for byte
+  for (nm in setdiff(names(so_attributes(30)), character())) expect_identical(back$attrs[[nm]], original[[nm]])
+  out_md <- nm_pq_meta(out)
+  expect_identical(out_md[["geo"]], src_md[["geo"]])
+  expect_identical(out_md[["other_key"]], "kept")
+  expect_identical(out_md[["rpst:schema"]], "2")
+  expect_identical(out_md[["rpst:function"]], "network_betweenness")
+  expect_identical(out_md[["rpst:graph_type"]], "axial")
+  expect_identical(out_md[["rpst:graph_rows"]], "30")
+  expect_identical(out_md[["rpst:radius_varying"]], "steps")
+  expect_identical(jsonlite::fromJSON(out_md[["rpst:radius_fixed"]], simplifyVector = FALSE), list(straight = 80L))
+  expect_identical(unlist(jsonlite::fromJSON(out_md[["rpst:normalizations"]], simplifyVector = FALSE)), norms)
+  cols <- jsonlite::fromJSON(out_md[["rpst:columns"]], simplifyVector = FALSE)
+  expect_identical(vapply(cols, function(x) x$name, ""), result_names)
+  expect_true(all(vapply(cols, function(x) identical(x$weight_name, "weights"), NA)))
+  expect_identical(rs_pq(out)$num_row_groups, rs_pq(src)$num_row_groups)
+  # Network Reach, same route (source without a colliding column)
+  src2 <- so_write_gpq(file.path(dir, "net2.parquet"), m, so_attributes(30), chunk = 11L)
+  g2 <- axial_graph(src2)
+  rr <- analysis_radius(walking = c(25, 10, 60))
+  freach <- network_reach(g2, rr)
+  out2 <- file.path(dir, "reach.parquet")
+  network_reach(g2, rr, spatial_output_file = out2)
+  back2 <- so_read(out2, "geoparquet")
+  for (nm in setdiff(names(freach), "line_id")) nm_same_values(as.numeric(back2$attrs[[nm]]), freach[[nm]], info = nm)
+  expect_identical(nm_pq_meta(out2)[["rpst:function"]], "network_reach")
+  expect_identical(nm_pq_meta(out2)[["rpst:schema"]], "2")
+  # publication and failure behaviour
+  md5 <- so_md5(out)
+  expect_error(nm_between(g, r, "steps", norms, weights, spatial_output_file = out), "already exists")
+  expect_identical(so_md5(out), md5)
+  nm_fail_after(1)                                           # the second radius fails after the first completed
+  expect_error(nm_between(g, r, "steps", norms, weights, spatial_output_file = out, overwrite = TRUE), "injected native failure")
+  nm_fail_after(-1)
+  expect_identical(so_md5(out), md5)                         # the existing file is untouched
+  fresh <- file.path(dir, "fresh.parquet")
+  nm_fail_after(2)
+  expect_error(network_reach(g2, rr, spatial_output_file = fresh), "injected native failure")
+  nm_fail_after(-1)
+  expect_false(file.exists(fresh))
+  expect_identical(so_leftovers(dir), character())
+  expect_s3_class(nm_between(g, r, "steps", "syntax", weights, spatial_output_file = out, overwrite = TRUE), "pst_result_file")
+  expect_false(identical(so_md5(out), md5))                  # replaced atomically on request
+  expect_identical(nrow(network_reach(g2, analysis_radius(steps = 2))), 30L)   # the graph is still usable
+})

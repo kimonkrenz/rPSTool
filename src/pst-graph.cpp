@@ -2133,7 +2133,7 @@ ReachMulti reach_multi_args(SEXP pointer, SEXP radii, SEXP origins)
 template <class Sink>
 void reach_multi_compute(const ReachMulti& a, Sink& sink)
 {
-    const auto coords = copy_analysis_points(a.points);
+    auto coords = copy_analysis_points(a.points);
     for (R_xlen_t r = 0; r < a.k; ++r) {
         axial_fault_point();
         ++g_axial.reach_runs;
@@ -2142,7 +2142,7 @@ void reach_multi_compute(const ReachMulti& a, Sink& sink)
         SPSTAReachDesc desc{};
         desc.m_Graph = a.handle;
         desc.m_Radius = a.radii[r];
-        desc.m_OriginCoords = a.has_origins ? const_cast<double2*>(coords.data()) : nullptr;
+        desc.m_OriginCoords = a.has_origins ? coords.data() : nullptr;
         desc.m_OriginCount = static_cast<unsigned int>(a.points.count);
         desc.m_OutReachedCount = counts.data();
         desc.m_OutReachedLength = lengths.data();
