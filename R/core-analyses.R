@@ -15,6 +15,13 @@
 #' boundary is inclusive. For every other radius PST finds the closest line to the point and traverses
 #' the network from there, and the point itself is included in the area hull. Points are not retained.
 #'
+#' **Several radii.** One field of [analysis_radius()] may hold several values. PST then runs once per radius, and the result has
+#' the identifier column once, then radius by radius the three columns a single call with that radius would give, named
+#' identically (see Value and [result_column_names]). Fixed restrictions apply to every radius and are recorded in the result's
+#' metadata (`rpst:*` keys and the `rpst_manifest` attribute). The same table goes to `output_file` (and, without `origins`, to
+#' `spatial_output_file`). The result keeps the columns of all radii, so its size grows with the number of radii. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
+#'
 #' **Coordinate reference systems.** `sf` points need XY geometry and a CRS compatible with the graph's
 #' (known versus unknown included). A known geographic CRS is rejected; transform it explicitly. A matrix
 #' graph has no CRS to compare, so the numerical frame is your responsibility. Nothing is reprojected or
@@ -26,7 +33,7 @@
 #' networks. Results are not affected. Adding a `steps` limit avoids the problem.
 #'
 #' @param graph An axial graph created by [axial_graph()].
-#' @param radius Distance limits created by [analysis_radius()].
+#' @param radius Distance limits created by [analysis_radius()]. One field may hold several values (see Details).
 #' @param origins `NULL` (default) to use every line as an origin, or a numeric matrix with at least one
 #'   row and exactly two columns (`x`, `y`), or an XY POINT `sf`/`sfc` object whose features are used in
 #'   order. Coordinates must be finite and within PST's coordinate range.
@@ -53,10 +60,12 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
                       spatial_output_file = NULL) {
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file, is.null(origins), "network_reach with origins (one result per origin point)")
-  .pst_validate_radius(radius)
+  plan <- .pst_radius_plan(radius, FALSE)   # a single radius is validated exactly as before; several are all checked here
   .pst_sf_analysis_crs(graph, origins)
   origins <- .pst_sf_points(origins, "origins")
   overwrite <- .pst_flag(overwrite, "overwrite")
+  if (!.pst_is_scalar_call(plan, "none"))
+    return(.pst_network_reach_multi(graph, ptr, plan, origins, output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_network_reach(radius); result_names <- .pst_nm_names(cols)
   .pst_progress_scope(result_names[[1L]])
   if (!is.null(output_file) || !is.null(spatial_output_file))
@@ -96,6 +105,16 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' `normalization` adds PST's `"standard"`, `"freeman"` (Freeman betweenness) or `"syntax"` normalisation as a
 #' further column (`..._s`, `..._f` or `..._y`).
 #'
+#' **Several radii and normalisations.** One field of [analysis_radius()] may hold several values, and `normalization` may hold several
+#' names. PST then runs once per radius and each requested normaliser is applied to that run; `"none"` adds no column because the raw
+#' score is always returned, once per radius. The result has `line_id` once, then radius by radius the columns a single call with
+#' that radius would give (raw score, node count and total depth once, then one normalised column per requested normaliser, in the
+#' requested order), named identically. A call with one radius and one normalisation keeps the single-result schema. Fixed
+#' restrictions apply to every radius and are recorded in the result's metadata (`rpst:*` keys and the `rpst_manifest` attribute).
+#' The same table goes to `output_file` or `spatial_output_file`. The result keeps the columns of all radii, so its size grows with
+#' the number of radii. See
+#' <https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md>.
+#'
 #' **Skipped origins.** PST skips origins whose effective line weight is not positive and writes neither their
 #' node count (`nc_...`, or `anc_...` with `attraction_points`) nor their total depth (`td_...`, or `atd_...`). rPSTool reports these as `NA`, with `NA` Freeman or syntax
 #' normalised values for those rows. Standard normalisation still uses all genuine raw scores.
@@ -110,9 +129,9 @@ network_reach <- function(graph, radius = analysis_radius(), origins = NULL, out
 #' than `false`), at most two are used. Invalid explicit caps are rejected before any work starts.
 #'
 #' @param graph An axial graph created by [axial_graph()].
-#' @param radius Distance limits created by [analysis_radius()].
+#' @param radius Distance limits created by [analysis_radius()]. One field may hold several values (see Details).
 #' @param distance `"steps"` (default), `"walking"`, `"angular"` or `"axmeter"`.
-#' @param normalization `"none"`, `"standard"`, `"freeman"` or `"syntax"`.
+#' @param normalization One or more of `"none"` (default), `"standard"`, `"freeman"` and `"syntax"`.
 #' @param weights `NULL`, or finite numeric weights that fit single precision (non-zero values must not
 #'   underflow to zero). Supply one per line, or one per attraction point when `attraction_points` is given.
 #' @param attraction_points `NULL`, or a finite numeric matrix with at least one row and exactly two columns
@@ -145,13 +164,16 @@ network_betweenness <- function(graph, radius = analysis_radius(), distance = "s
   weights_expr <- substitute(weights)
   ptr <- .pst_analysis_graph(graph)
   .pst_spatial_request(output_file, spatial_output_file)
-  .pst_validate_radius(radius)
+  plan <- .pst_radius_plan(radius, FALSE)   # a single radius is validated exactly as before; several are all checked here
   distance <- .pst_mode(distance, c("walking", "steps", "angular", "axmeter"), "distance")
-  normalization <- .pst_mode(normalization, c("none", "standard", "freeman", "syntax"), "normalization")
+  normalization <- .pst_modes(normalization, c("none", "standard", "freeman", "syntax"), "normalization")
   .pst_sf_analysis_crs(graph, attraction_points)
   attraction_points <- .pst_sf_points(attraction_points, "attraction_points")
   overwrite <- .pst_flag(overwrite, "overwrite")
   weight <- .pst_nm_user_weight(!is.null(weights), weights_expr, "weights", "w")
+  if (!.pst_is_scalar_call(plan, normalization))
+    return(.pst_network_betweenness_multi(graph, ptr, plan, distance, normalization, weights, weight, attraction_points,
+                                          output_file, overwrite, spatial_output_file))
   cols <- .pst_nm_network_betweenness(radius, distance, normalization, weight, !is.null(attraction_points))
   result_label <- .pst_nm_names(cols)[[1L]]   # generated names are validated before any native work
   .pst_progress_scope(result_label)

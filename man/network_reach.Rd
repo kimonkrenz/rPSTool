@@ -16,7 +16,7 @@ network_reach(
 \arguments{
 \item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}. One field may hold several values (see Details).}
 
 \item{origins}{\code{NULL} (default) to use every line as an origin, or a numeric matrix with at least one
 row and exactly two columns (\code{x}, \code{y}), or an XY POINT \code{sf}/\code{sfc} object whose features are used in
@@ -55,6 +55,13 @@ Lengths and areas are in the units of the input coordinates; no rescaling takes 
 straight-only radius a line counts as reached when its midpoint lies strictly inside the radius, whereas for line origins the
 boundary is inclusive. For every other radius PST finds the closest line to the point and traverses
 the network from there, and the point itself is included in the area hull. Points are not retained.
+
+\strong{Several radii.} One field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values. PST then runs once per radius, and the result has
+the identifier column once, then radius by radius the three columns a single call with that radius would give, named
+identically (see Value and \link{result_column_names}). Fixed restrictions apply to every radius and are recorded in the result's
+metadata (\verb{rpst:*} keys and the \code{rpst_manifest} attribute). The same table goes to \code{output_file} (and, without \code{origins}, to
+\code{spatial_output_file}). The result keeps the columns of all radii, so its size grows with the number of radii. See
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 
 \strong{Coordinate reference systems.} \code{sf} points need XY geometry and a CRS compatible with the graph's
 (known versus unknown included). A known geographic CRS is rejected; transform it explicitly. A matrix

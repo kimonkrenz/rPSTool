@@ -67,6 +67,7 @@
     c(list(name = spec$name[[i]], role = spec$role[[i]], radius = spec$radius[[i]],
            normalization = if (is.na(spec$normalization[[i]])) NULL else spec$normalization[[i]]),
       col[c("code", "distance", "weight", "parameters")][nzchar(unlist(col[c("code", "distance", "weight", "parameters")]))],
+      if (!is.null(col$weight_name)) list(weight_name = col$weight_name),   # the R object the weights came from, as in a scalar manifest
       list(radius_tag = col$radius))
   })
   c(md,

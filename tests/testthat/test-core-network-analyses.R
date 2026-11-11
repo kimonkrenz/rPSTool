@@ -179,7 +179,9 @@ test_that("invalid radii and modes fail in R and native conversion", {
   for (field in names(analysis_radius())) {
     for (v in list(TRUE,"1",numeric(),c(1,2),NA_integer_,NA_real_,NaN,Inf,-Inf,-1,1+1i,1e40)) {
       bad <- analysis_radius();bad[field] <- list(v)
-      expect_error(network_reach(a,bad))
+      # two distinct valid numbers in one field are a multi-radius, which Network Reach now accepts (test-multi-radius-network.R);
+      # the native scalar boundary below still rejects them
+      if (identical(v, c(1, 2))) expect_s3_class(network_reach(a, bad), "data.frame") else expect_error(network_reach(a,bad))
       expect_error(core_native("reach",a$ptr,bad))
       expect_error(core_native("betweenness",a$ptr,bad,"steps","none"))
       expect_error(core_native("angular_choice",s$ptr,bad,FALSE,"none"))

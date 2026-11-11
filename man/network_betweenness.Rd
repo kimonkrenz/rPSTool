@@ -19,11 +19,11 @@ network_betweenness(
 \arguments{
 \item{graph}{An axial graph created by \code{\link[=axial_graph]{axial_graph()}}.}
 
-\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}.}
+\item{radius}{Distance limits created by \code{\link[=analysis_radius]{analysis_radius()}}. One field may hold several values (see Details).}
 
 \item{distance}{\code{"steps"} (default), \code{"walking"}, \code{"angular"} or \code{"axmeter"}.}
 
-\item{normalization}{\code{"none"}, \code{"standard"}, \code{"freeman"} or \code{"syntax"}.}
+\item{normalization}{One or more of \code{"none"} (default), \code{"standard"}, \code{"freeman"} and \code{"syntax"}.}
 
 \item{weights}{\code{NULL}, or finite numeric weights that fit single precision (non-zero values must not
 underflow to zero). Supply one per line, or one per attraction point when \code{attraction_points} is given.}
@@ -61,6 +61,16 @@ the unweighted scores. The node count (\code{nc_...}, or \code{anc_...} with \co
 \strong{Normalisation.} The raw score (\code{nb_..._n}, or \code{at_..._n} with \code{attraction_points}) is always returned.
 \code{normalization} adds PST's \code{"standard"}, \code{"freeman"} (Freeman betweenness) or \code{"syntax"} normalisation as a
 further column (\code{..._s}, \code{..._f} or \code{..._y}).
+
+\strong{Several radii and normalisations.} One field of \code{\link[=analysis_radius]{analysis_radius()}} may hold several values, and \code{normalization} may hold several
+names. PST then runs once per radius and each requested normaliser is applied to that run; \code{"none"} adds no column because the raw
+score is always returned, once per radius. The result has \code{line_id} once, then radius by radius the columns a single call with
+that radius would give (raw score, node count and total depth once, then one normalised column per requested normaliser, in the
+requested order), named identically. A call with one radius and one normalisation keeps the single-result schema. Fixed
+restrictions apply to every radius and are recorded in the result's metadata (\verb{rpst:*} keys and the \code{rpst_manifest} attribute).
+The same table goes to \code{output_file} or \code{spatial_output_file}. The result keeps the columns of all radii, so its size grows with
+the number of radii. See
+\url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 
 \strong{Skipped origins.} PST skips origins whose effective line weight is not positive and writes neither their
 node count (\code{nc_...}, or \code{anc_...} with \code{attraction_points}) nor their total depth (\code{td_...}, or \code{atd_...}). rPSTool reports these as \code{NA}, with \code{NA} Freeman or syntax

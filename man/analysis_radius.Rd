@@ -45,8 +45,8 @@ vanishingly small values are rejected, and a \code{straight} limit must also hav
 calculation, so \code{analysis_radius(walking = c(500, 1000), angular = 180)} means two calculations, each
 limited to 180 degrees; no Cartesian product is formed. The order you supply is kept. Missing,
 non-finite, invalid and duplicate values (duplicates also after narrowing to single precision) and empty
-vectors are rejected. A radius of \code{0} is valid. Only \code{\link[=angular_choice]{angular_choice()}} and \code{\link[=angular_integration]{angular_integration()}}
-accept a multi-radius; every other analysis rejects it before doing any work. See
+vectors are rejected. A radius of \code{0} is valid. Only \code{\link[=network_reach]{network_reach()}}, \code{\link[=network_betweenness]{network_betweenness()}},
+\code{\link[=angular_choice]{angular_choice()}} and \code{\link[=angular_integration]{angular_integration()}} accept a multi-radius; every other analysis rejects it before doing any work. See
 \url{https://github.com/kimonkrenz/rPSTool/blob/main/docs/compatibility/multi-radius.md}.
 
 Each analysis accepts a subset of the limits; see its help page. For example,

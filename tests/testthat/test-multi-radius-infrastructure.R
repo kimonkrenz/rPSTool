@@ -5,10 +5,11 @@ test_that("the multi-radius error names exactly the registered analyses", {
   expect_identical(rPSTool:::.pst_multi_radius_list(c("a")), "a()")
   expect_identical(rPSTool:::.pst_multi_radius_list(c("a", "b")), "a() and b()")
   expect_identical(rPSTool:::.pst_multi_radius_list(c("a", "b", "c")), "a(), b() and c()")
-  expect_identical(rPSTool:::.pst_multi_radius_functions, c("angular_choice", "angular_integration"))
+  registry <- rPSTool:::.pst_multi_radius_functions
+  expect_true(all(c("angular_choice", "angular_integration") %in% registry))
   r <- analysis_radius(walking = c(100, 200))
   expect_error(rPSTool:::.pst_validate_radius(r),
-               "supported only by angular_choice() and angular_integration()", fixed = TRUE)
+               paste0("supported only by ", rPSTool:::.pst_multi_radius_list(registry), ";"), fixed = TRUE)
 })
 
 test_that("unsupported radius fields are rejected before validation or native work", {

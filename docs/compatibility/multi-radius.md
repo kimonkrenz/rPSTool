@@ -1,6 +1,6 @@
-# Multi-radius and multi-normalisation (Angular Choice and Angular Integration)
+# Multi-radius and multi-normalisation
 
-Scope: `angular_choice()` and `angular_integration()` only; every other analysis rejects a multi-valued radius (§9).
+Scope: `angular_choice()`, `angular_integration()`, `network_reach()` and `network_betweenness()` (§10); every other analysis rejects a multi-valued radius (§9).
 
 rPSTool runs one PST calculation per radius and applies PST's exported normalisers to that calculation's finished native arrays;
 nothing is computed in R.
@@ -148,6 +148,31 @@ network, make several calls with different radii. A combined file stores geometr
 
 ## 9. Other radius-bearing analyses
 
-Only `angular_choice()` and `angular_integration()` accept a vector in one radius field. All other analyses (Network Integration,
-Reach, Network Betweenness, OD Betweenness, Attraction Reach and Distance, Segment Group Integration) reject a multi-valued
+Only the analyses listed in §10 accept a vector in one radius field. All other analyses (Network Integration,
+OD Betweenness, Attraction Reach and Distance, Segment Group Integration) reject a multi-valued
 `analysis_radius()` with an explicit error before any native work.
+
+## 10. Network Reach and Segment Betweenness (axial graphs)
+
+`network_reach()` and `network_betweenness()` follow the same design: R expands the radius vector into validated scalar configurations
+(all of them before the first native call, with the unchanged scalar rules and every function-specific restriction), PST runs once
+per radius, and each requested exported normaliser is applied to that run's finished arrays. Nothing is computed in R. The
+identifier column comes first (`line_id`, or `origin_id` for `network_reach()` with `origins`), then the columns of each radius in
+the requested order, named exactly as in a scalar call with that radius.
+
+* **Network Reach** per radius: `rc_`, `rln_`, `rca_` (reached count, length, area). All five `analysis_radius()` fields are accepted
+  as before; one may vary. With `origins` the table has one row per origin.
+* **Segment Betweenness** per radius: the raw score (`nb_..._n`, or `at_..._n` with `attraction_points`), the node count and the total
+  depth (once per radius, however many normalisations are requested), then one column per requested normalisation other than `"none"`,
+  in the requested order. `normalization` is a character vector of distinct names from `"none"`, `"standard"`, `"freeman"` and
+  `"syntax"`; `"none"` adds no column because the raw score is always returned and never duplicated. As for Angular Choice, a call with
+  one radius and one normalisation keeps the scalar schema (`rpst:schema` 1); anything else is a multi-result call (schema 2).
+* **Skipped origins.** Weights and attraction points keep their scalar meaning in every radius. Where PST skips an origin the node count
+  and total depth are `NA` (null in a file), and so are the Freeman and syntax values, in every radius.
+* **Files.** `output_file` (Parquet) and `spatial_output_file` use the same native result table as the in-memory route; the metadata is
+  schema 2 (`rpst:graph_type` `axial`, `rpst:graph_rows` the number of lines, `rpst:columns` with the radius index of every column). The
+  atomic publication, overwrite, collision and clean-up guarantees are those of the scalar routes. Network Reach with `origins` keeps its
+  restriction that `spatial_output_file` is unavailable.
+* **Memory.** Each PST run's scratch memory is released before the next radius, but the finished columns of all radii are retained
+  until the result is returned or the file is written, so result storage grows with the number of radii. The file route does not
+  build R data frames; it is not constant-memory.

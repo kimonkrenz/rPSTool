@@ -41,11 +41,10 @@ test_that("pst_radius keeps scalar behaviour and validates vectors", {
   expect_error(angular_choice(mr_graph(), analysis_radius(walking = 5, axmeter = c(1, 2))), "axmeter")
 })
 
-test_that("only the two angular analyses accept a multi-radius; the others refuse before any work", {
+test_that("only the registered analyses accept a multi-radius; the others refuse before any work", {
+  # Network Reach and Segment Betweenness accept one since the axial multi-radius layer (test-multi-radius-network.R)
   r <- analysis_radius(walking = c(1, 2))
   axial <- axial_graph(mr_segments())
-  expect_error(network_reach(axial, r), "supported only by")
-  expect_error(network_betweenness(axial, r, distance = "walking"), "supported only by")
   expect_error(network_integration(axial, radius = r), "supported only by")
   expect_error(od_betweenness(axial, rbind(c(0, 0)), r), "supported only by")
   expect_error(attraction_reach(axial, rbind(c(0, 0)), r), "supported only by")
